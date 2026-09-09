@@ -1,0 +1,16 @@
+{
+  "name": "xpeak",
+  "version": "0.0.1",
+  "private": true,
+  "description": "XPeak — RPG gym app: check-in ganha XP, sobe de nível",
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test"
+  }
+}
