@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/Felpasw/xpeak/compare/v0.1.1...v0.1.2) (2026-09-15)
+
+
+### Bug Fixes
+
+* **release:** drop custom pull-request-title-pattern ([#10](https://github.com/Felpasw/xpeak/issues/10)) ([032a596](https://github.com/Felpasw/xpeak/commit/032a596e83a8e8c27cdc5ab88a8ad4f67f6dfe2d))
+* **release:** include component placeholder in release PR title pattern ([bae82b7](https://github.com/Felpasw/xpeak/commit/bae82b764658b2a0de8f1e196982e7449a4ac951))
+
 ## [0.1.1](https://github.com/Felpasw/xpeak/compare/v0.1.0...v0.1.1) (2026-09-15)
 
 
