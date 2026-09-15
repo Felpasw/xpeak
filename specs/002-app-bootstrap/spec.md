@@ -5,164 +5,204 @@
 ## 1. Summary
 
 Scaffold two runnable-but-empty applications inside the monorepo:
-`apps/api` (Phoenix 1.7, API mode) and `apps/mobile` (Next.js 15 +
-Capacitor). Wire both into the CI pipeline from Phase 1. Prove
-correctness with a smoke test per app. Ship zero product features.
+`apps/api` (ASP.NET Core 9 Minimal API) and `apps/mobile` (Next.js
+15 + Capacitor). Wire both into the CI pipeline from Phase 1.
+Prove correctness with a smoke test per app. Ship zero product
+features.
 
-## 2. Phoenix API (`apps/api`)
+## 2. ASP.NET Core API (`apps/api`)
 
 ### 2.1. Bootstrap command
 
+Run via the .NET SDK container (Docker-first):
+
 ```
-mix archive.install hex phx_new --force
-mix phx.new apps/api \
-  --app xpeak \
-  --module Xpeak \
-  --database postgres \
-  --binary-id \
-  --no-html \
-  --no-assets \
-  --no-live \
-  --no-mailer \
-  --install
+docker run --rm -v "$PWD":/workspace -w /workspace \
+  --user "$(id -u):$(id -g)" \
+  -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e DOTNET_NOLOGO=1 \
+  mcr.microsoft.com/dotnet/sdk:9.0 \
+  sh -c "dotnet new webapi -o apps/api \
+           --framework net9.0 --use-controllers false --auth None \
+           && dotnet new gitignore -o apps/api"
 ```
 
 Notes:
-- `--app xpeak` sets the OTP application atom.
-- `--module Xpeak` sets the root module namespace (`Xpeak`,
-  `XpeakWeb`).
-- `--binary-id` makes every schema use UUID PKs by default (matches
-  the Phase 3 decision to use UUIDs for users).
-- `--no-html`, `--no-assets`, `--no-live` strip the HTML/LiveView
-  layers. Phoenix Channels (WebSocket) remain available for later
-  realtime work without adding LiveView back.
-- `--no-mailer` because email flows land later (or never — see
-  Phase 3 non-goals).
-- `--install` runs `mix deps.get` and `mix ecto.setup` at the end.
+- `--use-controllers false` gives us **Minimal APIs**, not the
+  legacy controller-based style.
+- `--auth None` because we roll our own auth in Phase 3.
 
 ### 2.2. Runtime versions
 
-- Elixir + Erlang/OTP: pinned via `apps/api/.tool-versions` (asdf).
-  Version choice deferred to `plan.md` §8 Q1.
-- Hex packages: locked in `mix.lock`.
+- .NET SDK: pinned via `apps/api/global.json`
+  (`sdk.version: "9.0.100"`, `rollForward: "latestMinor"`).
+- NuGet packages: locked via `packages.lock.json` after enabling
+  `<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>`
+  in `api.csproj` (T-002-07).
 
-### 2.3. Dependencies (`mix.exs`)
+### 2.3. Dependencies (NuGet)
 
-Baseline additions on top of what `phx.new` includes:
+Baseline additions on top of what `dotnet new webapi` includes:
 
-- **Web / runtime:**
-  - `corsica` — CORS handling (drops `Plug.Cors` custom code).
-  - `plug_cowboy` or `bandit` — `bandit` is the Phoenix 1.7 default;
-    keep it.
-- **Testing:**
-  - `ex_machina` — factories.
-  - `mox` — behaviour-based mocking (for later external integrations).
-- **Style / quality:**
-  - `credo` — linter.
-  - `dialyxir` — Dialyzer wrapper (runs opportunistically, not on
-    every commit — see §7.3).
-- **Config:**
-  - `dotenvy` or `envx` (or plain `System.get_env` in `runtime.exs`
-    — final choice in task). Dev/test only.
+- **Runtime:**
+  - `Microsoft.EntityFrameworkCore` 9.0.x
+  - `Npgsql.EntityFrameworkCore.PostgreSQL` 9.0.x
+  - `Microsoft.EntityFrameworkCore.Design` 9.0.x (build-time only)
+  - `Microsoft.AspNetCore.OpenApi` 9.0.x (already added by
+    template)
+- **Tests (in `apps/api.Tests`):**
+  - `Microsoft.NET.Test.Sdk`
+  - `xunit`, `xunit.runner.visualstudio`
+  - `Microsoft.AspNetCore.Mvc.Testing`
+  - `Testcontainers.PostgreSql`
+  - `FluentAssertions`
 
 ### 2.4. Configuration
 
-- `config/config.exs`: base config (endpoint, repo).
-- `config/dev.exs`: dev DB, `code_reloader: true`, `debug_errors:
-  true`, listens on port `4000`.
-- `config/test.exs`: test DB (`xpeak_test`), `pool:
-  Ecto.Adapters.SQL.Sandbox`, endpoint on port `4002`.
-- `config/prod.exs`: minimal — real config comes from
-  `runtime.exs`.
-- `config/runtime.exs`: `DATABASE_URL`, `SECRET_KEY_BASE`, `PORT`,
-  `PHX_HOST` read from ENV.
-- **CORS** (Corsica) mounted in `XpeakWeb.Endpoint` before the
-  router in dev/test: allow `http://localhost:3001` and
-  `capacitor://localhost`. Prod allow-list stays empty until deploy
-  phase.
+- `appsettings.json` — base config (defaults).
+- `appsettings.Development.json` — dev connection string,
+  verbose EF Core logging.
+- `Program.cs` reads `Configuration.GetConnectionString("Postgres")`.
+- Container/dev connection: `Host=localhost;Port=5433;Database=xpeak_dev;Username=xpeak;Password=xpeak`
+  (or `Host=postgres;Port=5432;...` when running from inside the
+  compose network).
+- CORS policy `XpeakDev` allows
+  `http://localhost:3001` and `capacitor://localhost`, any method,
+  any header, credentials.
+- **OpenAPI** mapped in dev only (`app.MapOpenApi()`).
 
-### 2.5. Router
+### 2.5. `Program.cs`
 
-`lib/xpeak_web/router.ex`:
+Slim, wires DI + endpoints:
 
-```elixir
-defmodule XpeakWeb.Router do
-  use XpeakWeb, :router
+```csharp
+using Microsoft.EntityFrameworkCore;
+using Xpeak.Api.Endpoints;
+using Xpeak.Api.Infrastructure;
 
-  pipeline :api do
-    plug :accepts, ["json"]
-  end
+var builder = WebApplication.CreateBuilder(args);
 
-  scope "/", XpeakWeb do
-    pipe_through :api
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
-    get "/health", HealthController, :show
-  end
-end
+const string CorsPolicy = "XpeakDev";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(CorsPolicy, policy => policy
+        .WithOrigins("http://localhost:3001", "capacitor://localhost")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
+});
+
+builder.Services.AddOpenApi();
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+    app.MapOpenApi();
+
+app.UseCors(CorsPolicy);
+app.MapHealthEndpoints();
+
+app.Run();
+
+public partial class Program;
 ```
 
 ### 2.6. Health endpoint
 
+`Endpoints/HealthEndpoints.cs`:
+
+```csharp
+namespace Xpeak.Api.Endpoints;
+
+public static class HealthEndpoints
+{
+    public static IEndpointRouteBuilder MapHealthEndpoints(this IEndpointRouteBuilder app)
+    {
+        app.MapGet("/health", () =>
+        {
+            var version = File.ReadAllText("VERSION").Trim();
+            return Results.Ok(new HealthResponse(
+                Status: "ok",
+                Version: version,
+                Time: DateTimeOffset.UtcNow
+            ));
+        })
+        .WithName("Health")
+        .WithSummary("Reports the app status, version and timestamp.");
+
+        return app;
+    }
+}
+
+public sealed record HealthResponse(string Status, string Version, DateTimeOffset Time);
+```
+
+Response contract:
 - Route: `GET /health`
-- Controller: `XpeakWeb.HealthController.show/2`
-- Response: `{"status":"ok","version":"<VERSION>","time":"<ISO8601>"}`
-- Status code: `200`
-- `<VERSION>` reads `File.read!(Path.join(:code.priv_dir(:xpeak),
-  "..") <> "/VERSION") |> String.trim()` **or** simpler:
-  `Application.spec(:xpeak, :vsn) |> to_string()` since `mix.exs`
-  reads the same file at compile time.
+- Status: `200`
+- Body:
+  ```json
+  { "status": "ok", "version": "0.0.1", "time": "2026-01-01T00:00:00Z" }
+  ```
 
 ### 2.7. Version file
 
 - `apps/api/VERSION` containing the current SemVer string
   (initialized as `0.0.1` to match `.release-please-manifest.json`).
-- `apps/api/mix.exs` reads it:
-
-  ```elixir
-  @version File.read!("VERSION") |> String.trim()
-
-  def project do
-    [
-      app: :xpeak,
-      version: @version,
-      # ...
-    ]
-  end
-  ```
-
+- `HealthEndpoints` reads it via `File.ReadAllText("VERSION")` at
+  request time.
 - `release-please-config.json` gains an `extra-files` entry pointing
   to `apps/api/VERSION` (type: `generic`, `path: apps/api/VERSION`)
   so future releases keep the file in sync.
 
-### 2.8. Formatter, Credo, Dialyzer
+### 2.8. `AppDbContext`
 
-- `apps/api/.formatter.exs` — default from `phx.new` (respects Phoenix
-  imports).
-- `apps/api/.credo.exs` — start from `mix credo.gen.config`; enable
-  `--strict` mode; keep defaults sensible (some `Design.*` checks
-  relaxed for generated code).
-- `apps/api/.dialyzer_ignore.exs` — empty file; populated as we
-  encounter false positives.
-- Dialyzer PLTs cached in CI under `_build/dev/*.plt`.
+`Infrastructure/AppDbContext.cs`:
+
+```csharp
+using Microsoft.EntityFrameworkCore;
+
+namespace Xpeak.Api.Infrastructure;
+
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
+    : DbContext(options)
+{
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+    }
+}
+```
+
+Empty on purpose — domain models arrive from Phase 3 onwards.
 
 ### 2.9. Dev Dockerfile
 
-- `apps/api/Dockerfile` for local dev only (prod dockerfile is a
-  later-phase concern).
-- Base: `hexpm/elixir:<elixir>-erlang-<otp>-alpine-<alpine>`.
-- Installs `build-base`, `git`, `openssl-dev`, `postgresql-client`.
-- Copies `mix.exs`, `mix.lock`, runs `mix deps.get`, then copies
-  the rest.
-- `CMD ["mix", "phx.server"]`.
+- `apps/api/Dockerfile.dev` for local dev only (prod dockerfile is
+  a later-phase concern).
+- Base: `mcr.microsoft.com/dotnet/sdk:9.0` (SDK for `dotnet watch`).
+- Two-stage layer strategy:
+  1. Copy `*.csproj`, `global.json`, `packages.lock.json`, run
+     `dotnet restore --locked-mode` (cached until deps change).
+  2. Copy the rest and `dotnet watch run --urls http://0.0.0.0:5000`.
+- Working dir: `/app`.
 
-### 2.10. README
+### 2.10. Style + formatter
 
-`apps/api/README.md` covers: prerequisites (asdf, Erlang, Elixir,
-Postgres), install (`asdf install && mix deps.get && mix
-ecto.setup`), running (`mix phx.server`), testing (`mix test`),
-linting (`mix format --check-formatted && mix credo --strict`),
-release version (`mix run -e "IO.puts Application.spec(:xpeak,
-:vsn)"`).
+- `dotnet format` used across the tree.
+- Optional: an `.editorconfig` at repo root (already added) governs
+  brace style, indent size, `var` usage, using-directive ordering.
+- CI runs `dotnet format --verify-no-changes` as part of the
+  api-test job.
+
+### 2.11. README
+
+`apps/api/README.md` covers: prerequisites (Docker only — or .NET 9
+SDK for local dev), install (`docker compose up -d api`), running
+(`docker compose logs -f api`), testing (`docker run ... dotnet
+test`), release version (`cat VERSION`).
 
 ## 3. Mobile app (`apps/mobile`)
 
@@ -180,35 +220,35 @@ pnpm create next-app@latest apps/mobile \
   --no-turbopack
 ```
 
-Tailwind decision deferred to `plan.md` §8 Q2. If we defer the design
-system, pass `--no-tailwind` and add it later.
+Tailwind decision deferred to `plan.md` §8 Q1. If we defer the
+design system, pass `--no-tailwind` and add it later.
 
 ### 3.2. Package name
 
 - `package.json` `name`: `@xpeak/mobile`
-- `package.json` `version`: `0.0.1` (kept in sync via `release-please`
-  `extra-files`).
+- `package.json` `version`: `0.0.1` (kept in sync via
+  `release-please` `extra-files`).
 - `package.json` `private`: `true`
 
 ### 3.3. TypeScript
 
-- `tsconfig.json` extends `../../packages/tsconfig-base.json` (shared
-  base created in §5).
+- `tsconfig.json` extends `../../packages/tsconfig-base.json`
+  (shared base already added).
 - `"strict": true`, `"noUncheckedIndexedAccess": true`,
   `"noImplicitOverride": true`.
 
 ### 3.4. ESLint + Prettier
 
 - Keep the Next.js ESLint preset.
-- Add `eslint-config-prettier` to disable style rules that clash with
-  Prettier.
-- `.prettierrc` at repo root (shared).
-- `.prettierignore` at repo root.
+- Add `eslint-config-prettier` to disable style rules that clash
+  with Prettier.
+- `.prettierrc` at repo root (already added).
+- `.prettierignore` at repo root (already added).
 
 ### 3.5. Vitest + Testing Library
 
-- Deps: `vitest`, `@vitejs/plugin-react`, `@testing-library/react`,
-  `@testing-library/jest-dom`, `jsdom`.
+- Deps: `vitest`, `@vitejs/plugin-react`,
+  `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`.
 - `vitest.config.ts` in `apps/mobile/`:
   - `environment: 'jsdom'`
   - `setupFiles: ['./vitest.setup.ts']`
@@ -221,8 +261,8 @@ system, pass `--no-tailwind` and add it later.
 ### 3.6. Root layout & page
 
 - `app/layout.tsx`: sets `<html lang="en">`, viewport meta with
-  `width=device-width, initial-scale=1, viewport-fit=cover`, safe-area
-  handling via CSS env vars.
+  `width=device-width, initial-scale=1, viewport-fit=cover`,
+  safe-area handling via CSS env vars.
 - `app/page.tsx`: renders a single `<main>` with the text "Hello
   XPeak" and a small caption "You'll level up here soon." — enough
   for the smoke test, no styling ambition beyond mobile-first
@@ -234,9 +274,9 @@ system, pass `--no-tailwind` and add it later.
   `@capacitor/android`, `@capacitor/ios`.
 - Init: `pnpm --filter @xpeak/mobile exec cap init "XPeak"
   "com.xpeak.app" --web-dir=out`.
-- `next.config.ts` sets `output: 'export'` and `images: { unoptimized:
-  true }` so `pnpm build && pnpm exec cap sync` produces a static
-  bundle for the native wrapper.
+- `next.config.ts` sets `output: 'export'` and
+  `images: { unoptimized: true }` so `pnpm build && pnpm exec cap sync`
+  produces a static bundle for the native wrapper.
 - Scripts:
   - `"build:web": "next build"`
   - `"cap:sync": "cap sync"`
@@ -244,13 +284,13 @@ system, pass `--no-tailwind` and add it later.
   - `"cap:open:ios": "cap open ios"`
 - Generate platforms:
   - `pnpm --filter @xpeak/mobile exec cap add android`
-  - `pnpm --filter @xpeak/mobile exec cap add ios` (may fail without
-    macOS — accept and document).
+  - `pnpm --filter @xpeak/mobile exec cap add ios` (may fail
+    without macOS — accept and document).
 
 ### 3.8. Environment variables
 
 - `.env.example` with:
-  - `NEXT_PUBLIC_API_URL=http://localhost:4000`
+  - `NEXT_PUBLIC_API_URL=http://localhost:5000`
 - No secrets ever committed. `.env.local` stays gitignored.
 
 ### 3.9. README
@@ -262,20 +302,20 @@ native (`pnpm --filter @xpeak/mobile cap:sync && cap:open:android`).
 
 ## 4. `packages/shared`
 
-- Scaffold only. Empty barrel: `packages/shared/src/index.ts` exports
-  nothing yet.
+- Scaffold only. Empty barrel: `packages/shared/src/index.ts`
+  exports nothing yet.
 - `package.json` `name`: `@xpeak/shared`, `private: true`,
   `main: "./src/index.ts"`, `types: "./src/index.ts"`.
 - `tsconfig.json` extends `../tsconfig-base.json`.
-- Consumed via `workspace:*` from `apps/mobile` (added as dep so the
-  wiring is proven, even with no exports yet).
+- Consumed via `workspace:*` from `apps/mobile` (added as dep so
+  the wiring is proven, even with no exports yet).
 
 ## 5. Shared tooling at repo root
 
-- `packages/tsconfig-base.json` — strict base tsconfig that mobile and
-  shared extend.
-- Root `.prettierrc` (single source of truth for both apps).
-- Root `.editorconfig` (line endings, indent width, final newline).
+- `packages/tsconfig-base.json` — strict base tsconfig that mobile
+  and shared extend (already added).
+- Root `.prettierrc` (already added).
+- Root `.editorconfig` (already added).
 
 ## 6. `docker-compose.yml`
 
@@ -283,19 +323,14 @@ At the repo root. Services:
 
 - `postgres` (image `postgres:16-alpine`, env
   `POSTGRES_USER=xpeak/POSTGRES_PASSWORD=xpeak/POSTGRES_DB=xpeak_dev`,
-  volume `xpeak_pg_data`).
-- Optional: `api` service depending on `plan.md` §8 Q4.
-
-Ports:
-- `5432` → host `5432` (or `54322` if the host already runs Postgres —
-  documented in README).
-
-Redis intentionally omitted: Oban stores jobs in Postgres and we
-don't need a separate cache yet.
+  volume `xpeak_pg_data`, host `5433` → container `5432`).
+- `api` (build `./apps/api/Dockerfile.dev`, depends on postgres
+  healthy, mounts `./apps/api:/app` for hot reload, port `5000:5000`).
 
 ## 7. CI additions (`.github/workflows/ci.yml`)
 
-Two new jobs on top of Phase 1:
+Two new jobs on top of Phase 1 (and drop the vestigial `lint`
+job):
 
 ### 7.1. `api-test`
 
@@ -303,27 +338,30 @@ Two new jobs on top of Phase 1:
 - Services: `postgres:16` on port 5432 with health-check.
 - Steps:
   - Checkout.
-  - `erlef/setup-beam@v1` reading `otp-version` and `elixir-version`
-    from `apps/api/.tool-versions`.
-  - Cache `apps/api/deps/` and `apps/api/_build/` keyed on
-    `mix.lock` hash.
-  - `mix deps.get --only test`
-  - `mix format --check-formatted`
-  - `mix credo --strict`
-  - `mix compile --warnings-as-errors`
-  - `mix ecto.create --quiet`
-  - `mix ecto.migrate --quiet`
-  - `mix test`
+  - `actions/setup-dotnet@v4` with `dotnet-version: 9.0.x`
+    (or reads `global.json`).
+  - Cache NuGet packages keyed on `packages.lock.json` hash.
+  - `dotnet restore --locked-mode`
+  - `dotnet format --verify-no-changes`
+  - `dotnet build --no-restore --configuration Release
+    -warnaserror`
+  - `dotnet test apps/api.Tests/api.Tests.csproj --no-build
+    --configuration Release --logger "trx" -- RunConfiguration.CollectSourceInformation=true`
 
 ### 7.2. `mobile-test`
 
 - Reuses the existing pnpm setup from Phase 1.
-- Steps: `pnpm --filter @xpeak/mobile lint`,
-  `pnpm --filter @xpeak/mobile test`,
+- Steps: `pnpm --filter @xpeak/mobile test`,
   `pnpm --filter @xpeak/mobile build`.
 
-Both jobs added to the required checks list on `main` (branch
-protection update in `T-002-23`).
+### 7.3. Drop `lint` job
+
+The vestigial `lint` job in `ci.yml` (from XPK-2) is removed as
+part of this phase — it's still required to be reflected in the
+Ruleset on `main` (see `T-002-25`).
+
+Both new jobs added to the required checks list on `main` (branch
+protection update in `T-002-25`).
 
 ## 8. Version wiring with release-please
 
@@ -345,48 +383,48 @@ Add `extra-files` in `release-please-config.json`:
 ```
 
 Result: bumps flow from a single root release into both apps'
-version files. `apps/api/mix.exs` reads `VERSION` at compile time so
-no separate manifest edit is needed on the api side.
+version files. `apps/api/VERSION` is the source of truth for the
+API; `HealthEndpoints` reads it at request time so no rebuild is
+needed for release-please to reflect the bump.
 
 ## 9. Success criteria
 
-- `mix test` in `apps/api` passes with the health controller test
-  (green).
-- `mix format --check-formatted`, `mix credo --strict`, and
-  `mix compile --warnings-as-errors` all return clean.
-- `curl localhost:4000/health` returns
-  `{"status":"ok","version":"0.0.1", ...}` when the app is booted
-  locally.
+- `dotnet test` in `apps/api.Tests` passes with the health
+  integration test (green).
+- `dotnet format --verify-no-changes` returns clean.
+- `dotnet build --warnaserror` returns 0 warnings, 0 errors.
+- `curl localhost:5000/health` returns
+  `{"status":"ok","version":"0.0.1", ...}` when the api container
+  is up.
 - `pnpm --filter @xpeak/mobile test` passes with the root page
   render spec (green).
 - `pnpm --filter @xpeak/mobile build` succeeds (static export
   emitted to `out/`).
-- `pnpm --filter @xpeak/mobile cap sync` completes without errors on
-  Linux (iOS platform generation may be skipped, documented).
-- `docker compose up -d postgres` starts the service and Phoenix
-  connects on `mix ecto.setup`.
-- CI runs `api-test` + `mobile-test` on the phase's own PR and both
-  are green.
+- `pnpm --filter @xpeak/mobile cap sync` completes without errors
+  on Linux (iOS platform generation may be skipped, documented).
+- `docker compose up -d` brings up postgres + api healthy.
+- CI runs `api-test` + `mobile-test` on the phase's own PR and
+  both are green.
 - `release-please` Release PR generated after this phase's merge
   bumps `apps/api/VERSION` and `apps/mobile/package.json` `version`.
 
 ## 10. Non-goals (explicit)
 
-- Auth (Guardian, hashing) — Phase 3.
+- Auth (Identity, JWT, Google OAuth) — Phase 3.
 - Any domain model (User, Category, CheckIn) — Phase 3+.
-- Oban workers actually processing jobs — later.
+- Hangfire workers actually processing jobs — later.
 - Production Dockerfile / deployment — later.
-- iOS native build validation on a Mac — later, when we have a Mac
-  in the loop.
+- iOS native build validation on a Mac — later, when we have a
+  Mac in the loop.
 
 ## 11. Risks and mitigations
 
 | Risk                                                    | Mitigation                                                                 |
 |---------------------------------------------------------|----------------------------------------------------------------------------|
-| Elixir/OTP version mismatch dev↔CI                      | `.tool-versions` is the single source of truth; CI reads it directly.      |
+| .NET SDK version mismatch dev↔CI                        | `global.json` is the single source of truth; CI reads it directly.         |
 | Capacitor iOS platform generation fails on Linux        | Document the caveat in `apps/mobile/README.md`; skip in CI on Linux.       |
 | Static export breaks App Router server components       | Restrict the smoke page to client + static; add lint rule later if needed. |
-| CORS misconfig blocks mobile → api during dev           | Controller test covers preflight from `capacitor://localhost` and localhost:3001. |
-| release-please `extra-files` desync                     | `T-002-25` explicitly bumps a manual version to confirm the flow.          |
+| CORS misconfig blocks mobile → api during dev           | Integration test covers preflight from `capacitor://localhost` and `localhost:3001`. |
+| release-please `extra-files` desync                     | `T-002-27` explicitly bumps a manual version to confirm the flow.          |
 | Docker on Linux runs Postgres as root and locks volume  | Named volume `xpeak_pg_data`; documented `docker compose down -v` reset.   |
-| Cold BEAM builds slow down CI                           | Cache `deps/` and `_build/` keyed on `mix.lock` hash.                      |
+| Testcontainers requires Docker socket in CI             | GitHub Actions ubuntu runners have Docker enabled — Testcontainers works OOTB. |
