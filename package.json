@@ -2,7 +2,7 @@
   "name": "xpeak",
   "version": "0.0.1",
   "private": true,
-  "description": "XPeak — RPG gym app: check-in ganha XP, sobe de nível",
+  "description": "XPeak — RPG-gamified gym app: check-in earns XP, level up.",
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=20"
@@ -11,6 +11,13 @@
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "prepare": "husky",
+    "commitlint": "commitlint --edit"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "husky": "^9.1.7"
   }
 }
