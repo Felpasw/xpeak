@@ -197,14 +197,15 @@ Each row on a board shows:
 
 ### 2.6.4. Storage & computation
 
-- Compute weekly/monthly boards from a materialized view or an Oban
-  job that snapshots into a `rankings_snapshots` table on a schedule
-  (e.g., hourly for current period, on rollover for closed periods).
+- Compute weekly/monthly boards from a materialized view or a
+  Hangfire recurring job that snapshots into a `rankings_snapshots`
+  table on a schedule (e.g., hourly for current period, on rollover
+  for closed periods).
 - All-time boards can be a straight `ORDER BY xp DESC LIMIT 100`
   with an index on `xp DESC` (with pagination).
-- Cache the top 100 in-memory (ETS via Cachex/Nebulex) or in Redis
-  when we add it, with a short TTL (60–300s) to avoid hammering the
-  DB on public views.
+- Cache the top 100 in-memory (`IMemoryCache`) or in Redis when we
+  add it, with a short TTL (60–300s) to avoid hammering the DB on
+  public views.
 
 ### 2.6.5. Cross-links with the social graph
 
@@ -338,7 +339,7 @@ user's join anniversary — decision below).
   Instagram/WhatsApp.
 
 **Generation:**
-- Batch job (Oban) runs after year rollover for every user with
+- Batch job (Hangfire) runs after year rollover for every user with
   at least one check-in that year.
 - Result cached as a `recaps` record: `user_id`, `period` (e.g.,
   `2026`), `payload (JSONB)`, `generated_at`.
@@ -516,8 +517,9 @@ Recurring pattern across the ideas above:
   come from admins/challenge owners.
 
 **Trade-off:** more flexibility ⇔ more surface for balancing bugs
-and exploits. Requires a small admin UI (or IEx console + audit
-log at minimum) and per-scope caps enforced at the domain layer.
+and exploits. Requires a small admin UI (Razor/Blazor or a plain
+authenticated section of the API) with per-scope caps enforced at
+the domain layer.
 
 ---
 
