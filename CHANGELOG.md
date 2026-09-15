@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/Felpasw/xpeak/compare/v0.1.1...v0.1.2) (2026-09-15)
+
+
+### Bug Fixes
+
+* **release:** include component placeholder in release PR title pattern ([bae82b7](https://github.com/Felpasw/xpeak/commit/bae82b764658b2a0de8f1e196982e7449a4ac951))
+
 ## [0.1.1](https://github.com/Felpasw/xpeak/compare/v0.1.0...v0.1.1) (2026-09-15)
 
 
