@@ -31,7 +31,8 @@ convention — see below).
   `0.x`, and `changelog-sections` limited to user-facing types
   (`feat`, `fix`, `perf`, `revert`).
 - `.release-please-manifest.json` — seed `{ ".": "0.0.1" }`.
-- `.github/workflows/release.yml` — trigger on `push` to `main`;
+- `.github/workflows/release.yml` — triggers on `push` to `main`
+  and on `workflow_dispatch` (manual re-run from the Actions tab);
   runs the action, then enables auto-merge (squash) on the produced
   Release PR via `gh pr merge --auto --squash`.
 

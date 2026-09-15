@@ -3,6 +3,11 @@ name: Release
 on:
   push:
     branches: [main]
+  # Allow manual re-runs from the Actions tab (Actions → Release → Run
+  # workflow). Useful when release-please aborts on a bad state (e.g.,
+  # a Release PR merged without a tag) and needs to be re-tried after
+  # a manual fix, without piggybacking on the next push to main.
+  workflow_dispatch: {}
 
 permissions:
   contents: write
