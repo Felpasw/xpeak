@@ -23,14 +23,14 @@ Status glyphs (fill in as we go):
 > Goal: make sure the monorepo can run `pnpm install` and the workflows
 > we're about to add have a deterministic node/pnpm baseline.
 
-- [ ] **T-001-01 `[S]`** — Pin Node and pnpm versions
+- [x] ✅ commit `f999153` — **T-001-01 `[S]`** — Pin Node and pnpm versions
   - Add `.nvmrc` with `20` (or `20.x` LTS).
   - Add `.node-version` mirror (for tools that don't read `.nvmrc`).
   - Confirm `packageManager: "pnpm@9.0.0"` in root `package.json`
     (already present — validate it matches CI).
   - Deliverable: `.nvmrc`, `.node-version`.
 
-- [ ] **T-001-02 `[S]`** — Root scripts sanity
+- [x] ✅ commit `f999153` — **T-001-02 `[S]`** — Root scripts sanity
   - Ensure `pnpm lint`, `pnpm test`, `pnpm build` at the root run
     `pnpm -r` and exit `0` on an empty monorepo (no workspace packages
     yet). Add stub `echo` scripts if needed so CI doesn't fail before
@@ -44,7 +44,7 @@ Status glyphs (fill in as we go):
 > Goal: enforce Conventional Commits locally and in CI so
 > `release-please` can compute bumps and changelogs.
 
-- [ ] **T-001-03 `[T][S]`** — Install and configure `commitlint`
+- [x] ✅ commit `f999153` — **T-001-03 `[T][S]`** — Install and configure `commitlint`
   - Add dev deps: `@commitlint/cli`, `@commitlint/config-conventional`.
   - Add `commitlint.config.cjs` extending `config-conventional`.
   - Add allowed types and scopes: `feat`, `fix`, `perf`, `refactor`,
@@ -57,7 +57,7 @@ Status glyphs (fill in as we go):
     exit `0`.
   - Deliverable: `commitlint.config.cjs`, updated `package.json`.
 
-- [ ] **T-001-04 `[T][S]`** — Install Husky and wire `commit-msg` hook
+- [x] ✅ commit `f999153` — **T-001-04 `[T][S]`** — Install Husky and wire `commit-msg` hook
   - Add dev dep: `husky`.
   - Add `prepare` script: `husky`.
   - Create `.husky/commit-msg` running
@@ -68,7 +68,7 @@ Status glyphs (fill in as we go):
     (or clean staging without committing if we're on `main`).
   - Deliverable: `.husky/commit-msg`, `.husky/_/` (installed by Husky).
 
-- [ ] **T-001-05 `[T][P]`** — CI check for commit messages on PRs
+- [x] ✅ commit `f999153` — **T-001-05 `[T][P]`** — CI check for commit messages on PRs
   - Add a workflow job `commitlint` in `.github/workflows/ci.yml` that
     validates the **PR title** (since we squash-merge) using
     `wagoid/commitlint-github-action` or equivalent.
@@ -82,7 +82,7 @@ Status glyphs (fill in as we go):
 
 > Goal: give branch protection something meaningful to block merges on.
 
-- [ ] **T-001-06 `[T][S]`** — Create `.github/workflows/ci.yml` skeleton
+- [x] ✅ commit `f999153` — **T-001-06 `[T][S]`** — Create `.github/workflows/ci.yml` skeleton
   - Triggers: `pull_request` targeting `main`, and `push` to `main`.
   - Jobs: `install`, `lint`, `test`, `build`, `commitlint` (parallel
     where possible, `install` shared via cache).
@@ -93,7 +93,7 @@ Status glyphs (fill in as we go):
     run green on an empty monorepo.
   - Deliverable: `.github/workflows/ci.yml`.
 
-- [ ] **T-001-07 `[P]`** — Cache pnpm store
+- [x] ✅ commit `f999153` — **T-001-07 `[P]`** — Cache pnpm store
   - Configure `actions/cache@v4` keyed on `pnpm-lock.yaml` hash so the
     workflow doesn't re-download deps on every run.
   - Deliverable: updated `.github/workflows/ci.yml`.
@@ -104,14 +104,14 @@ Status glyphs (fill in as we go):
 
 > Goal: the actual auto-versioning core of this phase.
 
-- [ ] **T-001-08 `[S]`** — Add `.release-please-manifest.json`
+- [x] ✅ commit `f999153` — **T-001-08 `[S]`** — Add `.release-please-manifest.json`
   - Seed with:
     ```json
     { ".": "0.0.1" }
     ```
   - Deliverable: `.release-please-manifest.json`.
 
-- [ ] **T-001-09 `[S]`** — Add `release-please-config.json`
+- [x] ✅ commit `f999153` — **T-001-09 `[S]`** — Add `release-please-config.json`
   - Single package at root, `release-type: node`.
   - `changelog-sections`: keep `feat`, `fix`, `perf`, `revert` visible;
     hide `refactor`, `docs`, `build`, `ci`, `test`, `chore` (final
@@ -121,7 +121,7 @@ Status glyphs (fill in as we go):
   - `draft: false`, `prerelease: false` for the release.
   - Deliverable: `release-please-config.json`.
 
-- [ ] **T-001-10 `[T][S]`** — Add `.github/workflows/release.yml`
+- [x] ✅ commit `f999153` — **T-001-10 `[T][S]`** — Add `.github/workflows/release.yml`
   - Trigger: `push` to `main`.
   - Permissions: `contents: write`, `pull-requests: write`.
   - Step 1: `googleapis/release-please-action@v4` with
@@ -137,7 +137,7 @@ Status glyphs (fill in as we go):
 
 ## Section E — Repo hygiene assets
 
-- [ ] **T-001-11 `[P]`** — PR template
+- [x] ✅ commit `f999153` — **T-001-11 `[P]`** — PR template
   - `.github/pull_request_template.md` with:
     - Reminder: PR title must be a valid Conventional Commit line
       (becomes the squash commit subject).
@@ -148,11 +148,11 @@ Status glyphs (fill in as we go):
     - Screenshot/video slot for UI changes.
   - Deliverable: `.github/pull_request_template.md`.
 
-- [ ] **T-001-12 `[P]`** — CODEOWNERS
+- [x] ✅ commit `f999153` — **T-001-12 `[P]`** — CODEOWNERS
   - `.github/CODEOWNERS` with a catch-all mapping to `@Felpasw`.
   - Deliverable: `.github/CODEOWNERS`.
 
-- [ ] **T-001-13 `[P]`** — ADR
+- [x] ✅ commit `f999153` — **T-001-13 `[P]`** — ADR
   - `docs/adr/0001-release-flow.md` documenting: decision
     (release-please), context, alternatives (changesets,
     semantic-release), consequences, and the trigger that would make
@@ -163,7 +163,7 @@ Status glyphs (fill in as we go):
 
 ## Section F — Branch protection & repo settings (human-only)
 
-- [ ] **T-001-14 `[HUMAN]`** — Configure branch protection on `main`
+- [x] ✅ done via GitHub Rulesets UI — **T-001-14 `[HUMAN]`** — Configure branch protection on `main`
   - Require PR before merging.
   - Require 1 approval; dismiss stale approvals on new commits.
   - Require status checks: `lint`, `test`, `build`, `commitlint`.
@@ -176,7 +176,7 @@ Status glyphs (fill in as we go):
   - Deliverable: settings applied in the GitHub UI (screenshot pasted
     into the ADR or `plan.md` §5 for audit).
 
-- [ ] **T-001-15 `[HUMAN]`** — Verify workflow permissions
+- [x] ✅ default workflow permissions accepted — **T-001-15 `[HUMAN]`** — Verify workflow permissions
   - Repo → Settings → Actions → General → Workflow permissions:
     `Read and write permissions` + `Allow GitHub Actions to create
     and approve pull requests`.
@@ -186,7 +186,7 @@ Status glyphs (fill in as we go):
 
 ## Section G — End-to-end validation
 
-- [ ] **T-001-16 `[T][S]`** — Dry-run: first `feat` merge creates
+- [~] deferred — validated implicitly by Phase 2 merge — **T-001-16 `[T][S]`** — Dry-run: first `feat` merge creates
       Release PR
   - Open a throwaway PR titled `feat(sandbox): dry-run release-please`
     with a trivial file change under `sandbox/`.
@@ -197,7 +197,7 @@ Status glyphs (fill in as we go):
   - Deliverable: screenshot of the Release PR pasted into the ADR;
     sandbox commit reverted in a follow-up PR.
 
-- [ ] **T-001-17 `[T][S]`** — Dry-run: follow-up `fix` merge updates
+- [~] deferred — validated implicitly by Phase 2 merge — **T-001-17 `[T][S]`** — Dry-run: follow-up `fix` merge updates
       the same Release PR
   - Open a second throwaway PR titled
     `fix(sandbox): dry-run release-please update`.
@@ -207,7 +207,7 @@ Status glyphs (fill in as we go):
     `Bug Fixes` section gains the entry.
   - Deliverable: screenshot appended to the ADR.
 
-- [ ] **T-001-18 `[T][S]`** — Dry-run: Release PR auto-merges and
+- [~] deferred — validated implicitly by Phase 2 merge — **T-001-18 `[T][S]`** — Dry-run: Release PR auto-merges and
       publishes
   - Approve the Release PR (or watch it auto-merge if branch
     protection allows).
@@ -216,7 +216,7 @@ Status glyphs (fill in as we go):
     `0.1.0`, `CHANGELOG.md` file appears (or is updated).
   - Deliverable: link to the published Release pasted into the ADR.
 
-- [ ] **T-001-19 `[S]`** — Cleanup
+- [~] deferred — validated implicitly by Phase 2 merge — **T-001-19 `[S]`** — Cleanup
   - Revert sandbox commits with a `revert:` PR so `main` history stays
     clean.
   - Bump the manifest back to something sensible if the dry-run left
