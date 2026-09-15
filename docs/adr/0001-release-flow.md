@@ -104,37 +104,48 @@ checks to pass**:
   same PR — otherwise merges get stuck waiting on a check that
   will never report.
 
-### Release-please action version pin
+### Named component even for single-package repos
 
-`.github/workflows/release.yml` pins
-`googleapis/release-please-action@v4.1.3`. Newer patches of v4.x
-introduced a bug where `${version}` in the Release PR title is
-silently substituted by the branch name (`main`), which breaks the
-downstream tag-creation step. Both keeping the default pattern and
-setting a custom pattern reproduced the bug; v4.1.3 is the last
-known-good release for our single-package / no-component setup.
+`release-please-config.json` sets an explicit `package-name` and
+`component` on the root package:
 
-When the release-please project fixes the bug we can bump back to
-the floating `@v4` tag. Track it via
-https://github.com/googleapis/release-please-action/releases.
+```json
+"packages": {
+  ".": {
+    "release-type": "node",
+    "package-name": "xpeak",
+    "component": "xpeak",
+    "include-component-in-tag": false,
+    ...
+  }
+}
+```
 
-### Release PR title pattern
+**Why this matters:** release-please 4 has a bug where the
+`${version}` placeholder in the Release PR title falls back to
+the branch name (`main`) when the package is defined at path `"."`
+without an explicit `component` / `package-name`. Symptom: the PR
+lands with title `chore: release main` (or `chore: release`),
+the squash commit is not recognized as a release commit, no tag is
+created, and every future run aborts with `There are untagged,
+merged release PRs outstanding`. Version bumps in `package.json` /
+`apps/api/VERSION` / `apps/mobile/package.json` still propagate,
+but the Releases page stays empty.
 
-**We don't set `pull-request-title-pattern`.** Release-please 4
-carries its own default that produces sensible titles like
-`chore: release 0.1.2` for a single-package repo, and any
-customization we tried triggered a bug where `${version}` silently
-fell back to the branch name (`main`) — even patterns that mirror
-the documented default. The Release PR ended up titled
-`chore: release main`, the squash commit lost its recognizable
-version marker, and tags stopped being created (though version
-bumps in `package.json` / `apps/api/VERSION` /
-`apps/mobile/package.json` still propagated).
+Setting `component: "xpeak"` gives release-please a stable
+identifier to interpolate, unblocking the title generation. We
+keep `include-component-in-tag: false` so tags stay clean (`v0.1.3`
+instead of `xpeak-v0.1.3`).
 
-**If a broken cycle happens** — bumps propagate but the "Releases"
-page stays empty and every subsequent workflow run aborts with
-`There are untagged, merged release PRs outstanding` — recovery
-is one-time:
+Reference — the sibling repo `moneta` uses the same trick with two
+named packages (`api`, `web`), which is why it works there
+out-of-the-box.
+
+### Recovering from a stuck cycle
+
+If the cycle ever breaks — bumps propagate but the Releases page
+stays empty and every future workflow run aborts with `There are
+untagged, merged release PRs outstanding` — recovery is one-time:
 
 1. Create the missing tag manually:
    `gh release create vX.Y.Z --target <sha> --generate-notes`
@@ -142,8 +153,7 @@ is one-time:
 3. Trigger the release workflow again (push or
    `workflow_dispatch`).
 
-After that, the default title pattern keeps future cycles clean
-and no intervention is needed.
+After that, the corrected config keeps future cycles clean.
 
 ## Alternatives considered
 
