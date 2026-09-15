@@ -1,6 +1,6 @@
 {
   "name": "xpeak",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "XPeak — RPG-gamified gym app: check-in earns XP, level up.",
   "packageManager": "pnpm@9.0.0",
