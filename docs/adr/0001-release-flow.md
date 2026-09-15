@@ -104,6 +104,20 @@ checks to pass**:
   same PR — otherwise merges get stuck waiting on a check that
   will never report.
 
+### Release-please action version pin
+
+`.github/workflows/release.yml` pins
+`googleapis/release-please-action@v4.1.3`. Newer patches of v4.x
+introduced a bug where `${version}` in the Release PR title is
+silently substituted by the branch name (`main`), which breaks the
+downstream tag-creation step. Both keeping the default pattern and
+setting a custom pattern reproduced the bug; v4.1.3 is the last
+known-good release for our single-package / no-component setup.
+
+When the release-please project fixes the bug we can bump back to
+the floating `@v4` tag. Track it via
+https://github.com/googleapis/release-please-action/releases.
+
 ### Release PR title pattern
 
 **We don't set `pull-request-title-pattern`.** Release-please 4
