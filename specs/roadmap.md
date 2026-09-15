@@ -50,13 +50,15 @@ first PR.
 
 ### Block A — Foundation
 
-- ✅ **Phase 1 — Code versioning & release automation**
-  `specs/001-versioning/`
+- 🛠️ **Phase 1 — Code versioning & release automation**
+  `specs/001-versioning/` — shipped via PR #1 (commit `f999153`).
   - release-please, Conventional Commits, CI (lint/test/build),
     branch protection, PR template, ADR.
 
 - ✅ **Phase 2 — Application skeleton**
-  `specs/002-app-bootstrap/`
+  `specs/002-app-bootstrap/` — implementation done in XPK-3
+  (`431b2bb`, `42e1a25`, `47543b3`, `8801969`); PR pending merge.
+  Flip to 🛠️ once merged.
   - ASP.NET Core 9 Minimal API + Postgres (EF Core), Next.js 15
     + Capacitor, docker-compose, health endpoint, first tests on
     both sides.
