@@ -106,34 +106,30 @@ checks to pass**:
 
 ### Release PR title pattern
 
-`release-please-config.json` sets:
+**We don't set `pull-request-title-pattern`.** Release-please 4
+carries its own default that produces sensible titles like
+`chore: release 0.1.2` for a single-package repo, and any
+customization we tried triggered a bug where `${version}` silently
+fell back to the branch name (`main`) — even patterns that mirror
+the documented default. The Release PR ended up titled
+`chore: release main`, the squash commit lost its recognizable
+version marker, and tags stopped being created (though version
+bumps in `package.json` / `apps/api/VERSION` /
+`apps/mobile/package.json` still propagated).
 
-```json
-"pull-request-title-pattern": "chore${scope}: release${component} ${version}"
-```
+**If a broken cycle happens** — bumps propagate but the "Releases"
+page stays empty and every subsequent workflow run aborts with
+`There are untagged, merged release PRs outstanding` — recovery
+is one-time:
 
-The `${component}` placeholder is mandatory even when we don't use
-components (single-package repo). Without it, release-please 4
-warns `pullRequestTitlePattern miss the part of '${component}'` and
-falls back to substituting the branch name for `${version}` — the
-Release PR ends up titled `chore: release main` and the squash
-commit is never recognized as a release commit. Tags and GitHub
-Releases stop being created (though version bumps in
-`package.json` / `apps/api/VERSION` / `apps/mobile/package.json`
-still propagate).
+1. Create the missing tag manually:
+   `gh release create vX.Y.Z --target <sha> --generate-notes`
+2. Drop the `autorelease: pending` label from the stuck PR.
+3. Trigger the release workflow again (push or
+   `workflow_dispatch`).
 
-The `release${component}` runs together on purpose: when component
-is empty, it renders as `release `, producing the clean `chore:
-release 0.1.2`. If we later split into per-package releases and set
-a component like `api`, it renders `chore: release-api 0.1.2`.
-
-Symptom of a broken cycle: bumps propagate but the "Releases" page
-stays empty and every subsequent workflow run aborts with `There
-are untagged, merged release PRs outstanding`. Recovery is
-one-time: create the missing tag manually
-(`gh release create vX.Y.Z --target <sha> --generate-notes`) and
-drop the `autorelease: pending` label from the stuck PR. After
-that, the corrected pattern keeps future cycles clean.
+After that, the default title pattern keeps future cycles clean
+and no intervention is needed.
 
 ## Alternatives considered
 
