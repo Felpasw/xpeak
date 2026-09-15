@@ -109,21 +109,31 @@ checks to pass**:
 `release-please-config.json` sets:
 
 ```json
-"pull-request-title-pattern": "chore${scope}: release ${version}"
+"pull-request-title-pattern": "chore${scope}: release${component} ${version}"
 ```
 
-Without this, release-please 4 fell back to `chore: release main`
-after the first cycle (no `${version}` in the title). When such a
-"nameless" commit lands on `main`, release-please no longer
-recognizes it as a release commit and never creates the tag +
-GitHub Release — the version bump happens but nothing shows up
-under `github.com/…/releases`.
+The `${component}` placeholder is mandatory even when we don't use
+components (single-package repo). Without it, release-please 4
+warns `pullRequestTitlePattern miss the part of '${component}'` and
+falls back to substituting the branch name for `${version}` — the
+Release PR ends up titled `chore: release main` and the squash
+commit is never recognized as a release commit. Tags and GitHub
+Releases stop being created (though version bumps in
+`package.json` / `apps/api/VERSION` / `apps/mobile/package.json`
+still propagate).
 
-Symptom: bumps in `package.json` / `apps/api/VERSION` /
-`apps/mobile/package.json` propagate cleanly, but the "Releases"
-page stays empty. Fix is this config line + a manual
-`gh release create vX.Y.Z --target main --generate-notes` to
-backfill the missed release.
+The `release${component}` runs together on purpose: when component
+is empty, it renders as `release `, producing the clean `chore:
+release 0.1.2`. If we later split into per-package releases and set
+a component like `api`, it renders `chore: release-api 0.1.2`.
+
+Symptom of a broken cycle: bumps propagate but the "Releases" page
+stays empty and every subsequent workflow run aborts with `There
+are untagged, merged release PRs outstanding`. Recovery is
+one-time: create the missing tag manually
+(`gh release create vX.Y.Z --target <sha> --generate-notes`) and
+drop the `autorelease: pending` label from the stuck PR. After
+that, the corrected pattern keeps future cycles clean.
 
 ## Alternatives considered
 
