@@ -31,3 +31,6 @@ android/app/src/main/assets/public/
 
 coverage/
 *.lcov
+
+CLAUDE.md
+.claude/
