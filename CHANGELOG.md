@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/Felpasw/xpeak/compare/v0.1.0...v0.1.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **release:** set pull-request-title-pattern to include version ([ad9a937](https://github.com/Felpasw/xpeak/commit/ad9a937caa685795417bbe1fd60f2806939512f0))
+
 ## [0.1.0](https://github.com/Felpasw/xpeak/compare/v0.0.1...v0.1.0) (2026-09-15)
 
 
