@@ -142,8 +142,7 @@ is one-time:
 3. Trigger the release workflow again (push or
    `workflow_dispatch`).
 
-After that, the default title pattern keeps future cycles clean
-and no intervention is needed.
+After that, the corrected config keeps future cycles clean.
 
 ## Alternatives considered
 
