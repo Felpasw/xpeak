@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/Felpasw/xpeak/compare/v0.1.2...v0.1.3) (2026-09-15)
+
+
+### Bug Fixes
+
+* **release:** pin release-please-action to v4.1.3 ([#12](https://github.com/Felpasw/xpeak/issues/12)) ([cf5987d](https://github.com/Felpasw/xpeak/commit/cf5987d916bdc29e5de4dd8dc046d23424491cab))
+
 ## [0.1.2](https://github.com/Felpasw/xpeak/compare/v0.1.1...v0.1.2) (2026-09-15)
 
 
