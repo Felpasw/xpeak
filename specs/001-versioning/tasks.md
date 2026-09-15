@@ -176,7 +176,7 @@ Status glyphs (fill in as we go):
   - Deliverable: settings applied in the GitHub UI (screenshot pasted
     into the ADR or `plan.md` §5 for audit).
 
-- [x] ✅ default workflow permissions accepted — **T-001-15 `[HUMAN]`** — Verify workflow permissions
+- [x] ✅ enabled after Phase 2 (release-please blocked without it; see ADR 0001 §"Repo settings checklist") — **T-001-15 `[HUMAN]`** — Verify workflow permissions
   - Repo → Settings → Actions → General → Workflow permissions:
     `Read and write permissions` + `Allow GitHub Actions to create
     and approve pull requests`.
