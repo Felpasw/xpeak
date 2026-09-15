@@ -1,0 +1,12 @@
+node_modules
+pnpm-lock.yaml
+dist
+build
+.next
+out
+android
+ios
+_build
+deps
+priv/static
+CHANGELOG.md
