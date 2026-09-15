@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: xpeak-postgres
+    environment:
+      POSTGRES_USER: xpeak
+      POSTGRES_PASSWORD: xpeak
+      POSTGRES_DB: xpeak_dev
+    ports:
+      # Host 5433 → container 5432 (avoids clash with a local Postgres on 5432).
+      - "5433:5432"
+    volumes:
+      - xpeak_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xpeak -d xpeak_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.dev
+    container_name: xpeak-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:5000
+      # Double underscore is ASP.NET Core's config binding convention:
+      # ConnectionStrings__Postgres → Configuration["ConnectionStrings:Postgres"].
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=xpeak_dev;Username=xpeak;Password=xpeak"
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/api:/app
+      # Keep build + nuget artifacts inside named volumes so the bind mount
+      # doesn't clobber the container's cached restore between runs.
+      - api_bin:/app/bin
+      - api_obj:/app/obj
+      - api_nuget:/tmp/.nuget
+
+volumes:
+  xpeak_pg_data:
+  api_bin:
+  api_obj:
+  api_nuget:

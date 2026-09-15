@@ -14,5 +14,6 @@ trim_trailing_whitespace = false
 [Makefile]
 indent_style = tab
 
-[*.{ex,exs}]
-indent_size = 2
+# .NET convention: 4-space indent for C#/csproj-related files.
+[*.{cs,csproj,sln,props,targets}]
+indent_size = 4
