@@ -1,0 +1,21 @@
+# Development image for the Xpeak API.
+# Uses the .NET SDK image (needed for `dotnet watch` hot reload).
+# The production Dockerfile arrives in a later phase (release engineering).
+FROM mcr.microsoft.com/dotnet/sdk:9.0
+
+WORKDIR /app
+
+# 1) Cached restore layer: copy only what affects restore.
+COPY api.csproj global.json packages.lock.json ./
+RUN dotnet restore --use-lock-file
+
+# 2) App source
+COPY . .
+
+ENV ASPNETCORE_URLS=http://0.0.0.0:5000
+ENV DOTNET_USE_POLLING_FILE_WATCHER=1
+ENV DOTNET_NOLOGO=1
+
+EXPOSE 5000
+
+CMD ["dotnet", "watch", "run", "--no-launch-profile", "--urls", "http://0.0.0.0:5000"]
