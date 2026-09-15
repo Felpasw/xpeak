@@ -70,6 +70,60 @@ Branch protection on `main` (configured in the GitHub UI, tracked in
 - Any Release PR can still be blocked manually (close the PR or
   push a `chore(release): skip` message).
 
+### Repo settings checklist (manual, one-time)
+
+Learned the hard way after Phase 2 shipped — release-please and
+auto-merge silently fail if these are not set. Track in
+`specs/001-versioning/tasks.md` T-001-14/15.
+
+At `Settings → Actions → General → Workflow permissions`:
+- ☑ **Read and write permissions** — needed for release-please to
+  push branches and commits.
+- ☑ **Allow GitHub Actions to create and approve pull requests** —
+  needed for release-please to open the Release PR itself. If
+  disabled, the workflow logs `GitHub Actions is not permitted to
+  create or approve pull requests` and the Release PR never
+  appears.
+
+At `Settings → General → Pull Requests`:
+- ☑ **Allow squash merging** — the only merge method we allow.
+- ☐ Allow merge commits — disable.
+- ☐ Allow rebase merging — disable.
+- ☑ **Allow auto-merge** — needed so `gh pr merge --auto` in
+  `release.yml` succeeds. If disabled, the workflow logs `Auto
+  merge is not allowed for this repository
+  (enablePullRequestAutoMerge)`.
+- ☑ Automatically delete head branches — optional but clean.
+
+At `Settings → Rulesets → main-protection` → **Require status
+checks to pass**:
+- Add every job name from `.github/workflows/ci.yml` that we want
+  to gate the merge on. Job **names** (the `name:` field), not
+  the YAML key. When we rename a job, update the ruleset in the
+  same PR — otherwise merges get stuck waiting on a check that
+  will never report.
+
+### Release PR title pattern
+
+`release-please-config.json` sets:
+
+```json
+"pull-request-title-pattern": "chore${scope}: release ${version}"
+```
+
+Without this, release-please 4 fell back to `chore: release main`
+after the first cycle (no `${version}` in the title). When such a
+"nameless" commit lands on `main`, release-please no longer
+recognizes it as a release commit and never creates the tag +
+GitHub Release — the version bump happens but nothing shows up
+under `github.com/…/releases`.
+
+Symptom: bumps in `package.json` / `apps/api/VERSION` /
+`apps/mobile/package.json` propagate cleanly, but the "Releases"
+page stays empty. Fix is this config line + a manual
+`gh release create vX.Y.Z --target main --generate-notes` to
+backfill the missed release.
+
 ## Alternatives considered
 
 - **[changesets]** — requires a `.changeset/*.md` file per PR
