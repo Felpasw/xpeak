@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">XPeak</string>
+    <string name="title_activity_main">XPeak</string>
+    <string name="package_name">com.xpeak.app</string>
+    <string name="custom_url_scheme">com.xpeak.app</string>
+</resources>

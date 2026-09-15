@@ -21,6 +21,15 @@
     { "type": "chore", "section": "Miscellaneous Chores", "hidden": true }
   ],
   "packages": {
-    ".": {}
+    ".": {
+      "extra-files": [
+        { "type": "generic", "path": "apps/api/VERSION" },
+        {
+          "type": "json",
+          "path": "apps/mobile/package.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
   }
 }
