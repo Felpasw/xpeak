@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/Felpasw/xpeak/compare/v0.1.3...v0.1.4) (2026-09-16)
+
+
+### Bug Fixes
+
+* **release:** re-unpin release-please-action after merge conflict ([#15](https://github.com/Felpasw/xpeak/issues/15)) ([b783a31](https://github.com/Felpasw/xpeak/commit/b783a31f349d17e46175c4c43b01750ce557c35a))
+
 ## [0.1.3](https://github.com/Felpasw/xpeak/compare/v0.1.2...v0.1.3) (2026-09-15)
 
 
