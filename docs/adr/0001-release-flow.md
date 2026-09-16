@@ -1,170 +1,133 @@
 # ADR 0001 — Release flow
 
-- **Status:** Accepted
-- **Date:** 2026-09-15
+- **Status:** Accepted (superseded initial release-please decision)
+- **Date:** 2026-09-16
 - **Context:** Phase 1 (`specs/001-versioning/`).
 
 ## Context
 
-Every merge into `main` should automatically maintain an
-up-to-date **Release PR** that accumulates upcoming changes, computes
-the next SemVer bump from Conventional Commit history, and — once
-merged — publishes a GitHub Release with the changelog and a
-`vX.Y.Z` tag. The pipeline runs unattended (single-maintainer
-project); the safety net is the required CI (`lint`, `test`,
-`build`, `commitlint`) and the ability to review the Release PR
-before it auto-merges.
+Every merge into `main` should automatically publish a versioned
+GitHub Release with a changelog, tagged `vX.Y.Z`. The pipeline
+runs unattended (single-maintainer project). The safety net is
+the required CI (`API — format + build + test`, `Mobile — test +
+build`, `Commit lint (PR title)`) enforced by the Ruleset on
+`main` — release only happens if the feature PR was green.
 
 ## Decision
 
-Adopt **[release-please]** (Google) via the official
-[`googleapis/release-please-action@v4`][action]. It fits the
-"auto-updating Release PR" pattern natively, works well with
-`pnpm` monorepos through its `extra-files` support, and produces
-English-only changelogs by construction (commits are English by
-convention — see below).
+Adopt **[semantic-release]** via `pnpm dlx` in a GitHub Actions
+workflow. Every push to `main` runs semantic-release, which:
+
+1. Analyzes commits since the previous tag using Conventional
+   Commits.
+2. Decides the next SemVer bump (`feat` = minor, `fix`/`perf` =
+   patch, `feat!` or `BREAKING CHANGE:` = major).
+3. Creates the tag `vX.Y.Z`.
+4. Publishes the GitHub Release with an auto-generated changelog
+   body linking commits, contributors and comparisons.
+
+No intermediate "Release PR" is opened. The tag/release is
+published directly on push, in ~30 seconds.
 
 ### Repository configuration
 
-- `release-please-config.json` — single package at `.`,
-  `release-type: node`, `bump-minor-pre-major: true` while we're on
-  `0.x`, and `changelog-sections` limited to user-facing types
-  (`feat`, `fix`, `perf`, `revert`).
-- `.release-please-manifest.json` — seed `{ ".": "0.0.1" }`.
-- `.github/workflows/release.yml` — triggers on `push` to `main`
-  and on `workflow_dispatch` (manual re-run from the Actions tab);
-  runs the action, then enables auto-merge (squash) on the produced
-  Release PR via `gh pr merge --auto --squash`.
+- `.releaserc.json` — minimal config: `branches: ["main"]` +
+  three plugins (`commit-analyzer`, `release-notes-generator`,
+  `github`).
+- `.github/workflows/release.yml` — trigger on `push` to `main`
+  and on `workflow_dispatch`; runs `pnpm dlx semantic-release@24`.
 
 ### Commit convention
 
 - **Conventional Commits**, English only.
-- Types → SemVer impact: `feat` = minor, `fix`/`perf` = patch,
-  `feat!` or `BREAKING CHANGE:` footer = major.
 - Enforcement:
   - Local: `commitlint` via Husky `commit-msg` hook.
   - CI: `wagoid/commitlint-github-action@v6` validating PR titles
-    (we squash-merge, so PR title becomes the commit subject).
-- PR title is required to be a valid Conventional Commit line.
+    (we squash-merge, so the PR title becomes the commit subject
+    on `main`).
 
-### CI as the gate
+### What is intentionally NOT bumped
 
-`.github/workflows/ci.yml` runs on every PR against `main`:
-- `install` — pnpm install with cache.
-- `lint`, `test`, `build` — matrix of independent jobs.
-- `commitlint` — PR title validation.
+`package.json`, `apps/api/VERSION`, `apps/mobile/package.json` are
+**not** touched by the release pipeline. The tag is the single
+source of truth for the current version. Anything that needs to
+report the running version at runtime should read the tag (e.g.,
+`git describe --tags --abbrev=0` at build time, or embed via
+CI env vars).
 
-Branch protection on `main` (configured in the GitHub UI, tracked in
-`specs/001-versioning/tasks.md` T-001-14):
-- Require PR before merging.
-- Require the checks above.
-- Require branches up to date before merging.
-- Require linear history.
-- Allow squash merge only.
-- Allow auto-merge.
-- Disallow force-push and deletions.
+Rationale: writing back to `main` from the release job requires
+either a personal access token or a bypass in the Ruleset for the
+GitHub Actions bot. Both add moving parts and failure modes we
+already burned an afternoon on. Keeping the release read-only
+from `main` sidesteps that entirely.
 
-### Auto-merge
-
-- Zero required approvals on Release PRs for MVP (single
-  maintainer). The safety comes from the required CI.
-- Any Release PR can still be blocked manually (close the PR or
-  push a `chore(release): skip` message).
-
-### Repo settings checklist (manual, one-time)
-
-Learned the hard way after Phase 2 shipped — release-please and
-auto-merge silently fail if these are not set. Track in
-`specs/001-versioning/tasks.md` T-001-14/15.
-
-At `Settings → Actions → General → Workflow permissions`:
-- ☑ **Read and write permissions** — needed for release-please to
-  push branches and commits.
-- ☑ **Allow GitHub Actions to create and approve pull requests** —
-  needed for release-please to open the Release PR itself. If
-  disabled, the workflow logs `GitHub Actions is not permitted to
-  create or approve pull requests` and the Release PR never
-  appears.
-
-At `Settings → General → Pull Requests`:
-- ☑ **Allow squash merging** — the only merge method we allow.
-- ☐ Allow merge commits — disable.
-- ☐ Allow rebase merging — disable.
-- ☑ **Allow auto-merge** — needed so `gh pr merge --auto` in
-  `release.yml` succeeds. If disabled, the workflow logs `Auto
-  merge is not allowed for this repository
-  (enablePullRequestAutoMerge)`.
-- ☑ Automatically delete head branches — optional but clean.
-
-At `Settings → Rulesets → main-protection` → **Require status
-checks to pass**:
-- Add every job name from `.github/workflows/ci.yml` that we want
-  to gate the merge on. Job **names** (the `name:` field), not
-  the YAML key. When we rename a job, update the ruleset in the
-  same PR — otherwise merges get stuck waiting on a check that
-  will never report.
-
-### Named component even for single-package repos
-
-`release-please-config.json` sets an explicit `package-name` and
-`component` on the root package. Without them, release-please 4
-falls back to substituting the branch name (`main`) for `${version}`
-in the Release PR title, breaking downstream tag creation. Setting
-`component: "xpeak"` gives release-please a stable identifier to
-interpolate. `include-component-in-tag: false` keeps tags clean
-(`v0.1.3`, not `xpeak-v0.1.3`).
-
-Reference: the sibling repo `Felpasw/moneta` uses the same trick
-with two named packages (`api`, `web`), which is why release-please
-works there out of the box.
-
-### Recovering from a stuck cycle
-
-If the cycle ever breaks — bumps propagate but the Releases page
-stays empty and every future workflow run aborts with `There are
-untagged, merged release PRs outstanding` — recovery is one-time:
-
-1. Create the missing tag manually:
-   `gh release create vX.Y.Z --target <sha> --generate-notes`
-2. Drop the `autorelease: pending` label from the stuck PR.
-3. Trigger the release workflow again (push or
-   `workflow_dispatch`).
-
-After that, the corrected config keeps future cycles clean.
+If we later decide to bump these files, add
+`@semantic-release/exec` + `@semantic-release/git` and either:
+- Grant the `github-actions[bot]` bypass on the Ruleset, or
+- Swap `GITHUB_TOKEN` for a PAT / GitHub App token that can
+  push to `main`.
 
 ## Alternatives considered
 
-- **[changesets]** — requires a `.changeset/*.md` file per PR
-  describing the impact. More friction, more control. Not chosen
-  because the "PR-that-updates-itself" pattern that we want is
-  release-please's default.
-- **[semantic-release]** — publishes straight from the push, no
-  intermediate PR. Does not fit the "review before merging"
-  posture we want.
+- **[release-please]** — was the original choice. It creates a
+  Release PR that accumulates changes and, once merged,
+  publishes the release. In practice, release-please 4 had a bug
+  in our config where `${version}` fell back to the branch name
+  (`main`) in the Release PR title, breaking downstream tag
+  creation. We tried:
+  - Default title pattern → bug.
+  - Custom title pattern with `${component}` → bug.
+  - Pinning to `v4.1.3` → bug.
+  - Named component + `package-name` → same bug.
+  - Recovering with manual `gh release create` — worked, but
+    every subsequent cycle broke the same way, forcing manual
+    intervention every release.
+  After 8 PRs and several manual tag creations, we switched.
+- **[changesets]** — requires a changeset file per PR describing
+  the impact. More discipline required, extra friction on every
+  feature PR. Not chosen.
 
 ## Consequences
 
-- Every merge into `main` triggers `release-please` and may
-  update/create a Release PR.
-- The version in `apps/api/VERSION` and `apps/mobile/package.json`
-  will be added to `extra-files` in Phase 2 so bumps flow through
-  both apps in one release.
-- If a commit lands on `main` without matching Conventional
-  Commits (bypassed protection), release-please will skip it —
-  the changelog will silently omit the change. Enforcement at the
-  PR title level should prevent this.
-- Failed CI blocks auto-merge; the Release PR stays open until
-  the failure is resolved (which is the intended behavior).
+- Every merge into `main` triggers a release evaluation.
+- Only commits with a bumping type (`feat`, `fix`, `perf`,
+  `revert`) produce a new tag. Everything else is a no-op run.
+- No Release PR, no auto-merge, no ruleset gymnastics for merge
+  methods.
+- `main` history stays clean: only feature squash commits, no
+  bot commits.
+- Release notes are generated by `release-notes-generator`
+  (Angular-style default) — grouped by type, linked to
+  commits/PRs.
+- If CI on the feature PR was green, semantic-release runs on
+  clean code by construction.
 
-## Revisit triggers
+## Recovering from oddities
 
-- If we start shipping mobile and api on independent cadences,
-  switch `release-please-config.json` to per-package releases and
-  reconsider the manifest layout.
-- If we grow beyond a single maintainer, revisit the "zero
-  approvals" stance on Release PRs.
+Semantic-release rarely gets stuck (there's no state between
+runs beyond git tags). If a run fails:
 
-[release-please]: https://github.com/googleapis/release-please
-[action]: https://github.com/googleapis/release-please-action
-[changesets]: https://github.com/changesets/changesets
+1. Check the job log.
+2. If necessary, delete the (unpublished) tag with
+   `git push --delete origin vX.Y.Z` and re-trigger the workflow
+   (`Actions → Release → Run workflow`).
+3. If a specific commit shouldn't have bumped, revert it — the
+   next commit reruns the analysis clean.
+
+## Prior release-please cleanup
+
+When this ADR was adopted (2026-09-16), the repo state was:
+- Tags `v0.1.0`, `v0.1.1`, `v0.1.2`, `v0.1.3` (all published
+  manually to recover from release-please stalls).
+- `.release-please-manifest.json` and `release-please-config.json`
+  removed.
+- The stale `chore: release main` PR (#16 at the time) closed
+  without merging.
+
+Semantic-release picks up from the latest tag it sees
+(`v0.1.3`) and the next commit with a bump-worthy type will
+produce `v0.1.4` automatically.
+
 [semantic-release]: https://github.com/semantic-release/semantic-release
+[release-please]: https://github.com/googleapis/release-please
+[changesets]: https://github.com/changesets/changesets

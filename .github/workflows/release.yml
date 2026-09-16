@@ -3,49 +3,49 @@ name: Release
 on:
   push:
     branches: [main]
-  # Allow manual re-runs from the Actions tab (Actions → Release → Run
-  # workflow). Useful when release-please aborts on a bad state (e.g.,
-  # a Release PR merged without a tag) and needs to be re-tried after
-  # a manual fix, without piggybacking on the next push to main.
+  # Allow manual re-runs from the Actions tab. Useful if a push
+  # missed the workflow trigger for any reason.
   workflow_dispatch: {}
 
 permissions:
   contents: write
-  pull-requests: write
   issues: write
+  pull-requests: write
 
 concurrency:
-  group: release-please-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release-please:
-    name: release-please
+  release:
+    name: semantic-release
     runs-on: ubuntu-latest
-    outputs:
-      pr: ${{ steps.release.outputs.pr }}
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - name: Run release-please
-        id: release
-        uses: googleapis/release-please-action@v4
+      - uses: actions/checkout@v4
         with:
-          config-file: release-please-config.json
-          manifest-file: .release-please-manifest.json
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          persist-credentials: false
 
-  enable-auto-merge:
-    name: Enable auto-merge on Release PR
-    needs: release-please
-    if: needs.release-please.outputs.pr != ''
-    runs-on: ubuntu-latest
-    steps:
-      - name: Enable auto-merge (squash)
+      - name: Read Node version
+        id: node
+        run: echo "version=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_JSON: ${{ needs.release-please.outputs.pr }}
-        run: |
-          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
-          echo "Enabling auto-merge on PR #$PR_NUMBER"
-          gh pr merge --auto --squash --repo "${{ github.repository }}" "$PR_NUMBER"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          pnpm dlx
+          semantic-release@24
+          @semantic-release/commit-analyzer@13
+          @semantic-release/release-notes-generator@14
+          @semantic-release/github@11
