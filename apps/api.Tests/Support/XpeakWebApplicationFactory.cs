@@ -43,17 +43,21 @@ public sealed class XpeakWebApplicationFactory
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:Postgres"] = _postgres.GetConnectionString()
+                ["ConnectionStrings:Postgres"] = _postgres.GetConnectionString(),
+                ["Jwt:Key"] = "test-jwt-key-do-not-use-in-prod-must-be-32-bytes+++",
+                ["Jwt:Issuer"] = "xpeak",
+                ["Jwt:Audience"] = "xpeak",
+                ["Google:ClientId"] = "test-client-id",
+                ["Google:ClientSecret"] = "test-client-secret",
+                ["Auth:CallbackUri"] = "xpeak://auth/callback",
             });
         });
 
         builder.ConfigureServices(services =>
         {
-            // Ensure the schema exists for the test DB. Once we have migrations
-            // (Phase 3), swap EnsureCreated for db.Database.Migrate().
             using var scope = services.BuildServiceProvider().CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Database.EnsureCreated();
+            db.Database.Migrate();
         });
     }
 }
