@@ -82,8 +82,10 @@ first PR.
 
 - 📋 **Phase 6 — Check-in media**
   - Multiple photo/video uploads per check-in.
-  - Storage layer via an ASP.NET-side wrapper (`AWSSDK.S3` or
-    equivalent) — provider TBD in `README.md` §10.
+  - **Cloudinary** as the storage/CDN backend (`CloudinaryDotNet`
+    SDK server-side; direct client upload via signed preset).
+    Transformations (thumbnails, format conversion, quality
+    optimization) happen on the URL, not on save.
   - Background upload on the mobile side (offline queue arrives in
     Phase 21).
 

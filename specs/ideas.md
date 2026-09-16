@@ -484,12 +484,17 @@ challenge banner, level form, achievement icon, trophy) accepts:
 - **Not video** (video is reserved for check-in proof).
 
 Implications:
-- Storage layer must handle animated formats without conversion
-  losing frames.
-- Size caps per slot (e.g., avatar max 2 MB, banner max 5 MB).
-- The feed must render animated assets without janking scroll
-  performance (lazy load + intersection observer + `img
-  loading="lazy"`).
+- **Cloudinary** is the storage/CDN for every visual asset in the
+  app. Animated formats are preserved without transcoding losing
+  frames (Cloudinary keeps the original + serves optimized
+  derivatives via URL transformations).
+- Size caps per slot enforced upstream (Cloudinary upload preset):
+  avatar max 2 MB, banner max 5 MB, category/medal/trophy icons max
+  1 MB, check-in photos 10 MB, check-in videos 100 MB.
+- The feed uses `f_auto,q_auto,w_<width>` transformations so each
+  device pulls the smallest viable variant (WebP on Chrome, AVIF on
+  new Safari, GIF on older browsers). Lazy load + intersection
+  observer on the client stays as a further guard.
 
 ## 9. Workout logs (media in check-in — recap)
 

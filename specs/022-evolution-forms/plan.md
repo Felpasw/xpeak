@@ -39,8 +39,9 @@ user levels up.
 
 ## 3. Approach
 
-- `theme_forms`: `theme_id, tier_id, artwork_storage_key,
-  mime_type, is_animated`.
+- `theme_forms`: `theme_id, tier_id, cloudinary_public_id,
+  is_animated`. Artwork lives on Cloudinary (reuses Phase 6
+  pipeline); `f_auto` handles mime negotiation per client.
 - Resolver: `Xpeak.Titles.resolve_form(user)` returns the form for
   the user's current tier in the active theme.
 - If a theme lacks forms for a tier, fall back to the previous tier

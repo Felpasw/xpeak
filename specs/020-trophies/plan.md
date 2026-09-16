@@ -59,7 +59,8 @@ challenge owner.
 - Extend challenge create flow to accept trophy upload / catalog
   pick.
 - Endpoints for trophies list + upload flow (reuses Phase 6
-  storage).
+  Cloudinary pipeline; custom trophies upload under `trophies/`
+  folder with `challenge_id` in the tag).
 - Mobile: challenge create wizard trophy step; trophy case on
   profile.
 
