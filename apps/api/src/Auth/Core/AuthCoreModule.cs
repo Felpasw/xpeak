@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
@@ -25,47 +26,15 @@ public static class AuthCoreModule
         services.AddScoped<RevokedTokenRepository>();
         services.AddHostedService<RevokedTokenSweeper>();
 
-        var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
-                  ?? throw new InvalidOperationException("Jwt configuration is missing.");
-
         services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(options =>
-            {
-                options.MapInboundClaims = false;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwt.Issuer,
-                    ValidAudience = jwt.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
-                    NameClaimType = JwtRegisteredClaimNames.Sub,
-                };
-                options.Events = new JwtBearerEvents
-                {
-                    OnTokenValidated = async ctx =>
-                    {
-                        var jti = ctx.Principal?.FindFirstValue(JwtRegisteredClaimNames.Jti);
-                        if (jti is null)
-                        {
-                            ctx.Fail("Missing jti.");
-                            return;
-                        }
-                        var repo = ctx.HttpContext.RequestServices
-                            .GetRequiredService<RevokedTokenRepository>();
-                        if (await repo.ExistsAsync(jti, ctx.HttpContext.RequestAborted))
-                        {
-                            ctx.Fail("Token revoked.");
-                        }
-                    },
-                };
-            });
+            .AddJwtBearer();
+
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<IOptions<JwtOptions>>(ConfigureJwtBearer);
 
         services.AddAuthorization();
         return services;
@@ -83,5 +52,45 @@ public static class AuthCoreModule
         LogoutEndpoint.Map(authGroup);
 
         return app;
+    }
+
+    private static void ConfigureJwtBearer(JwtBearerOptions bearer, IOptions<JwtOptions> jwtOptions)
+    {
+        var jwt = jwtOptions.Value;
+        if (string.IsNullOrEmpty(jwt.Key))
+        {
+            throw new InvalidOperationException("Jwt configuration is missing.");
+        }
+
+        bearer.MapInboundClaims = false;
+        bearer.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwt.Issuer,
+            ValidAudience = jwt.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
+            NameClaimType = JwtRegisteredClaimNames.Sub,
+        };
+        bearer.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async ctx =>
+            {
+                var jti = ctx.Principal?.FindFirstValue(JwtRegisteredClaimNames.Jti);
+                if (jti is null)
+                {
+                    ctx.Fail("Missing jti.");
+                    return;
+                }
+                var repo = ctx.HttpContext.RequestServices
+                    .GetRequiredService<RevokedTokenRepository>();
+                if (await repo.ExistsAsync(jti, ctx.HttpContext.RequestAborted))
+                {
+                    ctx.Fail("Token revoked.");
+                }
+            },
+        };
     }
 }
