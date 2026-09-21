@@ -7,4 +7,6 @@ public sealed record UserResponse(
     string? AvatarUrl,
     int Level,
     int Xp,
+    int CurrentStreakDays,
+    int LongestStreakDays,
     DateTimeOffset CreatedAt);

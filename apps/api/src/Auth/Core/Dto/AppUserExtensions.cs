@@ -15,5 +15,7 @@ internal static class AppUserExtensions
         AvatarUrl: u.AvatarUrl,
         Level: u.Level,
         Xp: u.Xp,
+        CurrentStreakDays: 0,
+        LongestStreakDays: 0,
         CreatedAt: u.CreatedAt);
 }

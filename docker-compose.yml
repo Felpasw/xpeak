@@ -28,6 +28,14 @@ services:
       # Double underscore is ASP.NET Core's config binding convention:
       # ConnectionStrings__Postgres → Configuration["ConnectionStrings:Postgres"].
       ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=xpeak_dev;Username=xpeak;Password=xpeak"
+      # Override any of these via shell env or a gitignored `.env` at the repo
+      # root. Defaults are dev-only and MUST NOT leak into staging/prod.
+      Jwt__Key: ${JWT_KEY:-dev-only-jwt-key-do-not-use-in-prod-must-be-32-bytes+}
+      Jwt__Issuer: ${JWT_ISSUER:-xpeak}
+      Jwt__Audience: ${JWT_AUDIENCE:-xpeak}
+      Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Auth__CallbackUri: ${AUTH_CALLBACK_URI:-xpeak://auth/callback}
     ports:
       - "5000:5000"
     depends_on:

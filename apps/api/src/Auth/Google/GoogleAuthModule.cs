@@ -35,8 +35,8 @@ public static class GoogleAuthModule
             })
             .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
             {
-                options.ClientId = configuration["Google:ClientId"] ?? "unset";
-                options.ClientSecret = configuration["Google:ClientSecret"] ?? "unset";
+                options.ClientId = OrPlaceholder(configuration["Google:ClientId"]);
+                options.ClientSecret = OrPlaceholder(configuration["Google:ClientSecret"]);
                 options.CallbackPath = "/signin-google";
                 options.SignInScheme = TempCookieScheme;
                 options.SaveTokens = true;
@@ -45,6 +45,13 @@ public static class GoogleAuthModule
 
         return services;
     }
+
+    // OAuthOptions.Validate() rejects null AND empty strings, so an unset env
+    // var (missing OR blank) needs a non-empty placeholder. The Google flow
+    // still fails at OAuth exchange with real credentials, but the app boots
+    // and unrelated endpoints keep working.
+    private static string OrPlaceholder(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "unset" : value;
 
     public static IEndpointRouteBuilder UseGoogleAuth(this IEndpointRouteBuilder app)
     {

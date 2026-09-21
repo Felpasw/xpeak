@@ -7,6 +7,8 @@ public sealed record UserDto(
     string? AvatarUrl,
     int Level,
     int Xp,
+    int CurrentStreakDays,
+    int LongestStreakDays,
     DateTimeOffset CreatedAt);
 
 public sealed record AuthResponseDto(UserDto User);
