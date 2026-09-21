@@ -1,5 +1,5 @@
-import { LightningText } from '@/components/atoms/LightningText';
 import { LoginForm } from '@/components/organisms/LoginForm';
+import { XpeakWordmark } from '@/components/atoms/XpeakWordmark';
 
 const SUBTITLE = 'Welcome back';
 
@@ -9,16 +9,16 @@ export const metadata = {
 
 export default function LoginPage() {
     return (
-        <>
-            <LightningText emph="X" rest="PEAK" />
-            <main className="pointer-events-none fixed left-1/2 top-[calc(50%+130px)] z-10 flex w-full max-w-sm -translate-x-1/2 flex-col items-center gap-6 px-6">
+        <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-12">
+            <header className="flex flex-col items-center gap-4 text-center">
+                <h1 aria-label="Xpeak" className="m-0">
+                    <XpeakWordmark emphSize={160} restSize={52} />
+                </h1>
                 <p className="font-mono text-[11px] uppercase tracking-[0.35em] text-white/60">
                     {SUBTITLE}
                 </p>
-                <div className="pointer-events-auto w-full">
-                    <LoginForm />
-                </div>
-            </main>
-        </>
+            </header>
+            <LoginForm />
+        </main>
     );
 }

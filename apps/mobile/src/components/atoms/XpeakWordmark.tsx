@@ -1,3 +1,7 @@
+'use client';
+
+import { motion } from 'motion/react';
+
 import { cn } from '@/lib/utils';
 
 interface XpeakWordmarkProps {
@@ -14,6 +18,12 @@ const STROKE_STYLE = {
     WebkitTextStroke: '1px #ffffff',
 } as const;
 
+const CHAR_INITIAL = { opacity: 0, filter: 'blur(18px)', y: 12 };
+const CHAR_ANIMATE = { opacity: 1, filter: 'blur(0px)', y: 0 };
+const CHAR_DURATION = 0.9;
+const CHAR_STAGGER = 0.08;
+const REST_START_DELAY = 0.2;
+
 export function XpeakWordmark({
     emph = 'X',
     rest = 'PEAK',
@@ -21,6 +31,7 @@ export function XpeakWordmark({
     restSize = 32,
     className,
 }: XpeakWordmarkProps) {
+    const restChars = rest.split('');
     return (
         <span
             aria-hidden="true"
@@ -30,15 +41,33 @@ export function XpeakWordmark({
             )}
             style={{ fontFamily: FONT_FAMILY }}
         >
-            <span style={{ ...STROKE_STYLE, fontSize: `${emphSize}px` }}>{emph}</span>
-            <span
-                style={{
-                    ...STROKE_STYLE,
-                    fontSize: `${restSize}px`,
-                    marginLeft: `-${emphSize * 0.35}px`,
-                }}
+            <motion.span
+                initial={CHAR_INITIAL}
+                animate={CHAR_ANIMATE}
+                transition={{ duration: CHAR_DURATION, ease: 'easeOut' }}
+                style={{ ...STROKE_STYLE, fontSize: `${emphSize}px` }}
             >
-                {rest}
+                {emph}
+            </motion.span>
+            <span
+                className="inline-flex"
+                style={{ marginLeft: `-${emphSize * 0.35}px` }}
+            >
+                {restChars.map((char, index) => (
+                    <motion.span
+                        key={`${char}-${index}`}
+                        initial={CHAR_INITIAL}
+                        animate={CHAR_ANIMATE}
+                        transition={{
+                            duration: CHAR_DURATION,
+                            ease: 'easeOut',
+                            delay: REST_START_DELAY + index * CHAR_STAGGER,
+                        }}
+                        style={{ ...STROKE_STYLE, fontSize: `${restSize}px` }}
+                    >
+                        {char}
+                    </motion.span>
+                ))}
             </span>
         </span>
     );

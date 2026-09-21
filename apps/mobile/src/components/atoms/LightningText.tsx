@@ -328,6 +328,10 @@ class Particles {
 interface LightningTextProps {
     emph?: string;
     rest?: string;
+    emphSize?: number;
+    restSize?: number;
+    width?: number;
+    height?: number;
     subtitle?: string;
     className?: string;
     href?: string;
@@ -337,6 +341,10 @@ interface LightningTextProps {
 export function LightningText({
     emph = 'X',
     rest = 'PEAK',
+    emphSize,
+    restSize,
+    width,
+    height,
     subtitle,
     className,
     href,
@@ -376,12 +384,19 @@ export function LightningText({
             animationRef.current = requestAnimationFrame(loop);
         };
 
+        const resolveSize = () => ({
+            w: width ?? window.innerWidth,
+            h: height ?? window.innerHeight,
+        });
+
         const init = (w: number, h: number) => {
             canvas.width = w;
             canvas.height = h;
             textRef.current = new TextGlyph({
                 emph,
                 rest,
+                emphSize,
+                restSize,
                 canvasWidth: w,
                 canvasHeight: h,
             });
@@ -391,31 +406,38 @@ export function LightningText({
             if (typeof document !== 'undefined' && document.fonts?.load) {
                 await Promise.race([
                     Promise.all([
-                        document.fonts.load('bold 260px "Orbitron"'),
-                        document.fonts.load('bold 90px "Orbitron"'),
+                        document.fonts.load(`bold ${emphSize ?? 260}px "Orbitron"`),
+                        document.fonts.load(`bold ${restSize ?? 90}px "Orbitron"`),
                     ]),
                     new Promise((resolve) => setTimeout(resolve, 3000)),
                 ]);
             }
             if (cancelled) return;
-            init(window.innerWidth, window.innerHeight);
+            const { w, h } = resolveSize();
+            init(w, h);
             loop();
         };
 
         start();
 
+        const isFixedSize = width !== undefined && height !== undefined;
         const handleResize = () => {
-            init(window.innerWidth, window.innerHeight);
+            const { w, h } = resolveSize();
+            init(w, h);
         };
 
-        window.addEventListener('resize', handleResize);
+        if (!isFixedSize) {
+            window.addEventListener('resize', handleResize);
+        }
 
         return () => {
             cancelled = true;
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
-            window.removeEventListener('resize', handleResize);
+            if (!isFixedSize) {
+                window.removeEventListener('resize', handleResize);
+            }
         };
-    }, [emph, rest]);
+    }, [emph, rest, emphSize, restSize, width, height]);
 
     const handleCanvasClick = (e: MouseEvent<HTMLCanvasElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -425,7 +447,15 @@ export function LightningText({
         particlesRef.current.push(new Particles({ x, y }));
     };
 
-    const wrapperClass = className ?? 'relative w-full h-screen overflow-hidden';
+    const defaultWrapperClass =
+        width !== undefined && height !== undefined
+            ? 'relative overflow-hidden'
+            : 'relative w-full h-screen overflow-hidden';
+    const wrapperClass = className ?? defaultWrapperClass;
+    const wrapperStyle =
+        width !== undefined && height !== undefined
+            ? { width, height }
+            : undefined;
     const subtitleNode = subtitle ? (
         <p className="pointer-events-none absolute left-1/2 top-[calc(50%+180px)] z-10 -translate-x-1/2 whitespace-nowrap px-4 text-center font-mono text-[11px] uppercase tracking-[0.35em] text-white/50">
             {subtitle}
@@ -438,6 +468,7 @@ export function LightningText({
                 href={href}
                 aria-label={ariaLabel ?? `${emph}${rest}`}
                 className={wrapperClass}
+                style={wrapperStyle}
             >
                 <canvas
                     ref={canvasRef}
@@ -449,7 +480,7 @@ export function LightningText({
     }
 
     return (
-        <div className={wrapperClass}>
+        <div className={wrapperClass} style={wrapperStyle}>
             <canvas
                 ref={canvasRef}
                 onClick={handleCanvasClick}
