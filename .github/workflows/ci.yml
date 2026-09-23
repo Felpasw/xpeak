@@ -35,13 +35,14 @@ jobs:
             revert
           requireScope: false
           subjectPatternError: |
-            The subject "{subject}" does not match the Conventional Commits
-            subject rules. Rewrite the PR title to start with a lowercase
-            verb and avoid Start Case, PascalCase or UPPER CASE.
-          # Reject Start Case / PascalCase / UPPER CASE subjects so a
-          # squash-merge on main never lands a non-parseable header for
-          # semantic-release to trip on.
-          subjectPattern: ^(?![A-Z])(?!.*[A-Z]{2,}).+$
+            The subject "{subject}" must start with a lowercase letter
+            (verb in imperative mood). Acronyms mid-subject are fine
+            (PR, API, JWT, ...).
+          # Only enforce the first character. Everything else — casing,
+          # length, formatting — is delegated to wagoid/commitlint on the
+          # branch commits so acronyms in the middle of the subject don't
+          # trip the check.
+          subjectPattern: ^[a-z].+$
 
   commitlint:
     name: Commit lint (branch commits)
