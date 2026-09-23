@@ -14,7 +14,7 @@ level services. Zero HTTP endpoints, zero UI.
 | `id`                  | uuid    | PK                                      |
 | `slug`                | citext  | not null, unique                        |
 | `name`                | string  | not null                                |
-| `icon`                | string  | not null (emoji or glyph key)           |
+| `icon_public_id`      | string  | nullable — Cloudinary asset public id   |
 | `base_xp`             | integer | not null, default `10`, check `> 0`     |
 | `weight_multiplier`   | decimal | not null, default `1.0`, check `0.5..2.5` |
 | `is_system`           | boolean | not null, default `false`               |
@@ -25,18 +25,24 @@ Indexes: `slug` unique.
 
 ### 2.2. Seed set (`is_system: true`)
 
-| Slug        | Name        | Icon | Base XP | Weight |
-|-------------|-------------|------|---------|--------|
-| `legs`      | Legs        | 🦵   | 15      | 1.4    |
-| `chest`     | Chest       | 💪   | 12      | 1.2    |
-| `back`      | Back        | 🔙   | 12      | 1.2    |
-| `shoulders` | Shoulders   | 🏋️   | 10      | 1.1    |
-| `arms`      | Arms        | 💪   | 8       | 1.0    |
-| `core`      | Core        | 🧘   | 8       | 0.9    |
-| `running`   | Running     | 🏃   | 15      | 1.3    |
-| `cycling`   | Cycling     | 🚴   | 12      | 1.2    |
-| `mobility`  | Mobility    | 🧘   | 6       | 0.8    |
-| `other`     | Other       | ❓   | 5       | 1.0    |
+Icons ship as Cloudinary assets uploaded under the `categories/`
+folder (public id examples: `categories/legs`, `categories/chest`).
+Seed rows reference the public id; the mobile client builds the
+delivery URL with the desired transformations
+(`f_auto,q_auto,w_128,h_128,c_fill`).
+
+| Slug        | Name        | Icon public id       | Base XP | Weight |
+|-------------|-------------|----------------------|---------|--------|
+| `legs`      | Legs        | `categories/legs`    | 15      | 1.4    |
+| `chest`     | Chest       | `categories/chest`   | 12      | 1.2    |
+| `back`      | Back        | `categories/back`    | 12      | 1.2    |
+| `shoulders` | Shoulders   | `categories/shoulders` | 10    | 1.1    |
+| `arms`      | Arms        | `categories/arms`    | 8       | 1.0    |
+| `core`      | Core        | `categories/core`    | 8       | 0.9    |
+| `running`   | Running     | `categories/running` | 15      | 1.3    |
+| `cycling`   | Cycling     | `categories/cycling` | 12      | 1.2    |
+| `mobility`  | Mobility    | `categories/mobility` | 6      | 0.8    |
+| `other`     | Other       | `categories/other`   | 5       | 1.0    |
 
 Values tunable in Phase 9. Final numbers to be reviewed with `plan.md`
 §6 Q2.

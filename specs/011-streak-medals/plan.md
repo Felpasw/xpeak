@@ -63,7 +63,9 @@ profile.
 1. **Default milestones** — 7/30/100/365? Add 3? Add 1000?
 2. **Retroactive award** — for users who already had long streaks
    before this phase, run a backfill?
-3. **Medal artwork** — bundled with the app or served from storage?
+3. ✅ **Medal artwork** — Cloudinary (same pipeline as Phase 6).
+   Seed 4 default medals under `medals/` folder; custom artwork per
+   challenge (deferred) uploads to `medals/challenges/<id>/`.
 
 ## 7. Success criteria
 

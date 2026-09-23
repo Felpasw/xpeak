@@ -23,7 +23,9 @@ animated formats per the media policy in `ideas.md` §8.
 - Banner upload.
 - Frame selection from a system catalog (unlocking logic stub — all
   unlocked in MVP).
-- Reuse the storage layer from Phase 6.
+- Reuse **Cloudinary** pipeline from Phase 6 for all avatar / banner /
+  frame assets. Backend stores `cloudinary_public_id`; client builds
+  transformed URLs (avatar `w_128,h_128,c_fill`; banner `w_1200,c_limit`).
 - `PATCH /me/profile` for avatar/banner/frame changes.
 - Mobile: profile edit screen with previews.
 

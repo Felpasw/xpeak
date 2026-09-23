@@ -40,7 +40,7 @@ the arithmetic that everything else in Block B leans on.
 ## 3. Approach
 
 - Categories live in a `categories` table with `slug` (unique),
-  `name`, `icon`, `base_xp`, `weight_multiplier`, `is_system`,
+  `name`, `icon_public_id` (Cloudinary), `base_xp`, `weight_multiplier`, `is_system`,
   `active`.
 - Seed a starter set (chest, back, legs, shoulders, arms, core,
   running, cycling, mobility, other).
@@ -75,8 +75,9 @@ the arithmetic that everything else in Block B leans on.
    piecewise)?
 2. **Starter category set** — the 10 above cover it or we want more
    (yoga, pilates, swim, martial arts)?
-3. **Category icon representation** — ship as font-glyph names,
-   emoji, or hosted image URLs?
+3. ✅ **Category icon representation** — Cloudinary `public_id`
+   (nullable). Seeds live under the `categories/` folder;
+   mobile client builds the URL with transformations at render time.
 4. **Weight multiplier bounds** — sane range (0.5 – 2.5)?
    Enforce at schema level to prevent absurd values.
 

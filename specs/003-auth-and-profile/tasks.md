@@ -45,7 +45,7 @@ Status glyphs:
 
 ## Section B — Identity, User, and JWT plumbing
 
-- [ ] **T-003-03 `[S]`** — Add NuGet packages
+- [x] ✅ commit `bd8a6f0` **T-003-03 `[S]`** — Add NuGet packages
   - `Microsoft.AspNetCore.Identity.EntityFrameworkCore`
   - `Microsoft.AspNetCore.Authentication.JwtBearer`
   - `Microsoft.AspNetCore.Authentication.Google`
@@ -55,7 +55,7 @@ Status glyphs:
   - `dotnet restore --locked-mode` clean.
   - Deliverable: updated `api.csproj`, `packages.lock.json`.
 
-- [ ] **T-003-04 `[T][S]`** — `AppUser` entity + Identity schema
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-04 `[T][S]`** — `AppUser` entity + Identity schema
       migration
   - **Write** `AppUserValidatorTests`:
     - `username` presence + format `^[a-z0-9_]{3,20}$` +
@@ -80,7 +80,7 @@ Status glyphs:
   - `dotnet test` → green.
   - Deliverable: migration + entity + validator + green tests.
 
-- [ ] **T-003-05 `[T][S]`** — `UsernameGenerator`
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-05 `[T][S]`** — `UsernameGenerator`
   - **Write** `UsernameGeneratorTests` per `spec.md` §8.1 —
     expect red.
   - Implement `Domain/User/UsernameGenerator.cs` (pure static
@@ -88,7 +88,7 @@ Status glyphs:
   - `dotnet test` → green.
   - Deliverable: class + green tests.
 
-- [ ] **T-003-06 `[T][S]`** — `RevokedTokens` table +
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-06 `[T][S]`** — `RevokedTokens` table +
       `RevokedTokenStore`
   - **Write** `RevokedTokenStoreTests`: round-trip revoke →
     `IsRevokedAsync` returns true.
@@ -98,13 +98,13 @@ Status glyphs:
   - `dotnet test` → green.
   - Deliverable: migration + class + green tests.
 
-- [ ] **T-003-07 `[S]`** — Wire Identity + JWT in `Program.cs`
+- [x] ✅ commit `bd8a6f0` (impl) + `d5cdc0c` (defer config binding) **T-003-07 `[S]`** — Wire Identity + JWT in `Program.cs`
   - `AddIdentityCore<AppUser>()` per `spec.md` §3.1.
   - `AddAuthentication().AddJwtBearer(...)` with
     `OnTokenValidated` checking `RevokedTokenStore`.
   - Deliverable: `Program.cs` updated.
 
-- [ ] **T-003-08 `[S]`** — `JwtTokenIssuer` service
+- [x] ✅ commit `bd8a6f0` **T-003-08 `[S]`** — `JwtTokenIssuer` service
   - `Infrastructure/Auth/JwtTokenIssuer.cs` with
     `IssueToken(AppUser)` → `(string jwt, string jti,
     DateTimeOffset expiresAt)`.
@@ -113,7 +113,7 @@ Status glyphs:
 
 ## Section C — Endpoints (email/password)
 
-- [ ] **T-003-09 `[T][S]`** — Register endpoint
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-09 `[T][S]`** — Register endpoint
   - **Write** `AuthEndpointTests.Register_*` covering happy
     (`username + email + password`) + sad paths (missing/invalid
     username, reserved username, taken username/email, weak
@@ -127,7 +127,7 @@ Status glyphs:
   - `dotnet test` → green.
   - Deliverable: endpoints + contracts + green tests.
 
-- [ ] **T-003-10 `[T][S]`** — Login endpoint (identifier)
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-10 `[T][S]`** — Login endpoint (identifier)
   - **Write** `AuthEndpointTests.Login_*` covering login via
     email AND login via username, plus wrong password / unknown
     identifier → 401. Expect red.
@@ -138,7 +138,7 @@ Status glyphs:
   - `dotnet test` → green.
   - Deliverable: endpoint + green tests.
 
-- [ ] **T-003-11 `[T][S]`** — Logout endpoint (revocation)
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-11 `[T][S]`** — Logout endpoint (revocation)
   - Extend `AuthEndpointTests`: logout inserts JTI into
     `RevokedTokens`; second `GET /me` with same token → 401.
     Expect red.
@@ -147,7 +147,7 @@ Status glyphs:
   - `dotnet test` → green.
   - Deliverable: endpoint + extended tests.
 
-- [ ] **T-003-12 `[T][S]`** — `GET /me` endpoint
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-12 `[T][S]`** — `GET /me` endpoint
   - **Write** `MeEndpointTests` per `spec.md` §8.1 — expect red.
   - Create `Endpoints/MeEndpoints.cs` with `MapMeEndpoints`.
   - `GET /me` is guarded by `.RequireAuthorization()`; loads user
@@ -157,7 +157,7 @@ Status glyphs:
 
 ## Section D — Google OAuth
 
-- [ ] **T-003-13 `[T][S]`** — OAuth callback (new user)
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-13 `[T][S]`** — OAuth callback (new user)
   - Configure `TestAuthHandler` for the `Google` scheme in
     integration tests (stubs the Google identity).
   - **Write** `GoogleOAuthEndpointTests` covering the "new user"
@@ -171,7 +171,7 @@ Status glyphs:
   - `dotnet test` → green.
   - Deliverable: endpoints + linker + green tests.
 
-- [ ] **T-003-14 `[T][S]`** — OAuth callback (existing user by
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-14 `[T][S]`** — OAuth callback (existing user by
       google_uid)
   - Extend test: pre-create user with `GoogleUid` matching
     stubbed UID; callback logs in without creating a new user.
@@ -179,14 +179,14 @@ Status glyphs:
   - `dotnet test` → green.
   - Deliverable: test + linker adjustment.
 
-- [ ] **T-003-15 `[T][S]`** — OAuth callback (link by email)
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-15 `[T][S]`** — OAuth callback (link by email)
   - Extend test: pre-create user with matching email but no
     `GoogleUid`; callback attaches `GoogleUid` and logs in.
   - Ensure `AccountLinker` handles the linking branch.
   - `dotnet test` → green.
   - Deliverable: test + linker adjustment.
 
-- [ ] **T-003-16 `[T][S]`** — OAuth failure path
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-16 `[T][S]`** — OAuth failure path
   - Extend test: stub the Google scheme to fail authentication;
     callback redirects with `?error=...`.
   - Implement failure branch in `google/callback` handler.
@@ -195,7 +195,7 @@ Status glyphs:
 
 ## Section E — Rate limiting
 
-- [ ] **T-003-17 `[T][S]`** — Rate limiter + `FailedLoginCounter`
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-17 `[T][S]`** — Rate limiter + `FailedLoginCounter`
   - Add rate limiter config per `spec.md` §3.4.
   - Apply `.RequireRateLimiting("auth-register")` and
     `.RequireRateLimiting("auth-login-ip")` on the endpoints.
@@ -209,7 +209,7 @@ Status glyphs:
   - `dotnet test` → green.
   - Deliverable: config + counter + tests.
 
-- [ ] **T-003-18 `[T][S]`** — `RevokedTokenSweeper`
+- [x] ✅ commit `bd8a6f0` (impl) + `886375d` (tests) **T-003-18 `[T][S]`** — `RevokedTokenSweeper`
       (`BackgroundService`)
   - Failing test: seed old + fresh rows, run sweeper, assert
     only old ones deleted.
@@ -220,7 +220,7 @@ Status glyphs:
 
 ## Section F — Env vars & repo hygiene
 
-- [ ] **T-003-19 `[P]`** — `.env.example` updates
+- [x] ✅ commit `bd8a6f0` **T-003-19 `[P]`** — `.env.example` updates
   - Add `Google__ClientId`, `Google__ClientSecret`,
     `Google__RedirectUri`, `Jwt__Key` (blank) to
     `apps/api/.env.example`.
