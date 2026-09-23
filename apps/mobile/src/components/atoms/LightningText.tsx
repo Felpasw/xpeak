@@ -119,7 +119,7 @@ class TextGlyph {
 
         const data = this.data.data;
         for (let i = this.index * 4; i < data.length; i += 4 * this.data.width) {
-            const bitmap = data[i] + data[i + 1] + data[i + 2] + data[i + 3];
+            const bitmap = data[i]! + data[i + 1]! + data[i + 2]! + data[i + 3]!;
             if (bitmap > 255 && Math.random() > 0.94) {
                 const x = this.x + this.index;
                 const y = this.y + i / this.bound.width / 4;
