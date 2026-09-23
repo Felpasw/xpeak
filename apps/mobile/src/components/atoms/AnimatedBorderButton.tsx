@@ -37,7 +37,7 @@ export function AnimatedBorderButton({
                 )}
             >
                 <motion.span
-                    className="absolute aspect-square bg-gradient-to-r from-transparent via-emerald-400 to-emerald-300"
+                    className="absolute aspect-square bg-gradient-to-r from-transparent via-sky-400 to-sky-300"
                     animate={{ offsetDistance: ['0%', '100%'] }}
                     style={{
                         width: 24,

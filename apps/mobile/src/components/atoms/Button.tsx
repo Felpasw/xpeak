@@ -11,7 +11,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const BASE_CLASSES =
     'rounded-md px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ' +
-    'data-[variant=primary]:bg-emerald-500 data-[variant=primary]:text-zinc-950 data-[variant=primary]:hover:bg-emerald-400 ' +
+    'data-[variant=primary]:bg-sky-500 data-[variant=primary]:text-zinc-950 data-[variant=primary]:hover:bg-sky-400 ' +
     'data-[variant=secondary]:border data-[variant=secondary]:border-zinc-800 data-[variant=secondary]:bg-zinc-900 data-[variant=secondary]:text-zinc-100 data-[variant=secondary]:hover:bg-zinc-800';
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(

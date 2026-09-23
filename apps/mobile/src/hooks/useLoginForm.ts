@@ -52,7 +52,7 @@ export function useLoginForm() {
             await auth.login.mutateAsync(values);
             toast.success(LOGIN_MESSAGES.successToast);
             setIsSuccess(true);
-            router.replace('/profile');
+            router.replace('/home');
         } catch (error) {
             if (isAxiosError(error)) {
                 if (error.response?.status === 401) {

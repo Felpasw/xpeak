@@ -15,7 +15,7 @@ interface XpeakWordmarkProps {
 const FONT_FAMILY = '"Orbitron", "Arial Black", sans-serif';
 const STROKE_STYLE = {
     color: 'transparent',
-    WebkitTextStroke: '1px #ffffff',
+    WebkitTextStroke: '1px #38bdf8',
 } as const;
 
 const CHAR_INITIAL = { opacity: 0, filter: 'blur(18px)', y: 12 };

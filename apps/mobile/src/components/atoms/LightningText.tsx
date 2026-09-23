@@ -81,7 +81,7 @@ class TextGlyph {
         const rest = options.rest ?? 'PEAK';
         const emphSize = options.emphSize ?? 260;
         const restSize = options.restSize ?? 90;
-        this.color = options.color ?? '#ffffff';
+        this.color = options.color ?? '#38bdf8';
         this.delay = options.delay ?? 2;
         this.basedelay = this.delay;
 
@@ -163,8 +163,8 @@ class Thunder {
     constructor(options: ThunderOptions = {}) {
         this.lifespan = options.lifespan ?? Math.round(Math.random() * 10 + 10);
         this.maxlife = this.lifespan;
-        this.color = options.color ?? '#fefefe';
-        this.glow = options.glow ?? '#2323fe';
+        this.color = options.color ?? '#bae6fd';
+        this.glow = options.glow ?? '#0284c7';
         this.x = options.x ?? Math.random() * window.innerWidth;
         this.y = options.y ?? Math.random() * window.innerHeight;
         this.width = options.width ?? 2;
@@ -221,11 +221,11 @@ class Thunder {
             this.y,
             strength,
         );
-        light.addColorStop(0, 'rgba(250, 200, 50, 0.6)');
-        light.addColorStop(0.1, 'rgba(250, 200, 50, 0.2)');
-        light.addColorStop(0.4, 'rgba(250, 200, 50, 0.06)');
-        light.addColorStop(0.65, 'rgba(250, 200, 50, 0.01)');
-        light.addColorStop(0.8, 'rgba(250, 200, 50, 0)');
+        light.addColorStop(0, 'rgba(56, 189, 248, 0.6)');
+        light.addColorStop(0.1, 'rgba(56, 189, 248, 0.2)');
+        light.addColorStop(0.4, 'rgba(56, 189, 248, 0.06)');
+        light.addColorStop(0.65, 'rgba(56, 189, 248, 0.01)');
+        light.addColorStop(0.8, 'rgba(56, 189, 248, 0)');
 
         ctx.beginPath();
         ctx.fillStyle = light;
@@ -267,7 +267,7 @@ class Spark {
         this.width = options.width ?? Math.random() * 3;
         this.lifespan = options.lifespan ?? Math.round(Math.random() * 20 + 40);
         this.maxlife = this.lifespan;
-        this.color = options.color ?? '#feca32';
+        this.color = options.color ?? '#38bdf8';
         this.prev = { x: this.x, y: this.y };
     }
 

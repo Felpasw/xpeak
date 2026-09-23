@@ -47,7 +47,10 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
                 }}
             >
                 <Providers>
-                    <StarsBackground className="flex flex-1 flex-col">
+                    <StarsBackground
+                        className="flex flex-1 flex-col"
+                        starColor="#38bdf8"
+                    >
                         {children}
                     </StarsBackground>
                     <footer className="pointer-events-none fixed bottom-6 left-0 right-0 z-10 text-center text-sm text-zinc-400">

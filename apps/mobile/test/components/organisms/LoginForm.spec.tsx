@@ -101,7 +101,7 @@ describe('<LoginForm />', () => {
         await user.type(screen.getByLabelText('Password'), 'hunter22!');
         await user.click(screen.getByRole('button', { name: /^log in$/i }));
 
-        await vi.waitFor(() => expect(routerReplace).toHaveBeenCalledWith('/profile'));
+        await vi.waitFor(() => expect(routerReplace).toHaveBeenCalledWith('/home'));
         expect(seen[0]).toEqual({ identifier: 'felipe', password: 'hunter22!' });
     });
 

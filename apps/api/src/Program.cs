@@ -36,7 +36,8 @@ builder.Services.AddCors(options =>
         .WithOrigins("http://localhost:3001", "capacitor://localhost")
         .AllowAnyHeader()
         .AllowAnyMethod()
-        .AllowCredentials());
+        .AllowCredentials()
+        .WithExposedHeaders("Authorization"));
 });
 
 builder.Services.AddOpenApi();

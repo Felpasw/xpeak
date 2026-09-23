@@ -99,7 +99,7 @@ export function Input({
                     onBlur?.(event);
                 }}
                 className={cn(
-                    'w-full border-b-2 border-zinc-100 bg-transparent py-2 text-base font-medium text-zinc-100 outline-none placeholder-transparent',
+                    'w-full border-b-2 border-sky-500 bg-transparent py-2 text-base font-medium text-zinc-100 caret-sky-400 outline-none placeholder-transparent transition-colors focus:border-sky-400',
                     toggleEnabled && 'pr-8',
                 )}
             />
@@ -110,7 +110,7 @@ export function Input({
                     aria-label={toggleLabel}
                     onClick={() => setIsRevealed((prev) => !prev)}
                     tabIndex={-1}
-                    className="absolute bottom-2 right-0 flex h-6 w-6 items-center justify-center text-zinc-500 transition-colors hover:text-zinc-100 focus-visible:text-zinc-100 focus-visible:outline-none"
+                    className="absolute bottom-2 right-0 flex h-6 w-6 items-center justify-center text-zinc-500 transition-colors hover:text-sky-400 focus-visible:text-sky-400 focus-visible:outline-none"
                 >
                     <ToggleIcon className="h-4 w-4" aria-hidden="true" />
                 </button>

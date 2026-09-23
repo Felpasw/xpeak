@@ -72,7 +72,7 @@ const renderPage = async () => {
 };
 
 describe('ProfilePage', () => {
-    it('renders @username, email, initials avatar and progression stats', async () => {
+    it('renders @username, email, initials avatar and stats tab by default', async () => {
         await renderPage();
 
         expect(screen.getByText('@felipe')).toBeInTheDocument();
@@ -82,21 +82,17 @@ describe('ProfilePage', () => {
         expect(screen.getByText('3')).toBeInTheDocument();
         expect(screen.getByText(/^xp$/i)).toBeInTheDocument();
         expect(screen.getByText('1250')).toBeInTheDocument();
-        expect(screen.getByText('7')).toBeInTheDocument();
-        expect(screen.getByText('21')).toBeInTheDocument();
     });
 
-    it('logs out, clears the token and redirects to /login', async () => {
+    it('reveals current and longest streaks when the streaks tab is selected', async () => {
         const user = userEvent.setup();
-        window.localStorage.setItem('xpeak.auth.token', 'live.jwt');
-        server.use(
-            http.post('http://localhost:5000/auth/logout', () => new HttpResponse(null, { status: 204 })),
-        );
-
         await renderPage();
-        await user.click(screen.getByRole('button', { name: /log out/i }));
 
-        await vi.waitFor(() => expect(routerReplace).toHaveBeenCalledWith('/login'));
-        expect(window.localStorage.getItem('xpeak.auth.token')).toBeNull();
+        await user.click(screen.getByRole('button', { name: /streaks/i }));
+
+        expect(screen.getByText(/current streak/i)).toBeInTheDocument();
+        expect(screen.getByText('7')).toBeInTheDocument();
+        expect(screen.getByText(/longest streak/i)).toBeInTheDocument();
+        expect(screen.getByText('21')).toBeInTheDocument();
     });
 });
