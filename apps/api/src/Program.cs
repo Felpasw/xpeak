@@ -4,6 +4,7 @@ using Xpeak.Api.Auth.Core;
 using Xpeak.Api.Auth.Google;
 using Xpeak.Api.Auth.Password;
 using Xpeak.Api.Endpoints;
+using Xpeak.Api.Groups;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Users;
 
@@ -14,6 +15,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services
     .AddUsers()
+    .AddGroups()
     .AddAuthCore(builder.Configuration)
     .AddPasswordAuth()
     .AddGoogleAuth(builder.Configuration);
