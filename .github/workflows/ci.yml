@@ -11,12 +11,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  pr-title:
+    name: PR title (Conventional Commits)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            docs
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false
+          subjectPatternError: |
+            The subject "{subject}" must start with a lowercase letter
+            (verb in imperative mood). Acronyms mid-subject are fine
+            (PR, API, JWT, ...).
+          # Only enforce the first character. Everything else — casing,
+          # length, formatting — is delegated to wagoid/commitlint on the
+          # branch commits so acronyms in the middle of the subject don't
+          # trip the check.
+          subjectPattern: ^[a-z].+$
+
   commitlint:
-    name: Commit lint (PR title)
+    name: Commit lint (branch commits)
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Validate PR title
+      - name: Validate branch commit messages
         uses: wagoid/commitlint-github-action@v6
         with:
           configFile: commitlint.config.cjs
