@@ -1,120 +1,267 @@
 # Phase 4 — Categories & Pure XP Domain (SPEC)
 
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16 + xUnit + FsCheck.
+
 ## 1. Summary
 
-`categories` table + `Xpeak.Progression` context with pure XP and
+`categories` table + `Xpeak.Api.Progression` module with pure XP and
 level services. Zero HTTP endpoints, zero UI.
 
 ## 2. Data model
 
 ### 2.1. `categories` table
 
-| Column                | Type    | Constraints                             |
-|-----------------------|---------|-----------------------------------------|
-| `id`                  | uuid    | PK                                      |
-| `slug`                | citext  | not null, unique                        |
-| `name`                | string  | not null                                |
-| `icon_public_id`      | string  | nullable — Cloudinary asset public id   |
-| `base_xp`             | integer | not null, default `10`, check `> 0`     |
-| `weight_multiplier`   | decimal | not null, default `1.0`, check `0.5..2.5` |
-| `is_system`           | boolean | not null, default `false`               |
-| `active`              | boolean | not null, default `true`                |
-| `inserted_at`/`updated_at` | utc_datetime_usec | not null           |
+| Column              | Type            | Constraints                                    |
+|---------------------|-----------------|------------------------------------------------|
+| `id`                | `uuid`          | PK                                             |
+| `slug`              | `citext`        | not null, unique                               |
+| `name`              | `text`          | not null                                       |
+| `icon_public_id`    | `text`          | nullable — Cloudinary asset public id          |
+| `base_xp`           | `int`           | not null, default `10`, `CHECK (base_xp > 0)`  |
+| `weight_multiplier` | `numeric(4, 2)` | not null, default `1.00`, `CHECK (>=0.5 AND <=2.5)` |
+| `is_system`         | `bool`          | not null, default `false`                      |
+| `active`            | `bool`          | not null, default `true`                       |
+| `created_at`        | `timestamptz`   | not null                                       |
+| `updated_at`        | `timestamptz`   | not null                                       |
 
-Indexes: `slug` unique.
+**Indexes:** unique on `slug`.
 
-### 2.2. Seed set (`is_system: true`)
+**Postgres extension:** `CREATE EXTENSION IF NOT EXISTS citext` runs
+as part of the migration (case-insensitive `slug` matches the
+convention already used by AppUser's normalized username lookup).
+
+### 2.2. Seed set (`is_system = true`, seeded via EF Core `HasData`)
 
 Icons ship as Cloudinary assets uploaded under the `categories/`
 folder (public id examples: `categories/legs`, `categories/chest`).
 Seed rows reference the public id; the mobile client builds the
 delivery URL with the desired transformations
-(`f_auto,q_auto,w_128,h_128,c_fill`).
+(`f_auto,q_auto,w_128,h_128,c_fill`) at render time.
 
-| Slug        | Name        | Icon public id       | Base XP | Weight |
-|-------------|-------------|----------------------|---------|--------|
-| `legs`      | Legs        | `categories/legs`    | 15      | 1.4    |
-| `chest`     | Chest       | `categories/chest`   | 12      | 1.2    |
-| `back`      | Back        | `categories/back`    | 12      | 1.2    |
-| `shoulders` | Shoulders   | `categories/shoulders` | 10    | 1.1    |
-| `arms`      | Arms        | `categories/arms`    | 8       | 1.0    |
-| `core`      | Core        | `categories/core`    | 8       | 0.9    |
-| `running`   | Running     | `categories/running` | 15      | 1.3    |
-| `cycling`   | Cycling     | `categories/cycling` | 12      | 1.2    |
-| `mobility`  | Mobility    | `categories/mobility` | 6      | 0.8    |
-| `other`     | Other       | `categories/other`   | 5       | 1.0    |
+| Slug        | Name        | Icon public id         | Base XP | Weight |
+|-------------|-------------|------------------------|---------|--------|
+| `legs`      | Legs        | `categories/legs`      | 15      | 1.40   |
+| `chest`     | Chest       | `categories/chest`     | 12      | 1.20   |
+| `back`      | Back        | `categories/back`      | 12      | 1.20   |
+| `shoulders` | Shoulders   | `categories/shoulders` | 10      | 1.10   |
+| `arms`      | Arms        | `categories/arms`      | 8       | 1.00   |
+| `core`      | Core        | `categories/core`      | 8       | 0.90   |
+| `running`   | Running     | `categories/running`   | 15      | 1.30   |
+| `cycling`   | Cycling     | `categories/cycling`   | 12      | 1.20   |
+| `mobility`  | Mobility    | `categories/mobility`  | 6       | 0.80   |
+| `other`     | Other       | `categories/other`     | 5       | 1.00   |
 
-Values tunable in Phase 9. Final numbers to be reviewed with `plan.md`
-§6 Q2.
+Seed `id`s are hard-coded Guids in `AppDbContext.OnModelCreating` so
+migrations are deterministic across environments and downstream
+foreign keys (Phase 5 `check_ins.category_id`) can reference them
+predictably.
 
-## 3. Domain modules (pure)
+Values tunable in Phase 9 (editable XP config surface).
 
-### 3.1. `Xpeak.Progression.XpCalculator`
+## 3. Domain services (pure, static)
 
-```elixir
-@spec compute(input :: %{category: Category.t()}) :: pos_integer()
-def compute(%{category: %Category{base_xp: base, weight_multiplier: w}}) do
-  round(base * Decimal.to_float(w))
-end
+### 3.1. `XpCalculator`
+
+```csharp
+namespace Xpeak.Api.Progression.Services;
+
+public static class XpCalculator
+{
+    public static int Compute(Category category)
+    {
+        var raw = category.BaseXp * (double)category.WeightMultiplier;
+        return (int)Math.Round(raw, MidpointRounding.AwayFromZero);
+    }
+}
 ```
 
-Rounding: `Kernel.round/1` (banker's rounding acceptable; document
-the choice in the ADR).
+Rounding: `MidpointRounding.AwayFromZero` — explicit and intuitive
+(`0.5 → 1`, `1.5 → 2`). Rationale captured in ADR-0004.
 
-### 3.2. `Xpeak.Progression.LevelCurve`
+### 3.2. `LevelCurve`
 
-```elixir
-@spec xp_for_level(non_neg_integer()) :: non_neg_integer()
-def xp_for_level(0), do: 0
-def xp_for_level(n) when n > 0, do: round(100 * :math.pow(n, 1.5))
+```csharp
+namespace Xpeak.Api.Progression.Services;
+
+public static class LevelCurve
+{
+    public static int XpForLevel(int level)
+    {
+        if (level < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(level));
+        }
+
+        if (level == 0)
+        {
+            return 0;
+        }
+
+        return (int)Math.Round(
+            100 * Math.Pow(level, 1.5),
+            MidpointRounding.AwayFromZero);
+    }
+}
 ```
 
-Cumulative XP required to reach level `n` from level 0.
+Cumulative XP required to reach `level` from level 0. Monotonic and
+strictly increasing for `level >= 1`.
 
-### 3.3. `Xpeak.Progression.LevelUpService`
+### 3.3. `LevelUpService`
 
-```elixir
-@spec level_for_xp(non_neg_integer()) :: non_neg_integer()
-def level_for_xp(total_xp) do
-  # binary search over LevelCurve.xp_for_level/1
-end
+```csharp
+namespace Xpeak.Api.Progression.Services;
 
-@spec level_up?(prev_xp, new_xp) :: {leveled_up :: boolean(),
-  new_level :: non_neg_integer(), levels_gained :: non_neg_integer()}
-def level_up?(prev_xp, new_xp) do
-  prev = level_for_xp(prev_xp)
-  new = level_for_xp(new_xp)
-  {new > prev, new, new - prev}
-end
+public readonly record struct LevelUpResult(
+    bool LeveledUp,
+    int NewLevel,
+    int LevelsGained);
+
+public static class LevelUpService
+{
+    // Binary search over LevelCurve.XpForLevel; upper bound grows
+    // until XpForLevel(hi) > xp. Cheap since the curve is
+    // strictly increasing.
+    public static int LevelForXp(int xp) { /* ... */ }
+
+    public static LevelUpResult EvaluateLevelUp(int prevXp, int newXp)
+    {
+        var prev = LevelForXp(prevXp);
+        var next = LevelForXp(newXp);
+        return new LevelUpResult(next > prev, next, next - prev);
+    }
+}
 ```
 
-## 4. Context API
+## 4. Public context — `IProgressionService`
 
-`Xpeak.Progression`:
+The **only** thing exported by `ProgressionModule`. Consumers
+(future check-in module, future rankings module, LLM tools) depend
+on this interface, not on the concrete service or the repository.
 
-- `list_categories/0` — active categories.
-- `get_category_by_slug!/1`.
-- `compute_xp/1` — delegates to `XpCalculator.compute/1`.
-- `xp_for_level/1`, `level_for_xp/1`, `level_up?/2` — delegates to
-  the pure modules above.
+```csharp
+namespace Xpeak.Api.Progression;
 
-## 5. Test plan
+public interface IProgressionService
+{
+    Task<IReadOnlyList<Category>> ListActiveCategoriesAsync(
+        CancellationToken ct = default);
 
-- `test/xpeak/progression/category_test.exs` — schema constraints,
-  weight bounds.
-- `test/xpeak/progression/xp_calculator_test.exs` — property-based
-  test with `stream_data`: for any category, `compute/1 > 0` and
-  monotonic on `base_xp`.
-- `test/xpeak/progression/level_curve_test.exs` — monotonic increase;
-  values at levels 0, 1, 10, 100.
-- `test/xpeak/progression/level_up_service_test.exs` — level_for_xp
-  round-trip; `level_up?` edge cases (crossing a level boundary
-  exactly).
-- `test/xpeak/progression_test.exs` — context integration (loads
-  seeded categories via `Repo.get_by/2`).
+    Task<Category?> GetCategoryBySlugAsync(
+        string slug,
+        CancellationToken ct = default);
 
-## 6. Non-goals
+    int ComputeXp(Category category);
 
-- No mutation of `users.xp` or `users.level` in this phase.
-- No admin surface.
-- No user-defined categories.
+    int XpForLevel(int level);
+
+    int LevelForXp(int xp);
+
+    LevelUpResult EvaluateLevelUp(int prevXp, int newXp);
+}
+```
+
+Concrete `ProgressionService`:
+- Delegates category reads to `ICategoryRepository`.
+- Delegates arithmetic to the static classes above.
+- No business logic of its own — it's the composition seam.
+
+## 5. Module layout
+
+```
+apps/api/src/Progression/
+  Entities/
+    Category.cs
+  Repositories/
+    ICategoryRepository.cs
+    CategoryRepository.cs
+  Services/
+    XpCalculator.cs
+    LevelCurve.cs
+    LevelUpService.cs
+    IProgressionService.cs
+    ProgressionService.cs
+  ProgressionModule.cs
+```
+
+`ProgressionModule.AddProgression(this IServiceCollection services)`:
+
+- `AddScoped<ICategoryRepository, CategoryRepository>()`
+- `AddSingleton<IProgressionService, ProgressionService>()`
+  (the service holds no state; repository is resolved per-call via
+  `IServiceProvider`, or the service is Scoped if we prefer symmetry
+  — the ADR captures the choice).
+
+`Program.cs` gains a single line: `.AddProgression()` in the service
+chain, after `.AddUsers()`.
+
+## 6. Test plan
+
+### 6.1. Test project structure
+
+```
+apps/api.Tests/Progression/
+  CategoryPersistenceTests.cs        # Testcontainers, real Postgres
+  CategoryRepositoryTests.cs         # Testcontainers, real Postgres
+  XpCalculatorTests.cs               # xUnit + FsCheck property tests
+  LevelCurveTests.cs                 # xUnit + FsCheck property tests
+  LevelUpServiceTests.cs             # xUnit, table-driven
+  ProgressionServiceTests.cs         # Testcontainers, integration
+```
+
+### 6.2. Coverage targets
+
+- **`CategoryPersistenceTests`** — schema constraints:
+  - `slug` unique across inserts (case-insensitive via `citext`).
+  - `weight_multiplier` bounds enforced by the DB `CHECK` — inserting
+    `0.4` or `2.6` throws `DbUpdateException`.
+  - Seed run: after `Database.EnsureCreatedAsync()` (or migrations
+    applied), exactly 10 rows with `is_system = true` and the
+    expected slugs.
+
+- **`CategoryRepositoryTests`** — `ListActiveAsync` returns only
+  `active = true`; `GetBySlugAsync("Legs")` matches `legs` (citext).
+
+- **`XpCalculatorTests`** — FsCheck property:
+  `∀ base > 0, ∀ weight ∈ [0.5, 2.5], Compute(new Category { BaseXp=base, WeightMultiplier=weight }) > 0`
+  and monotonic on `BaseXp` (holding weight constant).
+
+- **`LevelCurveTests`** — table-driven values (`{0, 0}, {1, 100},
+  {5, 1118}, {10, 3162}, {50, 35355}, {100, 100000}`) + FsCheck
+  monotonicity property.
+
+- **`LevelUpServiceTests`**:
+  - `LevelForXp` round-trip: `∀ n ∈ [0..500], LevelForXp(XpForLevel(n)) == n`.
+  - `EvaluateLevelUp` boundary cases:
+    - `EvaluateLevelUp(99, 100)` → `(true, 1, 1)` (crossing exactly).
+    - `EvaluateLevelUp(100, 199)` → `(false, 1, 0)` (no crossing).
+    - `EvaluateLevelUp(0, 300)` → `(true, 1, 1)` (single crossing).
+    - `EvaluateLevelUp(0, 3162)` → `(true, 10, 10)` (multi-level jump).
+
+- **`ProgressionServiceTests`** — Testcontainers integration:
+  - `ListActiveCategoriesAsync` returns the 10 seeded rows.
+  - `GetCategoryBySlugAsync("legs")` returns the `Legs` entity;
+    `ComputeXp(that)` returns `21`.
+  - `ListActiveCategoriesAsync` excludes an inactive row inserted at
+    runtime.
+
+### 6.3. Test fixtures
+
+- Reuse the existing `XpeakWebApplicationFactory` (already boots
+  Postgres via Testcontainers and applies migrations). For pure-domain
+  tests (`XpCalculator`, `LevelCurve`, `LevelUpService`) there is
+  **no fixture** — plain xUnit `[Fact]` / `[Theory]` methods with
+  FsCheck properties.
+- Add `FsCheck.Xunit` to `apps/api.Tests/api.Tests.csproj`.
+
+## 7. Non-goals
+
+- No mutation of `users.xp` or `users.level` in this phase (that
+  wires up in Phase 5 when the check-in endpoint calls
+  `EvaluateLevelUp` and persists the result inside the check-in
+  transaction).
+- No admin surface (Phase 9).
+- No user-defined categories (Phase 9).
+- No HTTP endpoint listing categories (that comes in Phase 5 as part
+  of the check-in flow, or earlier if the mobile client needs it —
+  decided on demand).

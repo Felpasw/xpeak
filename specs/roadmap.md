@@ -15,7 +15,9 @@ switch was purely aesthetic/ergonomic — product goals didn't change.
 
 Phase 1 (versioning) and Phase 2 (app skeleton) plan/spec/tasks are
 already updated for the new stack. **Phase 3 (auth) is updated too.**
-Phases 4–25 still reference the old stack in their plan/spec/tasks:
+**Phase 4 (categories & pure XP domain) has been rewritten for the C#
+stack under `specs/004-categories-and-xp-domain/`.**
+Phases 5–25 still reference the old stack in their plan/spec/tasks:
 
 | Old (Elixir/Phoenix)                       | New (C# / ASP.NET Core)                                     |
 |--------------------------------------------|-------------------------------------------------------------|
