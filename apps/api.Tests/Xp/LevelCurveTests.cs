@@ -1,9 +1,9 @@
 using FsCheck;
 using FsCheck.Fluent;
 using FsCheck.Xunit;
-using Xpeak.Api.Progression.Services;
+using Xpeak.Api.Xp;
 
-namespace Xpeak.Api.Tests.Progression;
+namespace Xpeak.Api.Tests.Xp;
 
 public sealed class LevelCurveTests
 {

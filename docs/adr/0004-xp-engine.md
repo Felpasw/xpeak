@@ -154,9 +154,8 @@ on existing membership) so retries after a partial failure are safe.
 The Groups module exports **only** `IGroupService` via `AddGroups()`.
 The Progression module exports **only** `IProgressionService` via
 `AddProgression()`. Everything else — `GroupService`,
-`ProgressionService`, `CategoryRepository`, `XpCalculator`,
-`LevelCurve`, `LevelUpService`, the entities' persistence layer — is
-internal to its module.
+`ProgressionService`, `CategoryRepository`, the entities'
+persistence layer — is internal to its module.
 
 Consumers (check-in handler in Phase 5, rankings, LLM tools) always
 depend on the interface, never on the concrete class or the
@@ -164,6 +163,10 @@ repository. That keeps the composition seam tight and lets us
 substitute implementations later (a caching decorator, a snapshot
 reader that hits a materialized view, an in-memory fake for tests)
 without churn on the callers.
+
+The pure math (`XpCalculator`, `LevelCurve`, `LevelUpService`,
+`LevelUpResult`) lives in a separate `Xpeak.Api.Xp` namespace with
+**no module** and **no DI registration** — see §7 for why.
 
 ### 6. No seed data
 
@@ -187,6 +190,43 @@ Phase 5 (check-in) will fail cleanly if you try to check in against
 a category that doesn't exist yet — which is the correct behaviour.
 The mobile UI will surface "no categories yet, ask your group owner
 to add some" until content lands.
+
+### 7. Xp namespace split — math lives outside Progression
+
+`XpCalculator`, `LevelCurve`, `LevelUpService` and `LevelUpResult`
+sit in `Xpeak.Api.Xp` — **not** in `Xpeak.Api.Progression.Services`
+where they originally landed. The split happened in a follow-up
+refactor after review flagged that the arithmetic was too coupled
+to the persistence/orchestration layer semantically.
+
+**Why the split:**
+
+- `Xp` is truly reusable — every future compound multiplier
+  (streak × group × challenge in Phase 7, challenge modifiers in
+  Phase 15+) is math with the same shape. Keeping the math in its
+  own namespace means Phase 7's `MultiplierComposer` (or however it
+  ends up named) lands right next to `XpCalculator` instead of
+  bloating `Progression/Services/`.
+- **Dependency direction is one-way.** `Progression` imports `Xp`;
+  `Xp` imports nothing from `Progression`. `XpCalculator` needs
+  `XpRule` as its input type — `XpRule` currently lives in
+  `Xpeak.Api.Progression.Entities`, which technically inverts the
+  cleaner direction. Not worth extracting `XpRule` into `Xp` today
+  (the entity has DB concerns via EF Core mapping), but the note is
+  captured here in case a future refactor wants the arithmetic
+  namespace to be entirely leaf-free.
+- **No module, no DI.** Everything in `Xp` is `static`, so there's
+  nothing to register. `Program.cs` doesn't call `.AddXp()`. That
+  matches the "Xp is a math primitive" mental model — you don't
+  register `Math` or `System.Random`, you just call it.
+- **Tests move too.** `apps/api.Tests/Xp/` mirrors the source
+  layout — `XpCalculatorTests`, `LevelCurveTests`,
+  `LevelUpServiceTests`. `apps/api.Tests/Progression/` keeps
+  everything that needs Testcontainers (persistence, repository,
+  the end-to-end `ProgressionServiceTests`).
+
+**Trade-off:** one more folder in `apps/api/src/`. Cheap price for
+the clearer semantic boundary.
 
 ## Consequences
 

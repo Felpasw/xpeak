@@ -1,4 +1,4 @@
-namespace Xpeak.Api.Progression.Services;
+namespace Xpeak.Api.Xp;
 
 /// <summary>
 /// Cumulative XP required to reach a given level from level 0.

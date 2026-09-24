@@ -1,6 +1,6 @@
 using Xpeak.Api.Progression.Entities;
 
-namespace Xpeak.Api.Progression.Services;
+namespace Xpeak.Api.Xp;
 
 /// <summary>
 /// Turns an <see cref="XpRule"/> into the integer XP amount a single

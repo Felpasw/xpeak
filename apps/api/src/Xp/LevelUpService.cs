@@ -1,4 +1,4 @@
-namespace Xpeak.Api.Progression.Services;
+namespace Xpeak.Api.Xp;
 
 /// <summary>
 /// Answers "what level does this XP amount put a user at?" and

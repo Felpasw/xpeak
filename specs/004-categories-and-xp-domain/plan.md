@@ -88,12 +88,13 @@ zero UI.
 - `apps/api/src/Groups/Entities/{Group, GroupMembership}.cs`.
 - `apps/api/src/Groups/Services/{IGroupService, GroupService}.cs`.
 - `apps/api/src/Groups/GroupsModule.cs` — `AddGroups()` extension.
+- `apps/api/src/Xp/{XpCalculator, LevelCurve, LevelUpService,
+  LevelUpResult}.cs` — pure static math namespace. No module, no DI.
 - `apps/api/src/Progression/Entities/{XpRule, Category}.cs`.
-- `apps/api/src/Progression/Services/{XpCalculator, LevelCurve,
-  LevelUpService}.cs` — pure static.
 - `apps/api/src/Progression/Services/{IProgressionService,
   ProgressionService}.cs` + `Repositories/{ICategoryRepository,
-  CategoryRepository}.cs`.
+  CategoryRepository}.cs`. `ProgressionService` imports
+  `Xpeak.Api.Xp` and composes it with the repository.
 - `apps/api/src/Progression/ProgressionModule.cs` — `AddProgression()`.
 - `apps/api/src/Infrastructure/AppDbContext.cs` — adds `DbSet<Group>`,
   `DbSet<GroupMembership>`, `DbSet<XpRule>`, `DbSet<Category>` and

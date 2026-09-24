@@ -4,9 +4,11 @@
 
 ## 1. Summary
 
-Four tables (`groups`, `group_memberships`, `xp_rules`, `categories`)
-plus a pure `Xpeak.Api.Progression` module with `XpCalculator`,
-`LevelCurve` and `LevelUpService`. Introduces the group scope every
+Four tables (`groups`, `group_memberships`, `xp_rules`, `categories`),
+a pure `Xpeak.Api.Xp` namespace with the arithmetic
+(`XpCalculator`, `LevelCurve`, `LevelUpService`) and a
+`Xpeak.Api.Progression` module owning the entities, repository and
+orchestrating `IProgressionService`. Introduces the group scope every
 check-in eventually references. **Zero HTTP endpoints, zero UI, zero
 category seed.**
 
@@ -101,7 +103,7 @@ rows, no `categories` rows.
 ### 3.1. `XpCalculator`
 
 ```csharp
-namespace Xpeak.Api.Progression.Services;
+namespace Xpeak.Api.Xp;
 
 public static class XpCalculator
 {
@@ -123,7 +125,7 @@ the rule (via the repository) and hand it in.
 ### 3.2. `LevelCurve`
 
 ```csharp
-namespace Xpeak.Api.Progression.Services;
+namespace Xpeak.Api.Xp;
 
 public static class LevelCurve
 {
@@ -152,7 +154,7 @@ strictly increasing for `level >= 1`.
 ### 3.3. `LevelUpService`
 
 ```csharp
-namespace Xpeak.Api.Progression.Services;
+namespace Xpeak.Api.Xp;
 
 public readonly record struct LevelUpResult(
     bool LeveledUp,
@@ -237,6 +239,13 @@ apps/api/src/Groups/
   GroupIds.cs
   GroupsModule.cs
 
+apps/api/src/Xp/
+  XpCalculator.cs
+  LevelCurve.cs
+  LevelUpService.cs
+  LevelUpResult.cs
+  (no Module.cs — everything is static, nothing to register in DI)
+
 apps/api/src/Progression/
   Entities/
     XpRule.cs
@@ -245,13 +254,14 @@ apps/api/src/Progression/
     ICategoryRepository.cs
     CategoryRepository.cs
   Services/
-    XpCalculator.cs
-    LevelCurve.cs
-    LevelUpService.cs
     IProgressionService.cs
     ProgressionService.cs
   ProgressionModule.cs
 ```
+
+**Dependency direction:** `Progression` imports `Xp`. `Xp` imports
+nothing from `Progression`. The math is a leaf; the orchestration
+composes it with the repository.
 
 **DI registration:**
 
@@ -259,7 +269,8 @@ apps/api/src/Progression/
 - `ProgressionModule.AddProgression()` —
   `AddScoped<ICategoryRepository, CategoryRepository>()` +
   `AddScoped<IProgressionService, ProgressionService>()`.
-- `Program.cs` chain: `.AddUsers().AddGroups().AddAuthCore(...).AddPasswordAuth().AddGoogleAuth(...).AddProgression()`.
+- `Xp` needs no registration — all types are `static`.
+- `Program.cs` chain: `.AddUsers().AddGroups().AddProgression().AddAuthCore(...).AddPasswordAuth().AddGoogleAuth(...)`.
   Groups must register before AuthCore so the register endpoint can
   resolve `IGroupService` from DI.
 
@@ -273,13 +284,15 @@ apps/api.Tests/Groups/
   GroupMembershipPersistenceTests.cs # Testcontainers
   GroupServiceTests.cs               # Testcontainers
 
+apps/api.Tests/Xp/
+  XpCalculatorTests.cs               # xUnit + FsCheck property tests
+  LevelCurveTests.cs                 # xUnit + FsCheck property tests
+  LevelUpServiceTests.cs             # xUnit, table-driven + FsCheck
+
 apps/api.Tests/Progression/
   XpRulePersistenceTests.cs          # Testcontainers
   CategoryPersistenceTests.cs        # Testcontainers
   CategoryRepositoryTests.cs         # Testcontainers
-  XpCalculatorTests.cs               # xUnit + FsCheck property tests
-  LevelCurveTests.cs                 # xUnit + FsCheck property tests
-  LevelUpServiceTests.cs             # xUnit, table-driven
   ProgressionServiceTests.cs         # Testcontainers, integration
 ```
 

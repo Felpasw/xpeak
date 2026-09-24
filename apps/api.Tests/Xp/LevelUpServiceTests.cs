@@ -1,8 +1,8 @@
 using FsCheck;
 using FsCheck.Xunit;
-using Xpeak.Api.Progression.Services;
+using Xpeak.Api.Xp;
 
-namespace Xpeak.Api.Tests.Progression;
+namespace Xpeak.Api.Tests.Xp;
 
 public sealed class LevelUpServiceTests
 {

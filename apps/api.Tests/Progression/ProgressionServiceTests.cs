@@ -4,6 +4,7 @@ using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Progression.Services;
 using Xpeak.Api.Tests.Support;
+using Xpeak.Api.Xp;
 
 namespace Xpeak.Api.Tests.Progression;
 

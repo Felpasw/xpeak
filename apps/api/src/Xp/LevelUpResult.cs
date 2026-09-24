@@ -1,4 +1,4 @@
-namespace Xpeak.Api.Progression.Services;
+namespace Xpeak.Api.Xp;
 
 /// <summary>
 /// Outcome of comparing two XP totals against the level curve. Returned

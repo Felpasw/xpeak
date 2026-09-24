@@ -1,4 +1,5 @@
 using Xpeak.Api.Progression.Entities;
+using Xpeak.Api.Xp;
 
 namespace Xpeak.Api.Progression.Services;
 
