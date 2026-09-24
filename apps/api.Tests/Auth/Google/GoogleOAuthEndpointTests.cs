@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Xpeak.Api.Groups;
+using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Tests.Support;
 using Xpeak.Api.Users;
 
@@ -47,6 +49,12 @@ public sealed class GoogleOAuthEndpointTests : IClassFixture<GoogleStubbedXpeakW
         created!.Email.Should().Be(email);
         created.AvatarUrl.Should().Be("https://x/avatar.png");
         created.UserName.Should().StartWith($"newg_{suffix}");
+
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var joinedGlobal = await db.GroupMemberships
+            .AsNoTracking()
+            .AnyAsync(m => m.UserId == created.Id && m.GroupId == GroupIds.Global);
+        joinedGlobal.Should().BeTrue();
     }
 
     [Fact]

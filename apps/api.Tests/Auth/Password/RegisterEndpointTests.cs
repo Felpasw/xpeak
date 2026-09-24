@@ -1,5 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Xpeak.Api.Groups;
+using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Tests.Support;
 
 namespace Xpeak.Api.Tests.Auth.Password;
@@ -37,6 +41,38 @@ public sealed class RegisterEndpointTests : IClassFixture<XpeakWebApplicationFac
         body.User.Email.Should().Be(payload.email);
         body.User.Level.Should().Be(0);
         body.User.Xp.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Happy_path_places_the_new_user_in_the_global_group()
+    {
+        var client = _factory.CreateClient();
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var username = $"glob_{suffix}";
+        var payload = new
+        {
+            username,
+            email = $"glob_{suffix}@x.com",
+            password = "hunter22!",
+        };
+
+        (await client.PostAsJsonAsync("/auth/register", payload))
+            .StatusCode.Should().Be(HttpStatusCode.Created);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var membership = await db.GroupMemberships
+            .AsNoTracking()
+            .Where(m => m.GroupId == GroupIds.Global)
+            .Join(
+                db.Users.AsNoTracking(),
+                m => m.UserId,
+                u => u.Id,
+                (m, u) => new { u.UserName, m.JoinedAt })
+            .SingleOrDefaultAsync(x => x.UserName == username);
+
+        membership.Should().NotBeNull();
     }
 
     [Fact]

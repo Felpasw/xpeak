@@ -13,9 +13,12 @@ Phase 2 the backend stack switched to **C# + ASP.NET Core 9** (Minimal
 APIs + EF Core 9 + Hangfire + ASP.NET Identity + JWT bearer). The
 switch was purely aesthetic/ergonomic — product goals didn't change.
 
-Phase 1 (versioning) and Phase 2 (app skeleton) plan/spec/tasks are
-already updated for the new stack. **Phase 3 (auth) is updated too.**
-Phases 4–25 still reference the old stack in their plan/spec/tasks:
+Phase 1 (versioning), Phase 2 (app skeleton), Phase 3 (auth) and
+**Phase 4 (categories & pure XP domain — shipped)** are all on the C#
+stack. Phase 4 spec reflects the design pivots landed during
+implementation (rule extraction, group scoping, no seed) — see
+`docs/adr/0004-xp-engine.md` for rationale.
+Phases 5–25 still reference the old stack in their plan/spec/tasks:
 
 | Old (Elixir/Phoenix)                       | New (C# / ASP.NET Core)                                     |
 |--------------------------------------------|-------------------------------------------------------------|
@@ -71,10 +74,17 @@ first PR.
     streak=0.
   - Mobile screens: register, login (email + Google), profile.
 
-- 📋 **Phase 4 — Categories & pure XP domain**
-  - Category CRUD (system + custom later).
-  - Pure domain services: `XpCalculator`, `LevelUpService` — no UI.
-  - 100% test coverage on the domain layer.
+- 🛠️ **Phase 4 — Categories & pure XP domain**
+  `specs/004-categories-and-xp-domain/` — shipped on branch
+  `XPK-15/felpa-xp-domain` (commits `9317486`, `5eebae9`,
+  `1319aab`, `c886eee`, this one). See ADR-0004.
+  - Group-scoped categories with rule extraction (`xp_rules` as
+    first-class entity), root Global group, membership hook in
+    register / Google OAuth.
+  - Pure domain services: `XpCalculator`, `LevelCurve`,
+    `LevelUpService`. Public context `IProgressionService`.
+  - 122 tests total in `apps/api.Tests`, FsCheck property tests for
+    the arithmetic invariants.
 
 - 📋 **Phase 5 — Check-in (no media)**
   - `POST /check_ins` + minimal mobile screen.
