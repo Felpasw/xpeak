@@ -6,6 +6,7 @@ using Xpeak.Api.Auth.Password;
 using Xpeak.Api.Endpoints;
 using Xpeak.Api.Groups;
 using Xpeak.Api.Infrastructure;
+using Xpeak.Api.Progression;
 using Xpeak.Api.Users;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services
     .AddUsers()
     .AddGroups()
+    .AddProgression()
     .AddAuthCore(builder.Configuration)
     .AddPasswordAuth()
     .AddGoogleAuth(builder.Configuration);
