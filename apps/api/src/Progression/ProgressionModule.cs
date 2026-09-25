@@ -1,3 +1,4 @@
+using Xpeak.Api.Progression.Endpoints;
 using Xpeak.Api.Progression.Repositories;
 using Xpeak.Api.Progression.Services;
 
@@ -11,5 +12,11 @@ public static class ProgressionModule
         services.AddScoped<IXpRuleRepository, XpRuleRepository>();
         services.AddScoped<IProgressionService, ProgressionService>();
         return services;
+    }
+
+    public static IEndpointRouteBuilder UseProgression(this IEndpointRouteBuilder app)
+    {
+        ListGroupCategoriesEndpoint.Map(app);
+        return app;
     }
 }
