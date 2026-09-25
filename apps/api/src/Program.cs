@@ -64,6 +64,7 @@ app.MapHealthEndpoints();
 app.UseAuthCore();
 app.UsePasswordAuth();
 app.UseGoogleAuth();
+app.UseCheckIns();
 
 app.Run();
 
