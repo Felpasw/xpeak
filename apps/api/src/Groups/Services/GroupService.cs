@@ -24,4 +24,9 @@ public sealed class GroupService(AppDbContext db) : IGroupService
         });
         await db.SaveChangesAsync(ct);
     }
+
+    public Task<bool> IsMemberAsync(Guid userId, Guid groupId, CancellationToken ct = default) =>
+        db.GroupMemberships
+            .AsNoTracking()
+            .AnyAsync(m => m.UserId == userId && m.GroupId == groupId, ct);
 }

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.Groups;
 using Xpeak.Api.Groups.Entities;
+using Xpeak.Api.Groups.Services;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Tests.Support;
 
@@ -87,5 +88,57 @@ public sealed class GroupConfigTests : IClassFixture<XpeakWebApplicationFactory>
             .AsNoTracking()
             .AnyAsync(gc => gc.GroupId == group.Id);
         remains.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetStreakConfigAsync_returns_the_daily_config_for_global()
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var configs = scope.ServiceProvider.GetRequiredService<IGroupConfigService>();
+
+        var config = await configs.GetStreakConfigAsync(GroupIds.Global);
+
+        config.Mode.Should().Be(StreakMode.Daily);
+        config.RequiredDaysPerWeek.Should().BeNull();
+        config.WeekStart.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetStreakConfigAsync_returns_the_weekly_config_for_a_custom_group()
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var configs = scope.ServiceProvider.GetRequiredService<IGroupConfigService>();
+        var suffix = Guid.NewGuid().ToString("N")[..6];
+
+        var group = new Group { Id = Guid.NewGuid(), Name = $"wk_{suffix}", IsRoot = false };
+        var config = new GroupConfig
+        {
+            GroupId = group.Id,
+            StreakConfig = new StreakConfig(
+                StreakMode.Weekly,
+                RequiredDaysPerWeek: 4,
+                WeekStart: DayOfWeek.Monday),
+        };
+        db.Groups.Add(group);
+        db.GroupConfigs.Add(config);
+        await db.SaveChangesAsync();
+
+        var result = await configs.GetStreakConfigAsync(group.Id);
+
+        result.Mode.Should().Be(StreakMode.Weekly);
+        result.RequiredDaysPerWeek.Should().Be(4);
+        result.WeekStart.Should().Be(DayOfWeek.Monday);
+    }
+
+    [Fact]
+    public async Task GetStreakConfigAsync_throws_when_the_group_has_no_config_row()
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var configs = scope.ServiceProvider.GetRequiredService<IGroupConfigService>();
+
+        var act = async () => await configs.GetStreakConfigAsync(Guid.NewGuid());
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
     }
 }
