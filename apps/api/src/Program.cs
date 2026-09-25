@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Xpeak.Api.Auth.Core;
 using Xpeak.Api.Auth.Google;
 using Xpeak.Api.Auth.Password;
+using Xpeak.Api.CheckIns;
 using Xpeak.Api.Endpoints;
 using Xpeak.Api.Groups;
 using Xpeak.Api.Infrastructure;
@@ -18,6 +19,7 @@ builder.Services
     .AddUsers()
     .AddGroups()
     .AddProgression()
+    .AddCheckIns()
     .AddAuthCore(builder.Configuration)
     .AddPasswordAuth()
     .AddGoogleAuth(builder.Configuration);
