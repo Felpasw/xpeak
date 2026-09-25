@@ -1,7 +1,11 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Xpeak.Api.Auth.Core;
+using Xpeak.Api.CheckIns.Dto;
+using Xpeak.Api.CheckIns.Entities;
 using Xpeak.Api.Groups;
 using Xpeak.Api.Groups.Entities;
 using Xpeak.Api.Progression.Entities;
@@ -12,15 +16,28 @@ namespace Xpeak.Api.Infrastructure;
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>(options)
 {
+    private static readonly JsonSerializerOptions JsonOpts = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        Converters =
+        {
+            new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
+        },
+    };
+
     public DbSet<RevokedToken> RevokedTokens => Set<RevokedToken>();
 
     public DbSet<Group> Groups => Set<Group>();
 
     public DbSet<GroupMembership> GroupMemberships => Set<GroupMembership>();
 
+    public DbSet<GroupConfig> GroupConfigs => Set<GroupConfig>();
+
     public DbSet<XpRule> XpRules => Set<XpRule>();
 
     public DbSet<Category> Categories => Set<Category>();
+
+    public DbSet<CheckIn> CheckIns => Set<CheckIn>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +54,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             b.Property(u => u.GoogleUid).HasColumnName("google_uid").HasMaxLength(255);
             b.Property(u => u.Level).HasColumnName("level").HasDefaultValue(0);
             b.Property(u => u.Xp).HasColumnName("xp").HasDefaultValue(0);
+            b.Property(u => u.TimeZone)
+                .HasColumnName("time_zone")
+                .HasMaxLength(64)
+                .HasDefaultValue("UTC");
             b.Property(u => u.CreatedAt).HasColumnName("created_at");
 
             b.HasIndex(u => u.GoogleUid).IsUnique().HasFilter("google_uid IS NOT NULL");
@@ -144,6 +165,89 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
                 .OnDelete(DeleteBehavior.Restrict);
 
             b.HasIndex(c => new { c.GroupId, c.Slug }).IsUnique();
+        });
+
+        modelBuilder.Entity<GroupConfig>(b =>
+        {
+            b.ToTable("group_configs");
+            b.HasKey(gc => gc.GroupId);
+            b.Property(gc => gc.GroupId).HasColumnName("group_id");
+            b.Property(gc => gc.StreakConfig)
+                .HasColumnName("streak_config")
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, JsonOpts),
+                    v => JsonSerializer.Deserialize<StreakConfig>(v, JsonOpts)!);
+            b.Property(gc => gc.CreatedAt).HasColumnName("created_at");
+            b.Property(gc => gc.UpdatedAt).HasColumnName("updated_at");
+
+            b.HasOne<Group>()
+                .WithOne()
+                .HasForeignKey<GroupConfig>(gc => gc.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasData(new GroupConfig
+            {
+                GroupId = GroupIds.Global,
+                StreakConfig = new StreakConfig(StreakMode.Daily),
+                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                UpdatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            });
+        });
+
+        modelBuilder.Entity<CheckIn>(b =>
+        {
+            b.ToTable("check_ins", t =>
+            {
+                t.HasCheckConstraint("ck_check_ins_xp_earned_positive", "xp_earned > 0");
+                t.HasCheckConstraint(
+                    "ck_check_ins_duration_positive",
+                    "duration_minutes IS NULL OR duration_minutes > 0");
+                t.HasCheckConstraint(
+                    "ck_check_ins_notes_length",
+                    "notes IS NULL OR length(notes) <= 280");
+            });
+
+            b.HasKey(c => c.Id);
+            b.Property(c => c.Id).HasColumnName("id");
+            b.Property(c => c.UserId).HasColumnName("user_id");
+            b.Property(c => c.CategoryId).HasColumnName("category_id");
+            b.Property(c => c.GroupId).HasColumnName("group_id");
+            b.Property(c => c.XpEarned).HasColumnName("xp_earned");
+            b.Property(c => c.ScoringSnapshot)
+                .HasColumnName("scoring_snapshot")
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, JsonOpts),
+                    v => JsonSerializer.Deserialize<ScoringSnapshot>(v, JsonOpts)!);
+            b.Property(c => c.PerformedAt).HasColumnName("performed_at");
+            b.Property(c => c.DurationMinutes).HasColumnName("duration_minutes");
+            b.Property(c => c.Notes).HasColumnName("notes");
+            b.Property(c => c.CreatedAt).HasColumnName("created_at");
+            b.Property(c => c.UpdatedAt).HasColumnName("updated_at");
+
+            b.HasOne<AppUser>()
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasOne<Category>()
+                .WithMany()
+                .HasForeignKey(c => c.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<Group>()
+                .WithMany()
+                .HasForeignKey(c => c.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasIndex(c => new { c.UserId, c.PerformedAt })
+                .HasDatabaseName("ix_check_ins_user_performed_desc")
+                .IsDescending(false, true);
+            b.HasIndex(c => new { c.UserId, c.GroupId, c.PerformedAt })
+                .HasDatabaseName("ix_check_ins_user_group_performed_desc")
+                .IsDescending(false, false, true);
+            b.HasIndex(c => new { c.GroupId, c.PerformedAt })
+                .HasDatabaseName("ix_check_ins_group_performed_desc")
+                .IsDescending(false, true);
         });
     }
 }

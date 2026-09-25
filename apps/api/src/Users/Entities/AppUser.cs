@@ -26,5 +26,12 @@ public sealed class AppUser : IdentityUser<Guid>
 
     public int Xp { get; set; }
 
+    /// <summary>
+    /// IANA timezone identifier (e.g. <c>"America/Sao_Paulo"</c>).
+    /// Defaults to <c>"UTC"</c> until proper TZ handling arrives in
+    /// Phase 21 (recap). Phase 5's streak math operates in UTC only.
+    /// </summary>
+    public string TimeZone { get; set; } = "UTC";
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
