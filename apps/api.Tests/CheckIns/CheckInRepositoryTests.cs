@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
-using Xpeak.Api.CheckIns.Services;
+using Xpeak.Api.CheckIns.Repositories;
 using Xpeak.Api.Groups.Entities;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Progression.Entities;
@@ -11,88 +11,107 @@ using Xpeak.Api.Users;
 
 namespace Xpeak.Api.Tests.CheckIns;
 
-public sealed class StreakServiceTests : IClassFixture<XpeakWebApplicationFactory>
+public sealed class CheckInRepositoryTests
+    : IClassFixture<XpeakWebApplicationFactory>
 {
     private readonly XpeakWebApplicationFactory _factory;
 
-    public StreakServiceTests(XpeakWebApplicationFactory factory)
+    public CheckInRepositoryTests(XpeakWebApplicationFactory factory)
     {
         _factory = factory;
         _factory.CreateClient();
     }
 
     [Fact]
-    public async Task ComputeAsync_returns_zero_zero_when_user_has_no_check_ins_in_group()
+    public async Task ListAsync_returns_only_the_callers_rows_ordered_newest_first()
     {
-        var fixture = await SeedFixtureAsync();
+        var mine = await SeedFixtureAsync();
+        var others = await SeedFixtureAsync();
+
+        var now = DateTimeOffset.UtcNow;
+        await InsertAsync(mine, now.AddDays(-2));
+        await InsertAsync(mine, now.AddDays(-1));
+        await InsertAsync(mine, now);
+        await InsertAsync(others, now);
 
         await using var scope = _factory.Services.CreateAsyncScope();
-        var streak = scope.ServiceProvider.GetRequiredService<IStreakService>();
+        var repo = scope.ServiceProvider.GetRequiredService<ICheckInRepository>();
 
-        var info = await streak.ComputeAsync(fixture.User.Id, fixture.Group.Id, Today);
+        var page = await repo.ListAsync(mine.User.Id, limit: 10, cursor: null, groupId: null);
 
-        info.Should().Be(new StreakInfo(0, 0, StreakUnit.Day));
+        page.Items.Should().HaveCount(3);
+        page.Items.Select(c => c.UserId).Should().OnlyContain(id => id == mine.User.Id);
+        page.Items.Should().BeInDescendingOrder(c => c.PerformedAt);
+        page.NextCursor.Should().BeNull();
     }
 
     [Fact]
-    public async Task ComputeAsync_returns_one_after_a_single_check_in_today()
+    public async Task ListAsync_paginates_via_cursor_without_overlap()
     {
         var fixture = await SeedFixtureAsync();
-        await InsertCheckInAsync(fixture, Today);
+        var now = DateTimeOffset.UtcNow;
+
+        var inserted = new List<Guid>();
+        for (var i = 0; i < 5; i++)
+        {
+            var id = await InsertAsync(fixture, now.AddDays(-i));
+            inserted.Add(id);
+        }
 
         await using var scope = _factory.Services.CreateAsyncScope();
-        var streak = scope.ServiceProvider.GetRequiredService<IStreakService>();
+        var repo = scope.ServiceProvider.GetRequiredService<ICheckInRepository>();
 
-        var info = await streak.ComputeAsync(fixture.User.Id, fixture.Group.Id, Today);
+        var page1 = await repo.ListAsync(fixture.User.Id, limit: 2, cursor: null, groupId: null);
+        page1.Items.Should().HaveCount(2);
+        page1.NextCursor.Should().NotBeNull();
 
-        info.Should().Be(new StreakInfo(1, 1, StreakUnit.Day));
+        var page2 = await repo.ListAsync(fixture.User.Id, limit: 2, cursor: page1.NextCursor, groupId: null);
+        page2.Items.Should().HaveCount(2);
+        page2.NextCursor.Should().NotBeNull();
+
+        var page3 = await repo.ListAsync(fixture.User.Id, limit: 2, cursor: page2.NextCursor, groupId: null);
+        page3.Items.Should().HaveCount(1);
+        page3.NextCursor.Should().BeNull();
+
+        var seen = page1.Items.Concat(page2.Items).Concat(page3.Items).Select(c => c.Id).ToList();
+        seen.Should().OnlyHaveUniqueItems();
+        seen.Should().HaveCount(5);
+        seen.Should().BeEquivalentTo(inserted);
     }
 
     [Fact]
-    public async Task ComputeAsync_counts_consecutive_days_up_to_today()
+    public async Task ListAsync_filters_by_group_when_requested()
     {
-        var fixture = await SeedFixtureAsync();
-        await InsertCheckInAsync(fixture, Today);
-        await InsertCheckInAsync(fixture, Today.AddDays(-1));
-        await InsertCheckInAsync(fixture, Today.AddDays(-2));
+        var mine = await SeedFixtureAsync();
+        var second = await SeedSecondGroupAsync(mine);
+
+        var now = DateTimeOffset.UtcNow;
+        await InsertAsync(mine, now);
+        await InsertAsync(mine with { Group = second.Group, Category = second.Category }, now);
 
         await using var scope = _factory.Services.CreateAsyncScope();
-        var streak = scope.ServiceProvider.GetRequiredService<IStreakService>();
+        var repo = scope.ServiceProvider.GetRequiredService<ICheckInRepository>();
 
-        var info = await streak.ComputeAsync(fixture.User.Id, fixture.Group.Id, Today);
+        var firstGroupOnly = await repo.ListAsync(mine.User.Id, limit: 10, cursor: null, groupId: mine.Group.Id);
+        var secondGroupOnly = await repo.ListAsync(mine.User.Id, limit: 10, cursor: null, groupId: second.Group.Id);
 
-        info.Should().Be(new StreakInfo(3, 3, StreakUnit.Day));
+        firstGroupOnly.Items.Should().ContainSingle().Which.GroupId.Should().Be(mine.Group.Id);
+        secondGroupOnly.Items.Should().ContainSingle().Which.GroupId.Should().Be(second.Group.Id);
     }
 
     [Fact]
-    public async Task ComputeAsync_isolates_streaks_between_two_groups_of_the_same_user()
+    public async Task ListAsync_returns_empty_page_when_user_has_no_check_ins()
     {
         var fixture = await SeedFixtureAsync();
-        await InsertCheckInAsync(fixture, Today);
-        await InsertCheckInAsync(fixture, Today.AddDays(-1));
-
-        // Second group for the same user, only one check-in today.
-        var second = await SeedSecondGroupAsync(fixture);
-        await InsertCheckInAsync(fixture with { Group = second.Group, Category = second.Category }, Today);
 
         await using var scope = _factory.Services.CreateAsyncScope();
-        var streak = scope.ServiceProvider.GetRequiredService<IStreakService>();
+        var repo = scope.ServiceProvider.GetRequiredService<ICheckInRepository>();
 
-        var first = await streak.ComputeAsync(fixture.User.Id, fixture.Group.Id, Today);
-        var other = await streak.ComputeAsync(fixture.User.Id, second.Group.Id, Today);
+        var page = await repo.ListAsync(fixture.User.Id, limit: 10, cursor: null, groupId: null);
 
-        first.Current.Should().Be(2);
-        other.Current.Should().Be(1);
+        page.Items.Should().BeEmpty();
+        page.NextCursor.Should().BeNull();
     }
-
-    // Users default to America/Sao_Paulo, so "today" for streak
-    // purposes lives in SP time — using DateTime.UtcNow would flake
-    // the tests during the 00:00-02:59 UTC window (still yesterday
-    // in SP).
-    private static readonly TimeZoneInfo UserTz =
-        TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
-    private static readonly DateOnly Today = DateOnly.FromDateTime(
-        TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, UserTz));
 
     private sealed record SeededFixture(AppUser User, Group Group, Category Category);
 
@@ -103,7 +122,7 @@ public sealed class StreakServiceTests : IClassFixture<XpeakWebApplicationFactor
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var suffix = Guid.NewGuid().ToString("N")[..6];
 
-        var user = new AppUser { UserName = $"strk_{suffix}", Email = $"strk_{suffix}@x.com" };
+        var user = new AppUser { UserName = $"lst_{suffix}", Email = $"lst_{suffix}@x.com" };
         (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
 
         var group = new Group { Id = Guid.NewGuid(), Name = $"g_{suffix}", IsRoot = false };
@@ -154,14 +173,15 @@ public sealed class StreakServiceTests : IClassFixture<XpeakWebApplicationFactor
         return new SeededFixture(existing.User, group, category);
     }
 
-    private async Task InsertCheckInAsync(SeededFixture fixture, DateOnly on)
+    private async Task<Guid> InsertAsync(SeededFixture fixture, DateTimeOffset at)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+        var id = Guid.NewGuid();
         db.CheckIns.Add(new CheckIn
         {
-            Id = Guid.NewGuid(),
+            Id = id,
             UserId = fixture.User.Id,
             CategoryId = fixture.Category.Id,
             GroupId = fixture.Group.Id,
@@ -170,8 +190,9 @@ public sealed class StreakServiceTests : IClassFixture<XpeakWebApplicationFactor
                 10,
                 [new ScoringMultiplier("category_weight", 1.00m)],
                 10),
-            PerformedAt = new DateTimeOffset(on.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero),
+            PerformedAt = at,
         });
         await db.SaveChangesAsync();
+        return id;
     }
 }

@@ -28,10 +28,13 @@ public sealed class AppUser : IdentityUser<Guid>
 
     /// <summary>
     /// IANA timezone identifier (e.g. <c>"America/Sao_Paulo"</c>).
-    /// Defaults to <c>"UTC"</c> until proper TZ handling arrives in
-    /// Phase 21 (recap). Phase 5's streak math operates in UTC only.
+    /// Drives per-user streak boundaries — a check-in at 22:00 local
+    /// on Monday and one at 08:00 local on Tuesday are two distinct
+    /// days regardless of what UTC says. Defaults to
+    /// <c>"America/Sao_Paulo"</c> for the current Brazilian audience;
+    /// users can override in profile settings once that lands.
     /// </summary>
-    public string TimeZone { get; set; } = "UTC";
+    public string TimeZone { get; set; } = "America/Sao_Paulo";
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

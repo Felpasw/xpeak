@@ -57,7 +57,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             b.Property(u => u.TimeZone)
                 .HasColumnName("time_zone")
                 .HasMaxLength(64)
-                .HasDefaultValue("UTC");
+                .HasDefaultValue("America/Sao_Paulo");
             b.Property(u => u.CreatedAt).HasColumnName("created_at");
 
             b.HasIndex(u => u.GoogleUid).IsUnique().HasFilter("google_uid IS NOT NULL");

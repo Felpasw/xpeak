@@ -16,9 +16,18 @@ public sealed class StreakService(
     {
         var config = await configs.GetStreakConfigAsync(groupId, ct);
 
-        // Pull raw `performed_at` timestamps; convert to DateOnly in
-        // memory so we stay off any Postgres-side date functions and
-        // keep the query dead simple. Bounded by the
+        // Load the user's timezone so both stored timestamps and the
+        // `asOf` cursor collapse into "days" from the same frame of
+        // reference. A user in Sao Paulo checking in at 22:00 local
+        // and one at 08:00 next-day local must count as two distinct
+        // days — using UTC would smash them into a single date.
+        var user = await db.Users
+            .AsNoTracking()
+            .SingleAsync(u => u.Id == userId, ct);
+        var tz = TimeZoneInfo.FindSystemTimeZoneById(user.TimeZone);
+
+        // Pull raw `performed_at` timestamps; convert to the user's
+        // local date in memory. Bounded by the
         // (user_id, group_id, performed_at) index — cheap even at
         // years of use.
         var timestamps = await db.CheckIns
@@ -28,7 +37,7 @@ public sealed class StreakService(
             .ToListAsync(ct);
 
         var distinctDates = timestamps
-            .Select(t => DateOnly.FromDateTime(t.UtcDateTime))
+            .Select(t => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(t, tz).DateTime))
             .Distinct()
             .ToList();
 
