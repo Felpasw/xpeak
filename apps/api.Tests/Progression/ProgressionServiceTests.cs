@@ -65,4 +65,52 @@ public sealed class ProgressionServiceTests
         service.EvaluateLevelUp(99, 100)
             .Should().Be(new LevelUpResult(true, 1, 1));
     }
+
+    [Fact]
+    public async Task Exposes_category_and_rule_lookups_by_id_for_the_check_in_flow()
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var service = scope.ServiceProvider.GetRequiredService<IProgressionService>();
+        var suffix = Guid.NewGuid().ToString("N")[..6];
+
+        var group = new Group
+        {
+            Id = Guid.NewGuid(),
+            Name = $"idflow_{suffix}",
+            IsRoot = false,
+        };
+        var rule = new XpRule
+        {
+            Id = Guid.NewGuid(),
+            BaseXp = 12,
+            WeightMultiplier = 1.20m,
+        };
+        var category = new Category
+        {
+            Id = Guid.NewGuid(),
+            GroupId = group.Id,
+            XpRuleId = rule.Id,
+            Slug = $"chest_{suffix}",
+            Name = "Chest",
+        };
+        db.Groups.Add(group);
+        db.XpRules.Add(rule);
+        db.Categories.Add(category);
+        await db.SaveChangesAsync();
+
+        var byId = await service.GetCategoryByIdAsync(category.Id);
+        var loadedRule = await service.GetRuleAsync(category.XpRuleId);
+
+        byId.Should().NotBeNull();
+        byId!.Id.Should().Be(category.Id);
+        byId.GroupId.Should().Be(group.Id);
+
+        loadedRule.Should().NotBeNull();
+        loadedRule!.BaseXp.Should().Be(12);
+        loadedRule.WeightMultiplier.Should().Be(1.20m);
+
+        (await service.GetCategoryByIdAsync(Guid.NewGuid())).Should().BeNull();
+        (await service.GetRuleAsync(Guid.NewGuid())).Should().BeNull();
+    }
 }

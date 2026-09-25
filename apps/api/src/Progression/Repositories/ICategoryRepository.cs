@@ -18,4 +18,8 @@ public interface ICategoryRepository
         Guid groupId,
         string slug,
         CancellationToken ct = default);
+
+    Task<Category?> GetByIdAsync(
+        Guid categoryId,
+        CancellationToken ct = default);
 }

@@ -9,7 +9,9 @@ namespace Xpeak.Api.Progression.Services;
 /// arithmetic goes through the pure static services. No business logic
 /// lives here.
 /// </summary>
-public sealed class ProgressionService(ICategoryRepository categories) : IProgressionService
+public sealed class ProgressionService(
+    ICategoryRepository categories,
+    IXpRuleRepository rules) : IProgressionService
 {
     public Task<IReadOnlyList<Category>> ListActiveCategoriesAsync(
         Guid groupId,
@@ -21,6 +23,16 @@ public sealed class ProgressionService(ICategoryRepository categories) : IProgre
         string slug,
         CancellationToken ct = default) =>
         categories.GetBySlugAsync(groupId, slug, ct);
+
+    public Task<Category?> GetCategoryByIdAsync(
+        Guid categoryId,
+        CancellationToken ct = default) =>
+        categories.GetByIdAsync(categoryId, ct);
+
+    public Task<XpRule?> GetRuleAsync(
+        Guid ruleId,
+        CancellationToken ct = default) =>
+        rules.GetByIdAsync(ruleId, ct);
 
     public int ComputeXp(XpRule rule) => XpCalculator.Compute(rule);
 
