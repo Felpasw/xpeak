@@ -26,5 +26,15 @@ public sealed class AppUser : IdentityUser<Guid>
 
     public int Xp { get; set; }
 
+    /// <summary>
+    /// IANA timezone identifier (e.g. <c>"America/Sao_Paulo"</c>).
+    /// Drives per-user streak boundaries — a check-in at 22:00 local
+    /// on Monday and one at 08:00 local on Tuesday are two distinct
+    /// days regardless of what UTC says. Defaults to
+    /// <c>"America/Sao_Paulo"</c> for the current Brazilian audience;
+    /// users can override in profile settings once that lands.
+    /// </summary>
+    public string TimeZone { get; set; } = "America/Sao_Paulo";
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

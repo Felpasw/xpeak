@@ -179,6 +179,80 @@ namespace Xpeak.Api.Migrations
                     b.ToTable("revoked_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("Xpeak.Api.CheckIns.Entities.CheckIn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("DurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_minutes");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("group_id");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<DateTimeOffset>("PerformedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("performed_at");
+
+                    b.Property<string>("ScoringSnapshot")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("scoring_snapshot");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("XpEarned")
+                        .HasColumnType("integer")
+                        .HasColumnName("xp_earned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("GroupId", "PerformedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_check_ins_group_performed_desc");
+
+                    b.HasIndex("UserId", "PerformedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_check_ins_user_performed_desc");
+
+                    b.HasIndex("UserId", "GroupId", "PerformedAt")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_check_ins_user_group_performed_desc");
+
+                    b.ToTable("check_ins", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_check_ins_duration_positive", "duration_minutes IS NULL OR duration_minutes > 0");
+
+                            t.HasCheckConstraint("ck_check_ins_notes_length", "notes IS NULL OR length(notes) <= 280");
+
+                            t.HasCheckConstraint("ck_check_ins_xp_earned_positive", "xp_earned > 0");
+                        });
+                });
+
             modelBuilder.Entity("Xpeak.Api.Groups.Entities.Group", b =>
                 {
                     b.Property<Guid>("Id")
@@ -216,6 +290,39 @@ namespace Xpeak.Api.Migrations
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsRoot = true,
                             Name = "Global",
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        });
+                });
+
+            modelBuilder.Entity("Xpeak.Api.Groups.Entities.GroupConfig", b =>
+                {
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("group_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("StreakConfig")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("streak_config");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("GroupId");
+
+                    b.ToTable("group_configs", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            GroupId = new Guid("00000000-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            StreakConfig = "{\"mode\":\"daily\",\"required_days_per_week\":null,\"week_start\":null}",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
                         });
                 });
@@ -392,6 +499,14 @@ namespace Xpeak.Api.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
 
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("America/Sao_Paulo")
+                        .HasColumnName("time_zone");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
 
@@ -468,6 +583,36 @@ namespace Xpeak.Api.Migrations
                     b.HasOne("Xpeak.Api.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Xpeak.Api.CheckIns.Entities.CheckIn", b =>
+                {
+                    b.HasOne("Xpeak.Api.Progression.Entities.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Xpeak.Api.Groups.Entities.Group", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Xpeak.Api.Users.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Xpeak.Api.Groups.Entities.GroupConfig", b =>
+                {
+                    b.HasOne("Xpeak.Api.Groups.Entities.Group", null)
+                        .WithOne()
+                        .HasForeignKey("Xpeak.Api.Groups.Entities.GroupConfig", "GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

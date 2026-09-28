@@ -157,6 +157,46 @@ public sealed class CategoryRepositoryTests
         result.Should().BeNull();
     }
 
+    [Fact]
+    public async Task GetByIdAsync_returns_the_category_when_it_exists()
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var repo = scope.ServiceProvider.GetRequiredService<ICategoryRepository>();
+        var suffix = Guid.NewGuid().ToString("N")[..6];
+        var group = await CreateGroupAsync(db, $"byid_{suffix}");
+        var rule = await CreateRuleAsync(db);
+
+        var cat = new Category
+        {
+            Id = Guid.NewGuid(),
+            GroupId = group.Id,
+            XpRuleId = rule.Id,
+            Slug = $"cat_{suffix}",
+            Name = "Cat",
+        };
+        db.Categories.Add(cat);
+        await db.SaveChangesAsync();
+
+        var result = await repo.GetByIdAsync(cat.Id);
+
+        result.Should().NotBeNull();
+        result!.Id.Should().Be(cat.Id);
+        result.GroupId.Should().Be(group.Id);
+        result.XpRuleId.Should().Be(rule.Id);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_returns_null_when_the_id_is_unknown()
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var repo = scope.ServiceProvider.GetRequiredService<ICategoryRepository>();
+
+        var result = await repo.GetByIdAsync(Guid.NewGuid());
+
+        result.Should().BeNull();
+    }
+
     private static async Task<Group> CreateGroupAsync(AppDbContext db, string name)
     {
         var group = new Group { Id = Guid.NewGuid(), Name = name, IsRoot = false };

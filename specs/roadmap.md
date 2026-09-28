@@ -13,12 +13,15 @@ Phase 2 the backend stack switched to **C# + ASP.NET Core 9** (Minimal
 APIs + EF Core 9 + Hangfire + ASP.NET Identity + JWT bearer). The
 switch was purely aesthetic/ergonomic — product goals didn't change.
 
-Phase 1 (versioning), Phase 2 (app skeleton), Phase 3 (auth) and
-**Phase 4 (categories & pure XP domain — shipped)** are all on the C#
-stack. Phase 4 spec reflects the design pivots landed during
-implementation (rule extraction, group scoping, no seed) — see
-`docs/adr/0004-xp-engine.md` for rationale.
-Phases 5–25 still reference the old stack in their plan/spec/tasks:
+Phase 1 (versioning), Phase 2 (app skeleton), Phase 3 (auth),
+**Phase 4 (categories & pure XP domain — shipped)** and
+**Phase 5 (check-in no media — shipped)** are all on the C# stack.
+Phase 4 rationale lives in `docs/adr/0004-xp-engine.md`; Phase 5's
+design decisions (derived per-group streak, group-scoped check-ins,
+TZ-aware boundaries, FluentValidation, `scoring_snapshot` shape,
+`group_configs` table, weekly-mode schema readiness) are captured
+in `docs/adr/0005-check-in-and-streak.md`.
+Phases 6–25 still reference the old stack in their plan/spec/tasks:
 
 | Old (Elixir/Phoenix)                       | New (C# / ASP.NET Core)                                     |
 |--------------------------------------------|-------------------------------------------------------------|
@@ -86,9 +89,20 @@ first PR.
   - 122 tests total in `apps/api.Tests`, FsCheck property tests for
     the arithmetic invariants.
 
-- 📋 **Phase 5 — Check-in (no media)**
-  - `POST /check_ins` + minimal mobile screen.
-  - Wires the XP engine end-to-end for the first time.
+- 🛠️ **Phase 5 — Check-in (no media)**
+  `specs/005-checkin-no-media/` — shipped on branch
+  `XPK-16/felpa-checkin` (commits `f37136f`, `bed7d23`, `c9463c7`,
+  `c340c34`, `3c152e3`, `ad1732b`, `c9da6a6`, `931b158`, `1443161`,
+  this one). See ADR-0005.
+  - `check_ins` + `group_configs` tables. Per-group streak derived
+    on demand (no cache), TZ-aware via `AppUser.TimeZone`.
+  - Endpoints: `POST /check_ins`, `GET /check_ins`,
+    `GET /groups/{groupId}/categories` — auth-gated,
+    FluentValidation on writes, cursor-paginated reads.
+  - Mobile: `/checkin` screen with `<CheckinForm />` (react-hook-form
+    + zod), category picker atom, level-up overlay, profile refresh
+    via `useMe` cache invalidation. Copy in pt-BR.
+  - 214 tests total (177 api + 37 mobile).
 
 - 📋 **Phase 6 — Check-in media**
   - Multiple photo/video uploads per check-in.
@@ -126,10 +140,25 @@ first PR.
 
 ### Block D — Cosmetics catalog & first achievements
 
-- 📋 **Phase 10 — Profile customization: avatar, banner, frame**
+- 📋 **Phase 10 — Profile customization: avatar, frame, background**
   (from `ideas.md` §5)
   - Storage for cosmetic assets (static + animated per §8 policy).
-  - Profile page shows avatar with frame + banner behind.
+  - **Background is the profile signature** — replaces the default
+    starfield atrium on the user's profile page (and only that page).
+    Not a top strip / banner. Options include the existing
+    starfield, the WebGL `LightningBackground` atom (color-tunable
+    via hue), static images (Cloudinary-hosted), and future
+    animated shaders. Picking someone else's profile view swaps to
+    THEIR background — a visual flex.
+  - Profile page shows avatar with frame + user's active
+    background behind everything.
+  - `AppUser` gains an active-cosmetic reference set
+    (`active_avatar_id`, `active_frame_id`, `active_background_id`
+    — nullable FKs to a `cosmetics` catalog table). Config for
+    generated backgrounds (e.g. `LightningBackground` hue / speed
+    / intensity) lives in a JSONB `background_config` on the
+    cosmetic row, so the same "lightning" cosmetic can ship in
+    multiple colorways without duplicating asset rows.
   - Unlock system stub (everything unlocked for MVP; real unlock
     rules land in later achievements phases).
 
@@ -234,7 +263,15 @@ first PR.
 
 - 📋 **Phase 23 — Exploration / locations** (from `ideas.md` §3)
   - Gym database source (question in `ideas.md` §3).
-  - Location-tied check-ins and challenges.
+  - **Optional `location_id` on check-in payload** — user can log
+    where they trained; leaving it blank works exactly like today.
+  - **Display-only on profile.** First visit to a location upserts
+    into `visited_locations` (composite PK on `user_id, location_id`
+    so re-visits dedup); profile shows the collection. **No XP
+    impact, no leaderboard skew** — exploration reads as a
+    personal passport, not a farmable score. Rationale in
+    `docs/adr/0005-check-in-and-streak.md`.
+  - Location-based challenges (Phase 15+ extension).
   - Regional leaderboards feed back into Phase 14 rankings
     (regional scope).
 

@@ -22,6 +22,14 @@ public interface IProgressionService
         string slug,
         CancellationToken ct = default);
 
+    Task<Category?> GetCategoryByIdAsync(
+        Guid categoryId,
+        CancellationToken ct = default);
+
+    Task<XpRule?> GetRuleAsync(
+        Guid ruleId,
+        CancellationToken ct = default);
+
     int ComputeXp(XpRule rule);
 
     int XpForLevel(int level);

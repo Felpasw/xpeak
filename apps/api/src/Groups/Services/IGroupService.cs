@@ -13,4 +13,11 @@ public interface IGroupService
     /// partially-failed register.
     /// </summary>
     Task AddUserToGlobalAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns true when the user has a membership row for the given
+    /// group. Used by the check-in endpoint to reject writes against
+    /// categories in groups the caller doesn't belong to.
+    /// </summary>
+    Task<bool> IsMemberAsync(Guid userId, Guid groupId, CancellationToken ct = default);
 }

@@ -28,4 +28,9 @@ public sealed class CategoryRepository(AppDbContext db) : ICategoryRepository
             .AsNoTracking()
             .SingleOrDefaultAsync(c => c.GroupId == groupId && c.Slug == slug, ct);
     }
+
+    public Task<Category?> GetByIdAsync(Guid categoryId, CancellationToken ct = default) =>
+        db.Categories
+            .AsNoTracking()
+            .SingleOrDefaultAsync(c => c.Id == categoryId, ct);
 }

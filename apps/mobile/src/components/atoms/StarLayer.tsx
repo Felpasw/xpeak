@@ -41,7 +41,10 @@ export function StarLayer({
             data-slot="star-layer"
             animate={{ y: [0, -2000] }}
             transition={transition}
-            className={cn('absolute top-0 left-0 w-full h-[2000px]', className)}
+            className={cn(
+                'pointer-events-none absolute top-0 left-0 w-full h-[2000px]',
+                className,
+            )}
             {...props}
         >
             <div
