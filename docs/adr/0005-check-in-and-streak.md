@@ -274,6 +274,17 @@ stable, well-maintained.
 - **Phase 14 (rankings)** — leans on the
   `(group_id, performed_at DESC)` index shipped in T-005-01 for
   the leaderboard queries.
+- **Phase 23 (exploration / locations)** — display-only, never
+  XP. Optional `location_id` on the check-in payload (nullable
+  FK on `check_ins`); when present the check-in service upserts
+  into a `visited_locations` (`user_id`, `location_id`,
+  `first_visited_at`) table, dedup by composite PK so subsequent
+  visits to the same place don't create a new profile entry.
+  Profile surfaces the collection ("visitou 12 academias em 3
+  cidades"). Nothing touches `users.xp`, `scoring_snapshot`,
+  streaks or group rankings — the XP economy stays purely about
+  training effort, and gym exploration reads as a personal
+  passport instead of a farmable score.
 
 **Trade-offs accepted:**
 

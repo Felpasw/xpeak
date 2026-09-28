@@ -248,7 +248,15 @@ first PR.
 
 - 📋 **Phase 23 — Exploration / locations** (from `ideas.md` §3)
   - Gym database source (question in `ideas.md` §3).
-  - Location-tied check-ins and challenges.
+  - **Optional `location_id` on check-in payload** — user can log
+    where they trained; leaving it blank works exactly like today.
+  - **Display-only on profile.** First visit to a location upserts
+    into `visited_locations` (composite PK on `user_id, location_id`
+    so re-visits dedup); profile shows the collection. **No XP
+    impact, no leaderboard skew** — exploration reads as a
+    personal passport, not a farmable score. Rationale in
+    `docs/adr/0005-check-in-and-streak.md`.
+  - Location-based challenges (Phase 15+ extension).
   - Regional leaderboards feed back into Phase 14 rankings
     (regional scope).
 
