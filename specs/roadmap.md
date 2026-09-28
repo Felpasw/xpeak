@@ -140,10 +140,25 @@ first PR.
 
 ### Block D — Cosmetics catalog & first achievements
 
-- 📋 **Phase 10 — Profile customization: avatar, banner, frame**
+- 📋 **Phase 10 — Profile customization: avatar, frame, background**
   (from `ideas.md` §5)
   - Storage for cosmetic assets (static + animated per §8 policy).
-  - Profile page shows avatar with frame + banner behind.
+  - **Background is the profile signature** — replaces the default
+    starfield atrium on the user's profile page (and only that page).
+    Not a top strip / banner. Options include the existing
+    starfield, the WebGL `LightningBackground` atom (color-tunable
+    via hue), static images (Cloudinary-hosted), and future
+    animated shaders. Picking someone else's profile view swaps to
+    THEIR background — a visual flex.
+  - Profile page shows avatar with frame + user's active
+    background behind everything.
+  - `AppUser` gains an active-cosmetic reference set
+    (`active_avatar_id`, `active_frame_id`, `active_background_id`
+    — nullable FKs to a `cosmetics` catalog table). Config for
+    generated backgrounds (e.g. `LightningBackground` hue / speed
+    / intensity) lives in a JSONB `background_config` on the
+    cosmetic row, so the same "lightning" cosmetic can ship in
+    multiple colorways without duplicating asset rows.
   - Unlock system stub (everything unlocked for MVP; real unlock
     rules land in later achievements phases).
 

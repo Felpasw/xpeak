@@ -27,14 +27,8 @@ export default function ProfilePage() {
     const initials = user.username.slice(0, 2).toUpperCase();
 
     return (
-        <main className="flex flex-1 flex-col pb-48">
-            <div className="relative h-40 w-full overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-sky-500 via-sky-800 to-zinc-950" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,_rgba(125,211,252,0.45),_transparent_60%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_100%,_rgba(2,132,199,0.5),_transparent_60%)]" />
-            </div>
-
-            <div className="relative -mt-16 flex flex-col items-center px-6">
+        <main className="flex flex-1 flex-col pt-12 pb-48">
+            <div className="flex flex-col items-center px-6">
                 {user.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
