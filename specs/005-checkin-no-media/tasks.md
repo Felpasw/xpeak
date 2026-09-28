@@ -14,7 +14,7 @@
 
 ## Section A — Schema + user timezone + group configs
 
-- [ ] **T-005-01 `[T][S]`** — `check_ins` + `group_configs` +
+- [x] ✅ commit `bed7d23` **T-005-01 `[T][S]`** — `check_ins` + `group_configs` +
   `users.time_zone`
   - Failing tests
     (`apps/api.Tests/CheckIns/CheckInPersistenceTests.cs`,
@@ -37,7 +37,7 @@
 
 ## Section B — Group services extension
 
-- [ ] **T-005-02 `[T][S]`** — `IGroupService.IsMemberAsync` +
+- [x] ✅ commit `c9463c7` **T-005-02 `[T][S]`** — `IGroupService.IsMemberAsync` +
   `IGroupConfigService`
   - Failing test (`GroupConfigTests.cs`): `IsMemberAsync` returns
     true for a user in the group, false otherwise;
@@ -52,7 +52,7 @@
 
 ## Section C — Progression service extension
 
-- [ ] **T-005-03 `[T][S]`** — `IProgressionService.GetCategoryByIdAsync`
+- [x] ✅ commit `c340c34` **T-005-03 `[T][S]`** — `IProgressionService.GetCategoryByIdAsync`
   + `GetRuleAsync`
   - Failing test (`apps/api.Tests/Progression/ProgressionServiceTests.cs`
     extended): both methods return the seeded rows; return `null`
@@ -64,7 +64,7 @@
 
 ## Section D — Streak calculator (pure) + streak service (derived)
 
-- [ ] **T-005-04 `[T][P]`** — `StreakCalculator` (pure static)
+- [x] ✅ commit `3c152e3` **T-005-04 `[T][P]`** — `StreakCalculator` (pure static)
   - Failing test (`apps/api.Tests/CheckIns/StreakCalculatorTests.cs`):
     empty list, single date matching `asOf`, N consecutive back
     from `asOf`, gap resets current, longest preserved, non-daily
@@ -74,7 +74,7 @@
     `spec.md` §4.3.
   - Green.
 
-- [ ] **T-005-05 `[T][S]`** — `IStreakService` + `StreakService`
+- [x] ✅ commit `3c152e3` **T-005-05 `[T][S]`** — `IStreakService` + `StreakService`
   - Depends on T-005-01 (needs `CheckIns` table) + T-005-02
     (needs `IGroupConfigService`).
   - Failing test
@@ -87,7 +87,7 @@
 
 ## Section E — Check-in orchestration
 
-- [ ] **T-005-06 `[T][S]`** — `ICheckInService.CreateAsync`
+- [x] ✅ commit `ad1732b` **T-005-06 `[T][S]`** — `ICheckInService.CreateAsync`
   - Depends on T-005-01..05.
   - Failing test
     (`apps/api.Tests/CheckIns/CheckInServiceTests.cs`):
@@ -103,7 +103,7 @@
     `Program.cs` (`.AddCheckIns()`).
   - Green.
 
-- [ ] **T-005-07 `[T][S]`** — `ICheckInRepository` +
+- [x] ✅ commit `ad1732b` **T-005-07 `[T][S]`** — `ICheckInRepository` +
   `CheckInRepository` (list with cursor)
   - Depends on T-005-01.
   - Failing test
@@ -116,7 +116,7 @@
 
 ## Section F — HTTP endpoints
 
-- [ ] **T-005-08 `[T][S]`** — `POST /check_ins`
+- [x] ✅ commit `c9da6a6` **T-005-08 `[T][S]`** — `POST /check_ins`
   - Depends on T-005-06.
   - Failing test
     (`apps/api.Tests/CheckIns/CreateCheckInEndpointTests.cs`):
@@ -128,7 +128,7 @@
     + DTOs; wire in `CheckInsModule.UseCheckIns()`.
   - Green.
 
-- [ ] **T-005-09 `[T][S]`** — `GET /check_ins`
+- [x] ✅ commit `c9da6a6` + `931b158` **T-005-09 `[T][S]`** — `GET /check_ins`
   - Depends on T-005-07.
   - Failing test
     (`apps/api.Tests/CheckIns/ListCheckInsEndpointTests.cs`):
@@ -140,7 +140,7 @@
 
 ## Section G — Mobile
 
-- [ ] **T-005-10 `[T][S]`** — Check-in API client
+- [x] ✅ commit `1443161` **T-005-10 `[T][S]`** — Check-in API client
   - Add
     `apps/mobile/src/services/interfaces/checkin.interface.ts`,
     `apps/mobile/src/services/checkin.service.ts`,
@@ -149,7 +149,7 @@
     invalidation triggers on success.
   - Green.
 
-- [ ] **T-005-11 `[T][S]`** — Check-in screen
+- [x] ✅ commit `1443161` **T-005-11 `[T][S]`** — Check-in screen
   - Depends on T-005-10.
   - Failing spec
     (`apps/mobile/test/app/(app)/checkin/page.spec.tsx`): renders
@@ -161,7 +161,7 @@
     `apps/mobile/src/components/organisms/CheckinForm.tsx`.
   - Green.
 
-- [ ] **T-005-12 `[T][S]`** — Level-up overlay
+- [x] ✅ commit `1443161` **T-005-12 `[T][S]`** — Level-up overlay
   - Depends on T-005-11.
   - Failing spec: overlay renders when the response has
     `leveled_up === true`; hides otherwise; dismisses on tap.
@@ -170,7 +170,7 @@
     into check-in success flow.
   - Green.
 
-- [ ] **T-005-13 `[T][P]`** — Profile refresh
+- [x] ✅ commit `1443161` **T-005-13 `[T][P]`** — Profile refresh
   - Depends on T-005-11.
   - Spec: after check-in mutation, `useMe` cache is invalidated;
     profile shows fresh `xp` / `level` on next render.
@@ -179,7 +179,7 @@
 
 ## Section H — Wrap-up
 
-- [ ] **T-005-14 `[P]`** — ADR `docs/adr/0005-check-in-and-streak.md`
+- [x] **T-005-14 `[P]`** (this commit) — ADR `docs/adr/0005-check-in-and-streak.md`
   - Derived-not-cached streak, per-group scope.
   - Group scoping of check-ins (denormalized `group_id`).
   - `scoring_snapshot` structured shape (forward-compat with
@@ -191,7 +191,7 @@
   - Streak calc supporting only `"daily"` in Phase 5; weekly path
     schema-ready.
 
-- [ ] **T-005-15 `[S]`** — Phase close
+- [x] **T-005-15 `[S]`** (this commit) — Phase close
   - `dotnet test apps/api.Tests` green.
   - `pnpm --filter @xpeak/mobile test` green.
   - `dotnet format --verify-no-changes` clean on both projects.
@@ -222,18 +222,23 @@ A ──▶ B ──▶ D ──▶ E ──▶ F ──▶ G ──▶ H
 
 Branch: `XPK-16/felpa-checkin`.
 
-1. `feat(check-ins): add schema, user timezone and group configs`
-   — T-005-01.
-2. `feat(groups): extend groups module with membership and config services`
-   — T-005-02.
-3. `feat(progression): extend progression service with by-id lookups`
-   — T-005-03.
-4. `feat(check-ins): add streak calculator and streak service`
-   — T-005-04, T-005-05.
-5. `feat(check-ins): add check-in service and repository`
-   — T-005-06, T-005-07.
-6. `feat(check-ins): add http endpoints`
-   — T-005-08, T-005-09.
-7. `feat(mobile): add check-in screen and level-up overlay`
-   — T-005-10 → T-005-13.
-8. `docs(adr): check-in and streak` — T-005-14 + T-005-15.
+1. ✅ `docs(spec): rewrite phase 5 (check-in) for the C# stack`
+   (`f37136f`) — spec rewrite pre-work.
+2. ✅ `feat(check-ins): add schema, user timezone and group configs`
+   (`bed7d23`) — T-005-01.
+3. ✅ `feat(groups): extend group service with membership and config readers`
+   (`c9463c7`) — T-005-02.
+4. ✅ `feat(progression): expose category and rule lookups by id`
+   (`c340c34`) — T-005-03.
+5. ✅ `feat(check-ins): add streak calculator and streak service`
+   (`3c152e3`) — T-005-04, T-005-05.
+6. ✅ `feat(check-ins): add transactional service and cursor-paginated repository`
+   (`ad1732b`) — T-005-06, T-005-07.
+7. ✅ `feat(check-ins): add http endpoints with fluent validation`
+   (`c9da6a6`) — T-005-08.
+8. ✅ `feat(progression): add list group categories endpoint`
+   (`931b158`) — T-005-09 (backend half, extracted for cohesion).
+9. ✅ `feat(mobile): add check-in screen, level-up overlay and cache refresh`
+   (`1443161`) — T-005-10 → T-005-13.
+10. ✅ `docs(adr): check-in and streak` — T-005-14 + T-005-15
+    (this commit).
