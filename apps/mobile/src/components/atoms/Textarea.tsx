@@ -1,6 +1,6 @@
 'use client';
 
-import type { TextareaHTMLAttributes } from 'react';
+import type { Ref, TextareaHTMLAttributes } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -8,6 +8,7 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
     label: string;
     value: string;
     counter?: boolean;
+    ref?: Ref<HTMLTextAreaElement>;
 }
 
 const REMAINING_SUFFIX = 'restantes';
@@ -33,6 +34,7 @@ export function Textarea({
     value,
     counter = false,
     maxLength,
+    ref,
     ...rest
 }: TextareaProps) {
     return (
@@ -45,6 +47,7 @@ export function Textarea({
             </div>
             <textarea
                 {...rest}
+                ref={ref}
                 value={value}
                 maxLength={maxLength}
                 aria-label={rest['aria-label'] ?? label}

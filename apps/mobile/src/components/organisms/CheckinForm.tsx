@@ -23,7 +23,7 @@ export function CheckinForm() {
 
     return (
         <>
-            <form onSubmit={onSubmit} noValidate className="flex flex-1 flex-col gap-6 px-6 py-8">
+            <form onSubmit={onSubmit} noValidate className="flex flex-1 flex-col gap-6 px-6 pt-8 pb-48">
                 <header className="flex flex-col gap-1">
                     <h1 className="text-2xl font-bold tracking-tight text-zinc-100">{HEADER}</h1>
                     <p className="text-sm text-zinc-400">{HEADER_DESCRIPTION}</p>

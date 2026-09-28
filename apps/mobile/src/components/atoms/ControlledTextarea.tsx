@@ -33,10 +33,13 @@ export function ControlledTextarea<T extends FieldValues>({
                 <div className="space-y-2">
                     <Textarea
                         {...rest}
-                        {...field}
                         label={label}
                         counter={counter}
                         value={(field.value as string | undefined) ?? ''}
+                        onChange={(event) => field.onChange(event.target.value)}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                         aria-invalid={Boolean(fieldState.error)}
                     />
                     {fieldState.error ? (
