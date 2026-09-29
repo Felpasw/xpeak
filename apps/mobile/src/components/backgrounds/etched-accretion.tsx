@@ -714,6 +714,7 @@ export default function EtchedAccretion({
     // ---- only spend the GPU while it is on screen ---------------------------
     let visible = true
     const io = new IntersectionObserver(([entry]) => {
+      if (!entry) return
       visible = entry.isIntersecting
       if (visible && !reduced && !raf) {
         last = performance.now()
