@@ -8,6 +8,7 @@ using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
 using Xpeak.Api.Groups;
 using Xpeak.Api.Groups.Entities;
+using Xpeak.Api.Media.Entities;
 using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Users;
 
@@ -38,6 +39,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Category> Categories => Set<Category>();
 
     public DbSet<CheckIn> CheckIns => Set<CheckIn>();
+
+    public DbSet<CheckInMedia> CheckInMedia => Set<CheckInMedia>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -248,6 +251,56 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             b.HasIndex(c => new { c.GroupId, c.PerformedAt })
                 .HasDatabaseName("ix_check_ins_group_performed_desc")
                 .IsDescending(false, true);
+        });
+
+        modelBuilder.Entity<CheckInMedia>(b =>
+        {
+            b.ToTable("check_in_media", t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_check_in_media_kind",
+                    "kind IN ('photo', 'video')");
+                t.HasCheckConstraint(
+                    "ck_check_in_media_position_non_negative",
+                    "position >= 0");
+                t.HasCheckConstraint(
+                    "ck_check_in_media_storage_key_not_blank",
+                    "length(trim(storage_key)) > 0");
+                t.HasCheckConstraint(
+                    "ck_check_in_media_dimensions_non_negative",
+                    "(width IS NULL OR width > 0) AND (height IS NULL OR height > 0)");
+                t.HasCheckConstraint(
+                    "ck_check_in_media_duration_non_negative",
+                    "duration_seconds IS NULL OR duration_seconds > 0");
+            });
+
+            b.HasKey(m => m.Id);
+            b.Property(m => m.Id).HasColumnName("id");
+            b.Property(m => m.CheckInId).HasColumnName("check_in_id");
+            b.Property(m => m.Kind)
+                .HasColumnName("kind")
+                .HasMaxLength(16)
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<MediaKind>(v, true));
+            b.Property(m => m.StorageKey).HasColumnName("storage_key");
+            b.Property(m => m.Width).HasColumnName("width");
+            b.Property(m => m.Height).HasColumnName("height");
+            b.Property(m => m.DurationSeconds).HasColumnName("duration_seconds");
+            b.Property(m => m.Position).HasColumnName("position").HasDefaultValue(0);
+            b.Property(m => m.CreatedAt).HasColumnName("created_at");
+            b.Property(m => m.UpdatedAt).HasColumnName("updated_at");
+
+            b.HasOne<CheckIn>()
+                .WithMany()
+                .HasForeignKey(m => m.CheckInId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(m => m.StorageKey)
+                .IsUnique()
+                .HasDatabaseName("ux_check_in_media_storage_key");
+            b.HasIndex(m => new { m.CheckInId, m.Position })
+                .HasDatabaseName("ix_check_in_media_check_in_position");
         });
     }
 }
