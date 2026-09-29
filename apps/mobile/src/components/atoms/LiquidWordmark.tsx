@@ -7,7 +7,12 @@ interface LiquidWordmarkProps {
     width?: number;
     className?: string;
     align?: 'middle' | 'start';
+    viewBoxWidth?: number;
 }
+
+const GLYPH_ADVANCE = 48;
+const MIN_VIEWBOX_START = 240;
+const MIN_VIEWBOX_MIDDLE = 400;
 
 const prefersReducedMotion = (): boolean =>
     typeof window !== 'undefined' &&
@@ -19,14 +24,17 @@ export function LiquidWordmark({
     width = 300,
     className,
     align = 'middle',
+    viewBoxWidth,
 }: LiquidWordmarkProps) {
     const uid = useId().replace(/:/g, '');
     const gradId = `lw-grad-${uid}`;
     const filterId = `lw-water-${uid}`;
     const animate = !prefersReducedMotion();
 
-    const viewBox = align === 'start' ? '0 0 240 108' : '0 0 400 108';
-    const textX = align === 'start' ? 0 : 200;
+    const minWidth = align === 'start' ? MIN_VIEWBOX_START : MIN_VIEWBOX_MIDDLE;
+    const computedWidth = viewBoxWidth ?? Math.max(minWidth, text.length * GLYPH_ADVANCE);
+    const viewBox = `0 0 ${computedWidth} 108`;
+    const textX = align === 'start' ? 0 : computedWidth / 2;
     const textAnchor = align === 'start' ? 'start' : 'middle';
 
     return (
