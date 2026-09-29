@@ -7,6 +7,7 @@ using Xpeak.Api.CheckIns;
 using Xpeak.Api.Endpoints;
 using Xpeak.Api.Groups;
 using Xpeak.Api.Infrastructure;
+using Xpeak.Api.Media;
 using Xpeak.Api.Progression;
 using Xpeak.Api.Users;
 
@@ -20,6 +21,7 @@ builder.Services
     .AddGroups()
     .AddProgression()
     .AddCheckIns()
+    .AddMedia(builder.Configuration)
     .AddAuthCore(builder.Configuration)
     .AddPasswordAuth()
     .AddGoogleAuth(builder.Configuration);
