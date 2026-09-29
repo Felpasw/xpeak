@@ -201,6 +201,20 @@ first PR.
   - Notification records for social events (push delivery lives in
     Phase 23).
 
+- 📋 **Phase 26 — Check-in reactions & comments** (from `ideas.md`
+  §2.5.3 — "React (emoji), Comment")
+  - `check_in_reactions` + `check_in_comments` tables; fixed emoji
+    palette (`👍 💪 🔥 🎯 🎉`) for MVP, comment cap 280 chars.
+  - Idempotent toggle for reactions, soft-delete for comments
+    (author or check-in owner).
+  - Visibility gated by Phase 12 friendship graph.
+  - MediatR events feed into Phase 13 (timeline) and Phase 24
+    (push routing).
+  - Batched into feed responses so the strip and comment badge
+    render without N+1.
+  - Blocked by Phases 5, 12 and 13. See
+    `specs/026-checkin-reactions-and-comments/`.
+
 - 📋 **Phase 14 — Global rankings & discovery** (from `ideas.md`
   §2.6)
   - Multiple leaderboards: all-time XP, weekly, monthly, longest
