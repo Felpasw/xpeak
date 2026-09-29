@@ -5,10 +5,7 @@ import { useState } from 'react';
 
 import { DiscreteTabs } from '@/components/atoms/DiscreteTabs';
 import type { DiscreteTab } from '@/components/atoms/DiscreteTabs';
-import { PageHeader } from '@/components/atoms/PageHeader';
 import authHooks from '@/hooks/useAuth';
-
-const HEADER = 'Perfil';
 
 const TABS: DiscreteTab[] = [
     { id: 'stats', title: 'Stats', Icon: BarChart3 },
@@ -30,10 +27,7 @@ export default function ProfilePage() {
     const initials = user.username.slice(0, 2).toUpperCase();
 
     return (
-        <main className="flex flex-1 flex-col gap-8 pt-10 pb-48">
-            <div className="px-6">
-                <PageHeader title={HEADER} />
-            </div>
+        <main className="flex flex-1 flex-col pt-12 pb-48">
             <div className="flex flex-col items-center px-6">
                 {user.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
