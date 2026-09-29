@@ -1,14 +1,20 @@
 import { Trophy } from 'lucide-react';
 
 import { ComingSoon } from '@/components/atoms/ComingSoon';
+import { PageHeader } from '@/components/atoms/PageHeader';
 
-const TITLE = 'Leaderboard';
-const DESCRIPTION = 'See how you stack up against players worldwide.';
+const TITLE = 'Ranking';
+const DESCRIPTION = 'Veja como você se posiciona contra o mundo.';
 
 export const metadata = {
-    title: 'Leaderboard · Xpeak',
+    title: 'Ranking · Xpeak',
 };
 
 export default function LeaderboardPage() {
-    return <ComingSoon title={TITLE} Icon={Trophy} description={DESCRIPTION} />;
+    return (
+        <main className="flex flex-1 flex-col gap-8 px-6 pt-10 pb-48">
+            <PageHeader title={TITLE} description={DESCRIPTION} />
+            <ComingSoon Icon={Trophy} />
+        </main>
+    );
 }

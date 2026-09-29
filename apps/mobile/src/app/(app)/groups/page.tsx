@@ -1,14 +1,20 @@
 import { Users } from 'lucide-react';
 
 import { ComingSoon } from '@/components/atoms/ComingSoon';
+import { PageHeader } from '@/components/atoms/PageHeader';
 
-const TITLE = 'Groups';
-const DESCRIPTION = 'Train together. Push each other. Level up as a crew.';
+const TITLE = 'Grupos';
+const DESCRIPTION = 'Treine junto, empurre o parça, evolua em grupo.';
 
 export const metadata = {
-    title: 'Groups · Xpeak',
+    title: 'Grupos · Xpeak',
 };
 
 export default function GroupsPage() {
-    return <ComingSoon title={TITLE} Icon={Users} description={DESCRIPTION} />;
+    return (
+        <main className="flex flex-1 flex-col gap-8 px-6 pt-10 pb-48">
+            <PageHeader title={TITLE} description={DESCRIPTION} />
+            <ComingSoon Icon={Users} />
+        </main>
+    );
 }

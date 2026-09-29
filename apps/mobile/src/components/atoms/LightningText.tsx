@@ -332,6 +332,12 @@ interface LightningTextProps {
     restSize?: number;
     width?: number;
     height?: number;
+    /**
+     * When width/height are set, the canvas is drawn `overshoot` times
+     * larger than the wrapper (centered on it, with overflow visible),
+     * so thunder segments can extend past the text bounds.
+     */
+    overshoot?: number;
     subtitle?: string;
     className?: string;
     href?: string;
@@ -345,11 +351,15 @@ export function LightningText({
     restSize,
     width,
     height,
+    overshoot = 3,
     subtitle,
     className,
     href,
     ariaLabel,
 }: LightningTextProps) {
+    const isFixedSize = width !== undefined && height !== undefined;
+    const canvasWidth = isFixedSize ? width * overshoot : width;
+    const canvasHeight = isFixedSize ? height * overshoot : height;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const animationRef = useRef<number | null>(null);
     const thunderRef = useRef<Thunder[]>([]);
@@ -385,8 +395,8 @@ export function LightningText({
         };
 
         const resolveSize = () => ({
-            w: width ?? window.innerWidth,
-            h: height ?? window.innerHeight,
+            w: canvasWidth ?? window.innerWidth,
+            h: canvasHeight ?? window.innerHeight,
         });
 
         const init = (w: number, h: number) => {
@@ -420,7 +430,6 @@ export function LightningText({
 
         start();
 
-        const isFixedSize = width !== undefined && height !== undefined;
         const handleResize = () => {
             const { w, h } = resolveSize();
             init(w, h);
@@ -437,7 +446,7 @@ export function LightningText({
                 window.removeEventListener('resize', handleResize);
             }
         };
-    }, [emph, rest, emphSize, restSize, width, height]);
+    }, [emph, rest, emphSize, restSize, canvasWidth, canvasHeight, isFixedSize]);
 
     const handleCanvasClick = (e: MouseEvent<HTMLCanvasElement>) => {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -447,15 +456,17 @@ export function LightningText({
         particlesRef.current.push(new Particles({ x, y }));
     };
 
-    const defaultWrapperClass =
-        width !== undefined && height !== undefined
-            ? 'relative overflow-hidden'
-            : 'relative w-full h-screen overflow-hidden';
+    const defaultWrapperClass = isFixedSize
+        ? 'relative overflow-visible'
+        : 'relative w-full h-screen overflow-hidden';
     const wrapperClass = className ?? defaultWrapperClass;
-    const wrapperStyle =
-        width !== undefined && height !== undefined
-            ? { width, height }
-            : undefined;
+    const wrapperStyle = isFixedSize ? { width, height } : undefined;
+    const canvasClass = isFixedSize
+        ? 'pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
+        : 'block w-full h-full';
+    const canvasStyle = isFixedSize
+        ? { width: canvasWidth, height: canvasHeight }
+        : undefined;
     const subtitleNode = subtitle ? (
         <p className="pointer-events-none absolute left-1/2 top-[calc(50%+180px)] z-10 -translate-x-1/2 whitespace-nowrap px-4 text-center font-mono text-[11px] uppercase tracking-[0.35em] text-white/50">
             {subtitle}
@@ -472,7 +483,8 @@ export function LightningText({
             >
                 <canvas
                     ref={canvasRef}
-                    className="block w-full h-full cursor-pointer"
+                    className={`${canvasClass} cursor-pointer`}
+                    style={canvasStyle}
                 />
                 {subtitleNode}
             </Link>
@@ -483,8 +495,9 @@ export function LightningText({
         <div className={wrapperClass} style={wrapperStyle}>
             <canvas
                 ref={canvasRef}
-                onClick={handleCanvasClick}
-                className="block w-full h-full cursor-crosshair"
+                onClick={isFixedSize ? undefined : handleCanvasClick}
+                className={`${canvasClass}${isFixedSize ? '' : ' cursor-crosshair'}`}
+                style={canvasStyle}
             />
             {subtitleNode}
         </div>
