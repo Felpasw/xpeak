@@ -1,13 +1,7 @@
 # Phase 20 — Trophies (Customizable Artwork)
 
-> Status: **planning only**.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Status: **planning only**. Companion to `spec.md` and `tasks.md`.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -52,8 +46,8 @@ challenge owner.
 
 ## 4. Artifacts
 
-- Migrations: `create_trophies.exs`, `create_user_trophies.exs`,
-  `add_custom_trophy_id_to_challenges.exs`.
+- Migrations: `Migrations/YYYYMMDDHHmmss_Createtrophies.cs`, `Migrations/YYYYMMDDHHmmss_Createuser_trophies.cs`,
+  `Migrations/YYYYMMDDHHmmss_Addcustom_trophy_id_to_challenges.cs`.
 - `lib/xpeak/achievements/trophy.ex`, `user_trophy.ex`,
   `trophy_awarder.ex`.
 - Extend challenge create flow to accept trophy upload / catalog

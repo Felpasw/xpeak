@@ -19,11 +19,11 @@
 
 - [ ] **T-009-03 `[T][S]`** — `Xpeak.Config` read API + ETS cache
   - Failing tests: `get_number/1`, `get_string/1`, `get_json/1`.
-  - `Xpeak.Config.CacheWarmer` GenServer.
+  - `Xpeak.Config.CacheWarmer` BackgroundService.
   - Add to supervision tree.
   - Green.
 
-- [ ] **T-009-04 `[T][S]`** — `Xpeak.Config.put/3` + PubSub
+- [ ] **T-009-04 `[T][S]`** — `ConfigService.PutAsync` + PubSub
   - Failing tests: write persists, publishes, cache updates.
   - Enforce min/max.
   - Write to audit log.

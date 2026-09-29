@@ -23,7 +23,7 @@
   - Failing tests.
   - Green.
 
-- [ ] **T-016-04 `[T][S]`** — Expiration job (Oban)
+- [ ] **T-016-04 `[T][S]`** — Expiration job (Hangfire)
   - Failing tests.
   - Green.
 

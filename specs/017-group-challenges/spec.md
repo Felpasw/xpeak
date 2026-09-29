@@ -17,7 +17,7 @@ Constraint: exactly one of `invitee_id` or `code` is set.
 
 ## 2. Context additions
 
-```elixir
+```csharp
 def create_share_link(challenge, opts) do
   # opts: max_uses, expires_at
   # generates ULID, inserts invitation with code, invitee_id nil

@@ -27,34 +27,41 @@ Indexes: `check_in_id`, `storage_key` unique.
 
 ## 3. Storage layer
 
-### 3.1. `Xpeak.Storage` behaviour
+### 3.1. `IMediaStorage` interface
 
-```elixir
-defmodule Xpeak.Storage do
-  @callback presigned_put_url(key :: String.t(), opts :: keyword()) ::
-    {:ok, url :: String.t()} | {:error, term()}
+```csharp
+public interface IMediaStorage
+{
+    Task<Result<PresignedUpload>> PresignedPutUrlAsync(
+        string key,
+        PresignOptions options,
+        CancellationToken ct);
 
-  @callback presigned_get_url(key :: String.t(), opts :: keyword()) ::
-    {:ok, url :: String.t()} | {:error, term()}
+    Task<Result<string>> PresignedGetUrlAsync(
+        string key,
+        PresignOptions options,
+        CancellationToken ct);
 
-  @callback delete(key :: String.t()) :: :ok | {:error, term()}
-end
+    Task<Result> DeleteAsync(string key, CancellationToken ct);
+}
 ```
 
-### 3.2. `S3Adapter`
+### 3.2. `CloudinaryMediaStorage`
 
-- Config from `runtime.exs`: `AWS_ACCESS_KEY_ID`,
-  `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `MEDIA_BUCKET`,
-  `S3_ENDPOINT_URL` (for R2/MinIO compatibility).
-- Uses `ex_aws` + `ex_aws_s3`.
+- Config from `appsettings.json` (`Cloudinary:CloudName`,
+  `Cloudinary:ApiKey`, `Cloudinary:ApiSecret`,
+  `Cloudinary:UploadPreset`) with overrides via env vars using the
+  ASP.NET Core `__`-nested convention.
+- Wraps `CloudinaryDotNet` — `SignUpload(...)` for PUT and
+  `Api.Url.Signed(true)` for GET.
 - TTLs: PUT 10 min, GET 5 min.
 
 ### 3.3. Testing
 
-- `MockAdapter` for tests — returns deterministic fake URLs, records
-  calls.
-- Configured via `config :xpeak, :storage_adapter, MockAdapter` in
-  `test.exs`.
+- `FakeMediaStorage` for tests — returns deterministic fake URLs,
+  records calls.
+- Wired via `IServiceCollection.Replace(...)` in the test host
+  builder (integration tests) or `Moq`/`NSubstitute` (unit tests).
 
 ## 4. Endpoints
 
@@ -115,7 +122,8 @@ a fresh signed GET URL.
   `media_intent_count >= 1`.
 - Alternative: two-step flow. Step 1: `POST /check_ins` returns id.
   Step 2: presign + upload + attach. If step 2 fails, the check-in
-  is soft-deleted after 15 min without media (Oban cron).
+  is soft-deleted after 15 min without media (Hangfire recurring
+  job).
 - Recommended: **two-step** with cron cleanup — simpler for the
   client, safer against half-broken uploads.
 
@@ -156,8 +164,9 @@ a fresh signed GET URL.
 - Ownership: presign/attach as another user → 403.
 - Size cap: over-cap request → 422.
 - Attach with mismatched keys → 422.
-- Cron: Oban job soft-deletes check-ins without media after 15 min
-  (Oban.Testing helpers).
+- Cron: Hangfire recurring job soft-deletes check-ins without media
+  after 15 min (invoked directly against the job class in
+  integration tests, no scheduler round-trip).
 - `POST /check_ins` without media → still creates the record, but a
   `GET /check_ins/{id}` before media attach flags it as pending.
 

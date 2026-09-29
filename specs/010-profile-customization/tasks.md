@@ -13,11 +13,11 @@
   - Green.
 
 - [ ] **T-010-02 `[S]`** — Seed 10 default frames
-  - `priv/repo/seeds/frames.exs`.
+  - `Infrastructure/Seed/framesSeeder.cs`.
 
 ## Section B — Context
 
-- [ ] **T-010-03 `[T][S]`** — `Xpeak.Profile.update_profile/2`
+- [ ] **T-010-03 `[T][S]`** — `ProfileService.UpdateAsync`
   - Failing tests per `spec.md` §4.
   - Implement.
   - Green.

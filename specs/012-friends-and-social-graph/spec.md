@@ -57,7 +57,7 @@ Unique index `(blocker_id, blocked_id)`.
 
 ### 2.2. `Xpeak.Social.Visibility` (pure)
 
-```elixir
+```csharp
 @spec can_see?(viewer :: User.t() | nil, target :: User.t(), field :: atom(), context :: map()) :: boolean()
 ```
 

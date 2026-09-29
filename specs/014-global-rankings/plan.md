@@ -1,13 +1,7 @@
 # Phase 14 — Global Rankings & Discovery
 
-> Status: **planning only**.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Status: **planning only**. Companion to `spec.md` and `tasks.md`.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -27,7 +21,7 @@ public profile viewer from Phase 12 with "Add friend" quick action.
   - Longest streak ever.
   - Per-category XP.
   - Friends-scoped versions (same boards limited to friends).
-- `rankings_snapshots` table + Oban job that computes snapshots.
+- `rankings_snapshots` table + Hangfire job that computes snapshots.
 - Endpoints for each scope with pagination + "my rank".
 - Mobile: rankings tab with scope selector and "add friend" inline
   action.
@@ -43,8 +37,8 @@ public profile viewer from Phase 12 with "Add friend" quick action.
   `check_ins` (for time-bounded scopes) and `activity_events` (for
   weekly/monthly XP delta).
 - **All-time boards** — no snapshot needed; just an indexed query
-  (`ORDER BY xp DESC LIMIT 100`). Cache the top 100 in ETS/Cachex.
-- **Time-bounded boards** — computed by an Oban job:
+  (`ORDER BY xp DESC LIMIT 100`). Cache the top 100 in ETS/IMemoryCache.
+- **Time-bounded boards** — computed by an Hangfire job:
   - Hourly for the current period.
   - Immediately on rollover for the closed period (Sunday 23:59 UTC
     → freeze last-week board).
@@ -55,14 +49,14 @@ public profile viewer from Phase 12 with "Add friend" quick action.
 
 ## 4. Artifacts
 
-- Migrations: `create_rankings_snapshots.exs`,
-  `add_show_in_global_rankings_to_users.exs`.
+- Migrations: `Migrations/YYYYMMDDHHmmss_Createrankings_snapshots.cs`,
+  `Migrations/YYYYMMDDHHmmss_Addshow_in_global_rankings_to_users.cs`.
 - `lib/xpeak/rankings.ex` — read API.
-- `lib/xpeak/rankings/snapshot_job.ex` — Oban worker.
+- `lib/xpeak/rankings/snapshot_job.ex` — Hangfire worker.
 - `lib/xpeak/rankings/scope.ex` — value type + enum.
 - Endpoints: `GET /rankings/:scope`, `GET /rankings/:scope/me`.
 - Mobile: rankings tab with scope selector.
-- Cache layer (Cachex).
+- Cache layer (IMemoryCache).
 
 ## 5. Dependencies
 
@@ -73,8 +67,8 @@ public profile viewer from Phase 12 with "Add friend" quick action.
 
 ## 6. Open questions
 
-1. **Cache backend** — Cachex (in-memory only) or Redis when we
-   introduce it? Cachex works up to a certain scale.
+1. **Cache backend** — IMemoryCache (in-memory only) or Redis when we
+   introduce it? IMemoryCache works up to a certain scale.
 2. **Weekly period start** — ISO week (Mon 00:00 UTC) or Sunday?
    ISO week is default for now.
 3. **Snapshot retention** — 12 months? Forever?

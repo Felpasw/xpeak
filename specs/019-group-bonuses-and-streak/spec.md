@@ -44,20 +44,23 @@ Composite PK: `(group_workout_id, check_in_id)`.
 
 ## 2. Group-workout detector
 
-```elixir
-defmodule Xpeak.Social.GroupWorkoutDetector do
-  @radius_m 100
-  @time_window_min 30
+```csharp
+public sealed class GroupWorkoutDetector(AppDbContext db)
+{
+    private const int RadiusMeters = 100;
+    private static readonly TimeSpan Window = TimeSpan.FromMinutes(30);
 
-  def maybe_attach(check_in) do
-    # If check_in has GPS and user is in ≥1 active group challenge:
-    # For each challenge, find recent (30 min) check-ins from other members
-    # within @radius_m. If ≥ 1 other → create-or-join a group_workout.
-  end
-end
+    public Task<GroupWorkout?> MaybeAttachAsync(CheckIn checkIn, CancellationToken ct)
+    {
+        // If checkIn has GPS and user is in >= 1 active group challenge:
+        // For each challenge, find recent (30 min) check-ins from other
+        // members within RadiusMeters. If >= 1 other → create-or-join
+        // a group_workout row.
+    }
+}
 ```
 
-Called synchronously in `CheckIns.create_check_in/2` after insert.
+Called synchronously in `CheckInService.CreateAsync` after insert.
 
 ## 3. `MultiplierResolver` update
 
@@ -74,7 +77,7 @@ Adds a `group` slot:
 
 ## 4. Group streak updater
 
-`Xpeak.Social.GroupStreakUpdater` (Oban cron, daily 00:15 UTC):
+`Xpeak.Social.GroupStreakUpdater` (Hangfire cron, daily 00:15 UTC):
 
 - For each active group challenge:
   - Count distinct members with a check-in yesterday.

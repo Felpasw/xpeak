@@ -71,7 +71,7 @@ Extensible: `kind` acts as a tag, resolver dispatches per kind.
 
 ### 3.2. `Xpeak.Challenges.ProgressCalculator`
 
-```elixir
+```csharp
 @spec compute(Membership.t(), [CheckIn.t()]) :: %{
   value: number(), target: number(), percent: float(),
   achieved?: boolean(), days_left: non_neg_integer()
@@ -101,7 +101,7 @@ Dispatches on `challenge.win_rule.kind`.
 
 ## 5. Lifecycle
 
-- Oban cron every 15 min:
+- Hangfire cron every 15 min:
   - Transition `upcoming` → `active` when `starts_at` reached.
   - Transition `active` → `completed` if `ProgressCalculator`
     reports `achieved?: true`.

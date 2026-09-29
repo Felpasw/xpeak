@@ -41,7 +41,7 @@
   - Failing test.
   - Green.
 
-- [ ] **T-024-08 `[T][S]`** — `Push.Dispatcher` GenServer
+- [ ] **T-024-08 `[T][S]`** — `Push.Dispatcher` BackgroundService
   - Failing tests: routes by platform, respects preferences, deletes
     invalid tokens.
   - Add to supervision tree.
@@ -49,7 +49,7 @@
 
 ## Section E — Jobs
 
-- [ ] **T-024-09 `[T][S]`** — `StreakAtRiskJob` (Oban cron)
+- [ ] **T-024-09 `[T][S]`** — `StreakAtRiskJob` (Hangfire cron)
   - Failing tests: finds at-risk users, inserts notifications.
   - Green.
 

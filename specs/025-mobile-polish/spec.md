@@ -62,7 +62,7 @@
 
 ## 5. Error reporting
 
-- Sentry SDK on mobile (`@sentry/nextjs`) and on api (`sentry_elixir`).
+- Sentry SDK on mobile (`@sentry/nextjs`) and on api (`Sentry.AspNetCore`).
 - Source maps uploaded during build.
 - Privacy: never send PII (email, media blobs); scrub tokens from
   headers.

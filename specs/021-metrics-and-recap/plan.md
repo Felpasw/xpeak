@@ -1,13 +1,7 @@
 # Phase 21 — Metrics Dashboard & Yearly Recap
 
-> Status: **planning only**.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Status: **planning only**. Companion to `spec.md` and `tasks.md`.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -26,7 +20,7 @@ Two related surfaces:
 - Aggregation queries: totals + time-sliced breakdowns.
 - Streak calendar heatmap data endpoint.
 - Multiplier history breakdown from `multiplier_snapshot` rows.
-- `recaps` table + Oban batch job for yearly recap.
+- `recaps` table + Hangfire batch job for yearly recap.
 - `GET /recaps/:period` endpoint.
 - Mobile: metrics screen on home + full dashboard behind link;
   yearly recap full-screen story viewer.
@@ -46,21 +40,21 @@ Two related surfaces:
     challenges).
   - `friendships` (friends made this year).
 - Precompute expensive rollups (per-day XP, per-category totals,
-  per-week/month totals) via a nightly Oban job into a `metric_daily`
+  per-week/month totals) via a nightly Hangfire job into a `metric_daily`
   materialization table.
-- Recap generation: Oban job iterates all users with ≥ 1 check-in
+- Recap generation: Hangfire job iterates all users with ≥ 1 check-in
   in the period; produces one `recaps` row per user with cached
   payload.
 - Shareable card rendering: backend renders PNG via headless
-  Chromium (Chrome/Playwright) or via a canvas-based Elixir library.
+  Chromium (Chrome/Playwright) or via a canvas-based C# library.
   Decision deferred.
 
 ## 4. Artifacts
 
-- Migrations: `create_metric_daily.exs`, `create_recaps.exs`.
+- Migrations: `Migrations/YYYYMMDDHHmmss_Createmetric_daily.cs`, `Migrations/YYYYMMDDHHmmss_Createrecaps.cs`.
 - `lib/xpeak/metrics.ex` — read API for the dashboard.
-- `lib/xpeak/metrics/rollup_job.ex` (Oban nightly).
-- `lib/xpeak/metrics/recap_generator.ex` (Oban batch on
+- `lib/xpeak/metrics/rollup_job.ex` (Hangfire nightly).
+- `lib/xpeak/metrics/recap_generator.ex` (Hangfire batch on
   rollover/anniversary).
 - Endpoints: `GET /me/metrics`, `GET /me/metrics/heatmap`,
   `GET /recaps/:period`.

@@ -1,13 +1,7 @@
 # Phase 7 — Streak & Category Multipliers
 
 > Status: **planning only**. Companion to `spec.md` and `tasks.md`.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -40,7 +34,7 @@ so historical analysis (Phase 21 recap) can trust the numbers.
 
 - Multipliers stack **multiplicatively** with a hard cap (default
   3.0). Cap makes exploits bounded.
-- Streak tier table lives in `config/config.exs` for now, migrates
+- Streak tier table lives in `appsettings.json` for now, migrates
   to DB in Phase 9.
 - Snapshot format is stable: additive changes only (never rename
   fields).
@@ -53,10 +47,10 @@ so historical analysis (Phase 21 recap) can trust the numbers.
 - `lib/xpeak/progression/streak_tier.ex` — tier table + lookup.
 - `lib/xpeak/progression/multiplier_resolver.ex` — composition +
   cap.
-- Migration: `add_multiplier_snapshot_to_check_ins.exs`.
+- Migration: `Migrations/YYYYMMDDHHmmss_Addmultiplier_snapshot_to_check_ins.cs`.
 - Update `XpCalculator.compute/1` → `compute/2` accepting the
   multiplier.
-- Update `Xpeak.CheckIns.create_check_in/2` to compute and persist
+- Update `CheckInService.CreateAsync` to compute and persist
   snapshot.
 - Update `CheckInJson` to expose the snapshot (opt-in field).
 

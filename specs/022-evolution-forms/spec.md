@@ -23,17 +23,22 @@ Mark tiers 4 and 5 as `is_animated: true`.
 
 ## 3. Resolver
 
-```elixir
-defmodule Xpeak.Titles do
-  def resolve_form(%User{} = user) do
-    tier = current_tier(user)
-    Repo.get_by(ThemeForm, theme_id: user.theme_id, tier_id: tier.id)
-    || fallback_form(user.theme_id, tier)
-  end
-end
+```csharp
+public sealed class TitleResolver(AppDbContext db)
+{
+    public async Task<ThemeForm> ResolveFormAsync(AppUser user, CancellationToken ct)
+    {
+        var tier = CurrentTier(user);
+        var form = await db.ThemeForms
+            .SingleOrDefaultAsync(
+                f => f.ThemeId == user.ThemeId && f.TierId == tier.Id,
+                ct);
+        return form ?? await FallbackFormAsync(user.ThemeId, tier, ct);
+    }
+}
 ```
 
-`fallback_form/2` walks down to earlier tiers if the current tier
+`FallbackFormAsync` walks down to earlier tiers if the current tier
 has no form, then falls back to a bundled system placeholder.
 
 ## 4. Endpoints

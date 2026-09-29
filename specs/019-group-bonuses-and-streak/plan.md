@@ -1,13 +1,7 @@
 # Phase 19 — Group Bonuses & Group Streak
 
-> Status: **planning only**.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Status: **planning only**. Companion to `spec.md` and `tasks.md`.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -51,16 +45,16 @@ Two mechanics that reward group activity:
 - Group workout bonus applied at the resolver level using the
   group's size (`1.2× for 2, 1.5× for 3+`) capped at the global
   cap.
-- Group streak updated by an Oban job daily at 00:15 UTC per
+- Group streak updated by an Hangfire job daily at 00:15 UTC per
   challenge time zone (or globally UTC for MVP).
 
 ## 4. Artifacts
 
-- Migrations: `create_group_workouts.exs`,
-  `create_group_workout_check_ins.exs`, `create_group_streaks.exs`,
-  `add_gps_to_check_ins.exs`.
+- Migrations: `Migrations/YYYYMMDDHHmmss_Creategroup_workouts.cs`,
+  `Migrations/YYYYMMDDHHmmss_Creategroup_workout_check_ins.cs`, `Migrations/YYYYMMDDHHmmss_Creategroup_streaks.cs`,
+  `Migrations/YYYYMMDDHHmmss_Addgps_to_check_ins.cs`.
 - `lib/xpeak/social/group_workout_detector.ex` (pure + Repo layer).
-- `lib/xpeak/social/group_streak_updater.ex` (Oban).
+- `lib/xpeak/social/group_streak_updater.ex` (Hangfire).
 - Update `MultiplierResolver.resolve/3` for group multiplier.
 - Endpoints: `GET /challenges/:id/group_streak`,
   `GET /group_workouts/:id`.

@@ -28,7 +28,7 @@ null.
 
 ## 3. Context additions
 
-```elixir
+```csharp
 def invite(challenge, inviter, invitee_user) do
   # validates friendship + membership + duplicate
   # inserts invitation
@@ -87,7 +87,7 @@ end
 - Cannot invite same user twice → 422.
 - Accept creates membership + emits event.
 - Reject transitions state, no membership.
-- Expiration Oban job flips pending to expired.
+- Expiration Hangfire job flips pending to expired.
 - Leaderboard sort is stable across ties.
 - Mobile: profile → challenge wizard → invitation appears on
   invitee's account.

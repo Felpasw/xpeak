@@ -13,15 +13,16 @@
   - Paste credentials into local `.env` (not committed).
   - Update `.env.example` with placeholders.
 
-- [ ] **T-006-02 `[T][S]`** — `Xpeak.Storage` behaviour + `MockAdapter`
-  - Failing test: `MockAdapter.presigned_put_url/2` returns
+- [ ] **T-006-02 `[T][S]`** — `IMediaStorage` interface + `FakeMediaStorage`
+  - Failing test: `FakeMediaStorage.PresignedPutUrlAsync` returns a
     deterministic URL.
-  - Implement behaviour + mock.
+  - Implement interface + fake.
   - Green.
 
-- [ ] **T-006-03 `[T][S]`** — `S3Adapter`
-  - Failing test with Bypass simulating S3.
-  - Implement using `ex_aws_s3`.
+- [ ] **T-006-03 `[T][S]`** — `CloudinaryMediaStorage`
+  - Failing test with `WireMock.Net` (or `HttpMessageHandler` stub)
+    simulating Cloudinary.
+  - Implement using `CloudinaryDotNet`.
   - Green.
 
 ## Section B — Schema
@@ -56,11 +57,12 @@
   - Failing test: check-in created with `has_media: false`.
   - Green.
 
-- [ ] **T-006-09 `[T][S]`** — Oban cron: soft-delete pending
-      check-ins after 15 min
-  - Depends on Oban already installed (adds it if not).
-  - Failing test: Oban.Testing.perform_job/2 removes pending record
-    older than 15 min.
+- [ ] **T-006-09 `[T][S]`** — Hangfire recurring job: soft-delete
+      pending check-ins after 15 min
+  - Depends on Hangfire already installed (adds it if not).
+  - Failing test: instantiate the job class and invoke `ExecuteAsync`
+    directly against the test host; assert the pending record older
+    than 15 min is gone.
   - Implement.
   - Green.
 
@@ -114,7 +116,7 @@ A ──▶ B ──▶ C ──▶ D
 
 ## Bundling strategy for PRs
 
-1. `feat(storage): storage behaviour + s3 adapter + mock` — A
+1. `feat(storage): IMediaStorage + Cloudinary adapter + fake` — A
 2. `feat(check-ins): media schema` — B
 3. `feat(check-ins): presign and attach endpoints` — C
 4. `feat(check-ins): two-step flow with cleanup cron` — D

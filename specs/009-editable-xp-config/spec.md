@@ -51,7 +51,7 @@ Seeded with the Phase 7 defaults.
 
 ### 2.1. `Xpeak.Config`
 
-```elixir
+```csharp
 def get_number(key), do: ...
 def get_string(key), do: ...
 def get_json(key), do: ...
@@ -59,7 +59,7 @@ def put(key, value, actor), do: ...  # writes + audit + PubSub
 ```
 
 - ETS table `:xpeak_config_cache`.
-- `Xpeak.Config.CacheWarmer` GenServer starts on app boot, loads
+- `Xpeak.Config.CacheWarmer` BackgroundService starts on app boot, loads
   from DB, subscribes to `"config:updated"` PubSub topic.
 
 ### 2.2. Updates to Phase 7 modules
@@ -76,7 +76,7 @@ def put(key, value, actor), do: ...  # writes + audit + PubSub
 
 - `/admin` — Kaffy or a plain LiveView index.
 - Protected by `XpeakWeb.Plugs.RequireAdmin` (loads user via
-  Guardian pipeline, checks `user.role == "admin"`, else 403).
+  JWT bearer pipeline, checks `user.role == "admin"`, else 403).
 
 ### 3.2. Screens
 

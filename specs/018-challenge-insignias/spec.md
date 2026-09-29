@@ -34,7 +34,7 @@ challenge.
 
 `Xpeak.Achievements.InsigniaAwarder`:
 
-```elixir
+```csharp
 def on_challenge_finished(challenge) do
   members = list_memberships(challenge, %{state: :finished})
   ranked = rank_by_finish(members)

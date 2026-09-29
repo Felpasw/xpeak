@@ -46,33 +46,42 @@ Index: `(user_id, read_at NULLS FIRST, created_at DESC)`.
 
 ## 3. Emitter
 
-```elixir
-defmodule Xpeak.Feed.Emitter do
-  def emit(user, kind, opts \\ []) do
-    %ActivityEvent{
-      user_id: user.id,
-      kind: kind,
-      subject_type: opts[:subject_type],
-      subject_id: opts[:subject_id],
-      payload: opts[:payload] || %{},
-      visibility: opts[:visibility] || "friends"
+```csharp
+public sealed class FeedEmitter(AppDbContext db)
+{
+    public Task EmitAsync(
+        AppUser user,
+        string kind,
+        EmitOptions? options = null,
+        CancellationToken ct = default)
+    {
+        var evt = new ActivityEvent
+        {
+            UserId = user.Id,
+            Kind = kind,
+            SubjectType = options?.SubjectType,
+            SubjectId = options?.SubjectId,
+            Payload = options?.Payload ?? new(),
+            Visibility = options?.Visibility ?? "friends",
+        };
+        db.ActivityEvents.Add(evt);
+        return db.SaveChangesAsync(ct);
     }
-    |> Repo.insert()
-  end
-end
+}
 ```
 
-Called from `Ecto.Multi` in the writing context (transaction-safe).
+Called from `EF Core transaction` in the writing context (transaction-safe).
 
 ## 4. Feed context
 
-```elixir
-defmodule Xpeak.Feed do
-  def personal(user, opts), do: ...        # own events
-  def friends_feed(user, opts), do: ...    # own + friends'
-  def notifications(user, opts), do: ...
-  def mark_notification_read(user, id), do: ...
-end
+```csharp
+public interface IFeedService
+{
+    Task<Page<ActivityEvent>> PersonalAsync(AppUser user, FeedOptions opts, CancellationToken ct);
+    Task<Page<ActivityEvent>> FriendsFeedAsync(AppUser user, FeedOptions opts, CancellationToken ct);
+    Task<Page<Notification>> NotificationsAsync(AppUser user, FeedOptions opts, CancellationToken ct);
+    Task MarkNotificationReadAsync(AppUser user, Guid id, CancellationToken ct);
+}
 ```
 
 Friends feed query (simplified):

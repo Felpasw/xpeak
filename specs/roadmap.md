@@ -21,7 +21,18 @@ design decisions (derived per-group streak, group-scoped check-ins,
 TZ-aware boundaries, FluentValidation, `scoring_snapshot` shape,
 `group_configs` table, weekly-mode schema readiness) are captured
 in `docs/adr/0005-check-in-and-streak.md`.
-Phases 6–25 still reference the old stack in their plan/spec/tasks:
+**Phase 6 (check-in media) plan/spec/tasks have been rewritten for
+the C# stack** under `specs/006-checkin-media/` (Cloudinary as the
+storage provider, `IMediaStorage` abstraction, Hangfire recurring
+job for pending cleanup).
+**Phases 7–25 plan/spec/tasks have also been rewritten for the C#
+stack** — Ecto → EF Core, Oban → Hangfire, Guardian → JWT bearer,
+Ueberauth → `Microsoft.AspNetCore.Authentication.Google`, GenServer
+workers → `BackgroundService`, `Phoenix.PubSub` → MediatR
+notifications, ExUnit/Mox → xUnit/Moq, `mix.exs` → `.csproj`,
+`config/*.exs` → `appsettings*.json`, `priv/repo/*` →
+`Infrastructure/*`. Concepts, endpoint contracts and phase ordering
+are unchanged. The old-vs-new mapping below stays as a reference:
 
 | Old (Elixir/Phoenix)                       | New (C# / ASP.NET Core)                                     |
 |--------------------------------------------|-------------------------------------------------------------|

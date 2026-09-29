@@ -12,7 +12,7 @@
   - Green.
 
 - [ ] **T-011-02 `[S]`** — Seed 4 default medals + upload artwork
-  - `priv/repo/seeds/medals.exs`.
+  - `Infrastructure/Seed/medalsSeeder.cs`.
   - Upload PNGs to media bucket (or bundled).
 
 ## Section B — Awarder
