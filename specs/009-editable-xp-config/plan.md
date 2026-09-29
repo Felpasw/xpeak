@@ -1,13 +1,7 @@
 # Phase 9 — Editable XP & Level Configuration
 
 > Status: **planning only**. Companion to `spec.md` and `tasks.md`.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -23,7 +17,7 @@ tweaked without a deploy.
 **In scope**
 - `settings` key/value table for scalar knobs (e.g., overall
   multiplier cap).
-- Lift streak tier bands from `config.exs` → DB table
+- Lift streak tier bands from `appsettings.json` → DB table
   `streak_tiers`.
 - Category CRUD in the admin surface (already have the schema from
   Phase 4).
@@ -35,7 +29,7 @@ tweaked without a deploy.
   and after values.
 - Kaffy (or LiveView) admin at `/admin`.
 - Runtime cache of settings (ETS) with pub/sub invalidation across
-  nodes (Phoenix.PubSub).
+  nodes (MediatR notifications).
 
 **Out of scope**
 - Multi-tenant admin (gym as client — deferred, `README.md` §10).
@@ -57,9 +51,9 @@ tweaked without a deploy.
 
 ## 4. Artifacts
 
-- `priv/repo/migrations/*_create_settings.exs`,
-  `*_create_streak_tiers.exs`, `*_create_admin_events.exs`,
-  `*_add_role_to_users.exs`.
+- `Migrations/YYYYMMDDHHmmss_Createsettings.cs`,
+  `YYYYMMDDHHmmss_Createstreak_tiers.cs`, `YYYYMMDDHHmmss_Createadmin_events.cs`,
+  `YYYYMMDDHHmmss_Addrole_to_users.cs`.
 - `lib/xpeak/config.ex` — read API + cache.
 - `lib/xpeak/config/setting.ex`, `streak_tier.ex`, `admin_event.ex`.
 - Update `StreakTier` from Phase 7 to read from DB (with fallback
@@ -80,7 +74,7 @@ tweaked without a deploy.
 
 1. **Admin UI choice** — Kaffy (works fine, less flexible) vs.
    hand-rolled LiveView admin (more work, more control) vs.
-   plain-Ex IEx-only for MVP?
+   plain-Ex dotnet run REPL-only for MVP?
 2. **Role model** — add `role` column (`user`/`admin`) or separate
    `admin_users` table?
 3. **Bootstrap admin** — `mix xpeak.grant_admin <email>` task, or

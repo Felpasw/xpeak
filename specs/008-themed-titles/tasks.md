@@ -19,12 +19,12 @@
 ## Section B — Seeds
 
 - [ ] **T-008-03 `[S]`** — Seed Medieval + Sci-Fi themes
-  - `priv/repo/seeds/themes.exs`.
+  - `Infrastructure/Seed/themesSeeder.cs`.
   - Test: seeded rows present.
 
 ## Section C — Context
 
-- [ ] **T-008-04 `[T][S]`** — `Xpeak.Titles.resolve/2`
+- [ ] **T-008-04 `[T][S]`** — `TitleResolver.ResolveAsync`
   - Failing tests per `spec.md` §5.
   - Implement.
   - Green.

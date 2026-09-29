@@ -40,7 +40,7 @@
 
 ## Section D — Group streak
 
-- [ ] **T-019-08 `[T][S]`** — `GroupStreakUpdater` (Oban cron)
+- [ ] **T-019-08 `[T][S]`** — `GroupStreakUpdater` (Hangfire cron)
   - Failing tests: increment when threshold met, reset otherwise.
   - Green.
 

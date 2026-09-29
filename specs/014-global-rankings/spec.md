@@ -46,7 +46,7 @@ For each: also `friends:<scope>` (e.g., `friends:xp_all_time`).
 
 ## 4. Snapshot job
 
-`Xpeak.Rankings.SnapshotJob` (Oban):
+`Xpeak.Rankings.SnapshotJob` (Hangfire):
 
 - `perform/1` accepts `%{scope: ..., period: ..., mode: :current | :freeze}`.
 - Scheduled hourly for current period; scheduled once at rollover
@@ -55,7 +55,7 @@ For each: also `friends:<scope>` (e.g., `friends:xp_all_time`).
 
 ## 5. Cache
 
-- `Xpeak.Rankings.Cache` wraps Cachex.
+- `Xpeak.Rankings.Cache` wraps IMemoryCache.
 - Keys: `{scope, period, page}`, `{scope, period, :count}`.
 - TTL 60–300s depending on scope (all-time longer, weekly shorter).
 - Invalidated after each snapshot run.

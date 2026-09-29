@@ -16,7 +16,7 @@ Composed multiplier stack persisted on every check-in.
 
 ### 3.1. `Xpeak.Progression.StreakTier`
 
-```elixir
+```csharp
 @tiers [
   {0, 2, 1.0},
   {3, 6, 1.1},
@@ -35,7 +35,7 @@ end
 
 ### 3.2. `Xpeak.Progression.MultiplierResolver`
 
-```elixir
+```csharp
 @cap 3.0
 
 @spec resolve(User.t(), Category.t(), Challenge.t() | nil) :: Multiplier.t()
@@ -51,7 +51,7 @@ end
 
 ### 3.3. `XpCalculator` update
 
-```elixir
+```csharp
 @spec compute(Category.t(), Multiplier.t()) :: pos_integer()
 def compute(%Category{base_xp: base}, %Multiplier{total: t}) do
   round(base * t)
@@ -60,7 +60,7 @@ end
 
 ## 4. Check-in flow update
 
-`Xpeak.CheckIns.create_check_in/2` now:
+`CheckInService.CreateAsync` now:
 
 1. Loads user + category.
 2. `MultiplierResolver.resolve(user, category, challenge)`.

@@ -67,7 +67,7 @@ Steps:
 
 Per decision (§6.1):
 
-- **Calendar year**: Oban cron 2026-01-01 00:15 UTC iterates all
+- **Calendar year**: Hangfire cron 2026-01-01 00:15 UTC iterates all
   eligible users and enqueues one job per user.
 - **Anniversary**: cron runs daily, enqueues for users whose signup
   anniversary was yesterday.

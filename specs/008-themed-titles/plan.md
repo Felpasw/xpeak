@@ -1,13 +1,7 @@
 # Phase 8 — Themed Titles & Themes
 
 > Status: **planning only**. Companion to `spec.md` and `tasks.md`.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -21,7 +15,7 @@ and change the label without changing the level tiers.
 **In scope**
 - `themes` + `level_title_tiers` schemas.
 - Seed two themes: **Medieval** (default) and **Sci-Fi**.
-- `Xpeak.Titles.resolve/2` — pure lookup returning current title
+- `TitleResolver.ResolveAsync` — pure lookup returning current title
   and the next-tier target.
 - `PATCH /me/theme` — user picks their active theme.
 - `GET /me` exposes `current_title` + `next_title` + `progress_to_next`.
@@ -43,9 +37,9 @@ and change the label without changing the level tiers.
 
 ## 4. Artifacts
 
-- `priv/repo/migrations/*_create_themes.exs`.
-- `priv/repo/migrations/*_create_level_title_tiers.exs`.
-- `priv/repo/migrations/*_add_theme_id_to_users.exs`.
+- `Migrations/YYYYMMDDHHmmss_Createthemes.cs`.
+- `Migrations/YYYYMMDDHHmmss_Createlevel_title_tiers.cs`.
+- `Migrations/YYYYMMDDHHmmss_Addtheme_id_to_users.cs`.
 - `lib/xpeak/titles.ex` — context.
 - `lib/xpeak/titles/theme.ex`, `lib/xpeak/titles/tier.ex`.
 - `lib/xpeak_web/controllers/me_controller.ex` — new `PATCH /me/theme`.

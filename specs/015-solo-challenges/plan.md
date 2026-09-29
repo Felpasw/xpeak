@@ -1,13 +1,7 @@
 # Phase 15 — Solo Challenges
 
-> Status: **planning only**.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Status: **planning only**. Companion to `spec.md` and `tasks.md`.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -49,9 +43,9 @@ the user and themselves.
 
 ## 4. Artifacts
 
-- Migrations: `create_challenges.exs`,
-  `create_challenge_categories.exs`,
-  `create_challenge_memberships.exs`.
+- Migrations: `Migrations/YYYYMMDDHHmmss_Createchallenges.cs`,
+  `Migrations/YYYYMMDDHHmmss_Createchallenge_categories.cs`,
+  `Migrations/YYYYMMDDHHmmss_Createchallenge_memberships.cs`.
 - `lib/xpeak/challenges.ex` — context.
 - `lib/xpeak/challenges/challenge.ex`, `membership.ex`,
   `progress_calculator.ex` (pure).

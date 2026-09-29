@@ -44,19 +44,25 @@ Unique index: `(user_id, location_id)`.
 
 ## 2. Location matcher
 
-```elixir
-defmodule Xpeak.Exploration.LocationMatcher do
-  @radius_m 50
+```csharp
+public sealed class LocationMatcher(AppDbContext db)
+{
+    private const int RadiusMeters = 50;
 
-  def match_or_prompt(lat, lng) do
-    candidates = locations_within(lat, lng, @radius_m)
-    case candidates do
-      [] -> {:none}
-      [one] -> {:found, one}
-      many -> {:multiple, many}   # let the user pick
-    end
-  end
-end
+    public async Task<LocationMatch> MatchOrPromptAsync(
+        double latitude,
+        double longitude,
+        CancellationToken ct)
+    {
+        var candidates = await LocationsWithinAsync(latitude, longitude, RadiusMeters, ct);
+        return candidates.Count switch
+        {
+            0 => LocationMatch.None(),
+            1 => LocationMatch.Found(candidates[0]),
+            _ => LocationMatch.Multiple(candidates), // let the user pick
+        };
+    }
+}
 ```
 
 Called by the mobile client before submitting a check-in — it

@@ -1,13 +1,7 @@
 # Phase 22 — Level "Evolution Forms"
 
-> Status: **planning only**.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Status: **planning only**. Companion to `spec.md` and `tasks.md`.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -49,10 +43,10 @@ user levels up.
 
 ## 4. Artifacts
 
-- Migration: `create_theme_forms.exs`.
+- Migration: `Migrations/YYYYMMDDHHmmss_Createtheme_forms.cs`.
 - Seeds: 10 form rows (5 tiers × 2 themes).
 - `lib/xpeak/titles/form.ex` — schema.
-- `Xpeak.Titles.resolve_form/1` — pure lookup.
+- `TitleResolver.ResolveFormAsync` — pure lookup.
 - Endpoint additions: `GET /me` gains `current_form` +
   `next_form`; `GET /themes/:slug/forms` for the gallery.
 - Mobile: profile form illustration; forms gallery screen.

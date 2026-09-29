@@ -1,13 +1,7 @@
 # Phase 12 — Friends & Social Graph
 
-> Status: **planning only**.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Status: **planning only**. Companion to `spec.md` and `tasks.md`.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -52,8 +46,8 @@ and per-user privacy settings.
 
 ## 4. Artifacts
 
-- Migrations: `create_friendships.exs`, `create_blocks.exs`,
-  `add_privacy_to_users.exs`.
+- Migrations: `Migrations/YYYYMMDDHHmmss_Createfriendships.cs`, `Migrations/YYYYMMDDHHmmss_Createblocks.cs`,
+  `Migrations/YYYYMMDDHHmmss_Addprivacy_to_users.cs`.
 - `lib/xpeak/social.ex` — context.
 - `lib/xpeak/social/friendship.ex`, `block.ex`.
 - `lib/xpeak/social/visibility.ex` — pure helper computing "can X

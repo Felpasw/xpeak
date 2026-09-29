@@ -33,18 +33,18 @@ once per user.
 
 ### 2.1. `Xpeak.Achievements.MedalAwarder`
 
-```elixir
+```csharp
 @spec check_streak_medals(User.t()) :: {:ok, [UserMedal.t()]}
 def check_streak_medals(user) do
   eligible = list_medals_by_max_streak(user.current_streak_days)
-  already_earned = Repo.all(...)  # user's existing medal_ids
+  already_earned = dbContext.all(...)  # user's existing medal_ids
   to_award = Enum.reject(eligible, & &1.id in already_earned)
 
   Enum.map(to_award, &insert_user_medal(user, &1))
 end
 ```
 
-Called inside `create_check_in/2`'s `Ecto.Multi`.
+Called inside `create_check_in/2`'s `EF Core transaction`.
 
 ## 3. Endpoints
 

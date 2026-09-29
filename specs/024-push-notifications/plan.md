@@ -1,13 +1,7 @@
 # Phase 24 — Push Notifications
 
-> Status: **planning only**.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Status: **planning only**. Companion to `spec.md` and `tasks.md`.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -27,7 +21,7 @@ friend request, and recap ready.
 - Notification dispatcher: reads new `notifications` rows and sends
   push accordingly.
 - Preferences per notification category (opt-out toggles).
-- Streak-at-risk detector: daily Oban job that finds users at risk
+- Streak-at-risk detector: daily Hangfire job that finds users at risk
   of breaking their streak.
 - Deep-link handling on tap.
 
@@ -44,19 +38,19 @@ friend request, and recap ready.
 - Device tokens live on a `device_tokens` table:
   `user_id, token, platform (ios|android|web), locale, app_version,
   last_seen_at`.
-- Dispatcher: `NotificationDispatcher` GenServer subscribed to a
-  Phoenix.PubSub topic. When a new notification is inserted, publish
+- Dispatcher: `NotificationDispatcher` BackgroundService subscribed to a
+  MediatR notifications topic. When a new notification is inserted, publish
   → dispatcher processes → sends via provider adapter.
 - Provider adapter: behaviour + FCM adapter + APNs adapter + mock.
 
 ## 4. Artifacts
 
-- Migrations: `create_device_tokens.exs`,
-  `add_notification_preferences_to_users.exs`.
+- Migrations: `Migrations/YYYYMMDDHHmmss_Createdevice_tokens.cs`,
+  `Migrations/YYYYMMDDHHmmss_Addnotification_preferences_to_users.cs`.
 - `lib/xpeak/push.ex` — context.
 - `lib/xpeak/push/dispatcher.ex` — dispatch orchestration.
 - `lib/xpeak/push/{fcm_adapter,apns_adapter,mock_adapter}.ex`.
-- `lib/xpeak/push/streak_at_risk_job.ex` (Oban cron 20:00 local).
+- `lib/xpeak/push/streak_at_risk_job.ex` (Hangfire cron 20:00 local).
 - Endpoints for token registration, preferences.
 - Mobile: request permission on first login; register token;
   handle background/foreground events; deep-link routing.

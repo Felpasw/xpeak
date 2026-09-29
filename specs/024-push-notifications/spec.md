@@ -31,7 +31,7 @@ Keys → boolean (default `true`):
 
 `Xpeak.Push.Provider` behaviour:
 
-```elixir
+```csharp
 @callback send(token :: String.t(), payload :: map(), opts :: keyword()) ::
   :ok | {:error, term()}
 ```
@@ -45,26 +45,30 @@ Config selects adapter per platform.
 
 ## 3. Dispatcher
 
-```elixir
-defmodule Xpeak.Push.Dispatcher do
-  use GenServer
-
-  def start_link(_), do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
-
-  def init(_) do
-    Phoenix.PubSub.subscribe(Xpeak.PubSub, "notifications:new")
-    {:ok, nil}
-  end
-
-  def handle_info({:notification_created, notification_id}, state) do
-    dispatch(notification_id)
-    {:noreply, state}
-  end
-end
+```csharp
+public sealed class PushDispatcher(
+    IServiceScopeFactory scopes,
+    ILogger<PushDispatcher> log) : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken ct)
+    {
+        // Bridged from the domain event bus (MediatR notification
+        // + `INotificationHandler<NotificationCreated>`). This
+        // background worker only owns retries and per-adapter
+        // rate limiting.
+        await foreach (var notificationId in Queue.Reader.ReadAllAsync(ct))
+        {
+            using var scope = scopes.CreateScope();
+            var sender = scope.ServiceProvider.GetRequiredService<IPushSender>();
+            await sender.DispatchAsync(notificationId, ct);
+        }
+    }
+}
 ```
 
-Called from `Notifications.create/1` (which now emits the PubSub
-event).
+Called from `NotificationService.CreateAsync` (which publishes a
+`NotificationCreated` MediatR notification; the handler enqueues
+into `PushDispatcher.Queue`).
 
 Dispatch logic:
 1. Load notification + user + preferences.
@@ -76,7 +80,7 @@ Dispatch logic:
 
 ## 4. Streak-at-risk job
 
-`Xpeak.Push.StreakAtRiskJob` (Oban cron):
+`Xpeak.Push.StreakAtRiskJob` (Hangfire cron):
 
 - Runs daily at 20:00 local (MVP: 20:00 UTC).
 - Finds users with `current_streak_days ≥ 3` AND no check-in today.

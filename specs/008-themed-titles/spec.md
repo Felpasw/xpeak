@@ -33,7 +33,7 @@ migration + changeset guard.
 ### 1.3. `users` addition
 
 - `theme_id` (FK → themes, nullable, defaults to the seeded default
-  theme on user creation via `Repo.insert` hook or `Accounts.register_user/1`).
+  theme on user creation via `dbContext.insert` hook or `Accounts.register_user/1`).
 
 ### 1.4. Seeds
 

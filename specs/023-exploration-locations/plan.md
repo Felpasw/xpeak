@@ -1,13 +1,7 @@
 # Phase 23 — Exploration / Locations (Gyms)
 
-> Status: **planning only**.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Status: **planning only**. Companion to `spec.md` and `tasks.md`.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -51,10 +45,10 @@ unlocks XP bonuses, badges, and regional leaderboards.
 
 ## 4. Artifacts
 
-- Migrations: `create_locations.exs`,
-  `create_user_visited_locations.exs`,
-  `add_location_id_to_check_ins.exs`,
-  `add_region_to_users.exs` (or derived).
+- Migrations: `Migrations/YYYYMMDDHHmmss_Createlocations.cs`,
+  `Migrations/YYYYMMDDHHmmss_Createuser_visited_locations.cs`,
+  `Migrations/YYYYMMDDHHmmss_Addlocation_id_to_check_ins.cs`,
+  `Migrations/YYYYMMDDHHmmss_Addregion_to_users.cs` (or derived).
 - `lib/xpeak/exploration.ex` — context.
 - `lib/xpeak/exploration/location_matcher.ex`.
 - Integration with `MultiplierResolver` for first-visit bonus.

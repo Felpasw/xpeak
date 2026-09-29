@@ -41,7 +41,7 @@
 
 ## Section C — Lifecycle
 
-- [ ] **T-015-07 `[T][S]`** — `LifecycleJob` (Oban)
+- [ ] **T-015-07 `[T][S]`** — `LifecycleJob` (Hangfire)
   - Failing tests: upcoming→active, active→completed on target hit,
     active→failed on deadline.
   - Emits `challenge.finished` event (uses Phase 13 emitter).

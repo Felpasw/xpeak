@@ -1,13 +1,7 @@
 # Phase 13 — Activity Timeline / Feed
 
-> Status: **planning only**.
-
-> **Stack note:** artifacts in this file (module names, package names,
-> code samples) were originally written for Elixir/Phoenix. The
-> project switched to C# + ASP.NET Core 9 in Phase 2. See
-> `specs/roadmap.md` → "Stack migration note" for the mapping table.
-> Concepts and endpoint contracts still hold; concrete artifacts get
-> rewritten when this phase is picked up.
+> Status: **planning only**. Companion to `spec.md` and `tasks.md`.
+> Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16.
 
 
 ## 1. Goal
@@ -56,8 +50,8 @@ trophy, challenge start/end, friend accept).
 
 ## 4. Artifacts
 
-- Migrations: `create_activity_events.exs`,
-  `create_notifications.exs`.
+- Migrations: `Migrations/YYYYMMDDHHmmss_Createactivity_events.cs`,
+  `Migrations/YYYYMMDDHHmmss_Createnotifications.cs`.
 - `lib/xpeak/feed.ex` — context.
 - `lib/xpeak/feed/activity_event.ex`, `notification.ex`.
 - `lib/xpeak/feed/emitter.ex` — helper called by other contexts.

@@ -19,19 +19,19 @@
     all-time).
   - Green.
 
-- [ ] **T-014-03 `[T][S]`** — `SnapshotJob` (Oban)
+- [ ] **T-014-03 `[T][S]`** — `SnapshotJob` (Hangfire)
   - Failing test: perform inserts/updates snapshot rows correctly;
     ranks dense.
   - Implement.
   - Green.
 
-- [ ] **T-014-04 `[T][S]`** — Schedule (Oban Cron)
-  - Config Oban's `Oban.Plugins.Cron` with hourly for current +
+- [ ] **T-014-04 `[T][S]`** — Schedule (Hangfire Cron)
+  - Config Hangfire's `Hangfire.Plugins.Cron` with hourly for current +
     weekly/monthly freeze.
   - Failing test: cron config parsed as expected.
   - Green.
 
-- [ ] **T-014-05 `[T][S]`** — Cache layer (Cachex)
+- [ ] **T-014-05 `[T][S]`** — Cache layer (IMemoryCache)
   - Failing test: cache hit avoids DB call; invalidation after job.
   - Implement.
   - Green.
