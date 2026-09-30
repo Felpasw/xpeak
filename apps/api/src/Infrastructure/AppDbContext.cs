@@ -209,6 +209,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
                 t.HasCheckConstraint(
                     "ck_check_ins_notes_length",
                     "notes IS NULL OR length(notes) <= 280");
+                t.HasCheckConstraint(
+                    "ck_check_ins_title_shape",
+                    "length(trim(title)) > 0 AND length(title) <= 60");
             });
 
             b.HasKey(c => c.Id);
@@ -216,6 +219,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             b.Property(c => c.UserId).HasColumnName("user_id");
             b.Property(c => c.CategoryId).HasColumnName("category_id");
             b.Property(c => c.GroupId).HasColumnName("group_id");
+            b.Property(c => c.Title).HasColumnName("title").HasMaxLength(60).IsRequired();
             b.Property(c => c.XpEarned).HasColumnName("xp_earned");
             b.Property(c => c.ScoringSnapshot)
                 .HasColumnName("scoring_snapshot")

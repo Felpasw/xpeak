@@ -12,8 +12,8 @@ using Xpeak.Api.Infrastructure;
 namespace Xpeak.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260929174310_AddCheckInMedia")]
-    partial class AddCheckInMedia
+    [Migration("20260930143310_AddCheckInsGroupConfigsMediaAndTitle")]
+    partial class AddCheckInsGroupConfigsMediaAndTitle
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -218,6 +218,12 @@ namespace Xpeak.Api.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("scoring_snapshot");
 
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("title");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -251,6 +257,8 @@ namespace Xpeak.Api.Migrations
                             t.HasCheckConstraint("ck_check_ins_duration_positive", "duration_minutes IS NULL OR duration_minutes > 0");
 
                             t.HasCheckConstraint("ck_check_ins_notes_length", "notes IS NULL OR length(notes) <= 280");
+
+                            t.HasCheckConstraint("ck_check_ins_title_shape", "length(trim(title)) > 0 AND length(title) <= 60");
 
                             t.HasCheckConstraint("ck_check_ins_xp_earned_positive", "xp_earned > 0");
                         });

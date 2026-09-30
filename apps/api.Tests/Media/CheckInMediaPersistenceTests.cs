@@ -202,6 +202,7 @@ public sealed class CheckInMediaPersistenceTests
         var checkIn = new CheckIn
         {
             Id = Guid.NewGuid(),
+            Title = "test",
             UserId = user.Id,
             CategoryId = category.Id,
             GroupId = group.Id,

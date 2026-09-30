@@ -35,7 +35,7 @@ public sealed class CheckInServiceTests
 
         var result = await service.CreateAsync(
             fixture.User.Id,
-            new CreateCheckInInput(fixture.Category.Id, DurationMinutes: 45, Notes: "leg day"));
+            new CreateCheckInInput(fixture.Category.Id, "leg day", DurationMinutes: 45, Notes: "leg day"));
 
         result.CheckIn.XpEarned.Should().Be(21);
         result.CheckIn.GroupId.Should().Be(fixture.Group.Id);
@@ -77,7 +77,7 @@ public sealed class CheckInServiceTests
 
         var result = await service.CreateAsync(
             fixture.User.Id,
-            new CreateCheckInInput(fixture.Category.Id));
+            new CreateCheckInInput(fixture.Category.Id, "test"));
 
         result.User.Xp.Should().Be(190);
         result.User.Level.Should().Be(1);
@@ -97,7 +97,7 @@ public sealed class CheckInServiceTests
 
         var act = async () => await service.CreateAsync(
             fixture.User.Id,
-            new CreateCheckInInput(fixture.Category.Id));
+            new CreateCheckInInput(fixture.Category.Id, "test"));
 
         await act.Should().ThrowAsync<NotAGroupMemberException>();
 
@@ -118,7 +118,7 @@ public sealed class CheckInServiceTests
 
         var act = async () => await service.CreateAsync(
             fixture.User.Id,
-            new CreateCheckInInput(Guid.NewGuid()));
+            new CreateCheckInInput(Guid.NewGuid(), "test"));
 
         await act.Should().ThrowAsync<CategoryNotFoundException>();
 
@@ -141,7 +141,7 @@ public sealed class CheckInServiceTests
 
         var result = await service.CreateAsync(
             fixture.User.Id,
-            new CreateCheckInInput(fixture.Category.Id));
+            new CreateCheckInInput(fixture.Category.Id, "test"));
 
         result.CheckIn.GroupId.Should().Be(fixture.Category.GroupId);
     }

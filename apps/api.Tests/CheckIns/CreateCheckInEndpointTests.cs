@@ -29,7 +29,7 @@ public sealed class CreateCheckInEndpointTests
 
         var response = await client.PostAsJsonAsync("/check_ins", new
         {
-            categoryId = Guid.NewGuid(),
+            categoryId = Guid.NewGuid(), title = "test",
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -44,7 +44,7 @@ public sealed class CreateCheckInEndpointTests
 
         var response = await client.PostAsJsonAsync("/check_ins", new
         {
-            categoryId = fixture.Category.Id,
+            categoryId = fixture.Category.Id, title = "test",
             durationMinutes = 45,
             notes = "leg day",
         });
@@ -80,7 +80,7 @@ public sealed class CreateCheckInEndpointTests
 
         var response = await client.PostAsJsonAsync("/check_ins", new
         {
-            categoryId = fixture.Category.Id,
+            categoryId = fixture.Category.Id, title = "test",
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -95,7 +95,7 @@ public sealed class CreateCheckInEndpointTests
 
         var response = await client.PostAsJsonAsync("/check_ins", new
         {
-            categoryId = Guid.NewGuid(),
+            categoryId = Guid.NewGuid(), title = "test",
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -110,7 +110,7 @@ public sealed class CreateCheckInEndpointTests
 
         var response = await client.PostAsJsonAsync("/check_ins", new
         {
-            categoryId = fixture.Category.Id,
+            categoryId = fixture.Category.Id, title = "test",
             notes = new string('a', 281),
         });
 
@@ -126,7 +126,7 @@ public sealed class CreateCheckInEndpointTests
 
         var response = await client.PostAsJsonAsync("/check_ins", new
         {
-            categoryId = fixture.Category.Id,
+            categoryId = fixture.Category.Id, title = "test",
             durationMinutes = 0,
         });
 

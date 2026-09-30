@@ -19,6 +19,10 @@ public sealed class CheckIn
 
     public Guid GroupId { get; set; }
 
+    /// <summary>Short label the user gave this workout ("Leg day",
+    /// "Cardio manhã"). Required (max 60 chars, trimmed).</summary>
+    public string Title { get; set; } = "";
+
     public int XpEarned { get; set; }
 
     public ScoringSnapshot ScoringSnapshot { get; set; } =

@@ -182,6 +182,7 @@ public sealed class CheckInRepositoryTests
         db.CheckIns.Add(new CheckIn
         {
             Id = id,
+            Title = "test",
             UserId = fixture.User.Id,
             CategoryId = fixture.Category.Id,
             GroupId = fixture.Group.Id,

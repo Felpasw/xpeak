@@ -49,9 +49,10 @@ public sealed class CheckInService(
             UserId = userId,
             CategoryId = category.Id,
             GroupId = category.GroupId,      // server-populated, never from client
+            Title = input.Title.Trim(),
             XpEarned = xpEarned,
             ScoringSnapshot = snapshot,
-            PerformedAt = time.GetUtcNow(),
+            PerformedAt = input.PerformedAt ?? time.GetUtcNow(),
             DurationMinutes = input.DurationMinutes,
             Notes = input.Notes,
         };

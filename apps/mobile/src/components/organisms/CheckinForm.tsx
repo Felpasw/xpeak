@@ -7,6 +7,7 @@ import { ControlledCategoryPicker } from '@/components/atoms/ControlledCategoryP
 import { ControlledInput } from '@/components/atoms/ControlledInput';
 import { ControlledTextarea } from '@/components/atoms/ControlledTextarea';
 import { LevelUpOverlay } from '@/components/atoms/LevelUpOverlay';
+import { PageHeader } from '@/components/atoms/PageHeader';
 import { useCategories } from '@/hooks/useCheckIn';
 import { CHECKIN_MESSAGES, useCheckinForm } from '@/hooks/useCheckinForm';
 
@@ -23,11 +24,8 @@ export function CheckinForm() {
 
     return (
         <>
-            <form onSubmit={onSubmit} noValidate className="flex flex-1 flex-col gap-6 px-6 pt-8 pb-48">
-                <header className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold tracking-tight text-zinc-100">{HEADER}</h1>
-                    <p className="text-sm text-zinc-400">{HEADER_DESCRIPTION}</p>
-                </header>
+            <form onSubmit={onSubmit} noValidate className="flex flex-1 flex-col gap-6 px-6 pt-10 pb-48">
+                <PageHeader title={HEADER} description={HEADER_DESCRIPTION} />
 
                 <ControlledCategoryPicker
                     control={control}

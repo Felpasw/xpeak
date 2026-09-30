@@ -32,7 +32,12 @@ public static class CreateCheckInEndpoint
         {
             var result = await service.CreateAsync(
                 userId,
-                new CreateCheckInInput(request.CategoryId, request.DurationMinutes, request.Notes),
+                new CreateCheckInInput(
+                    request.CategoryId,
+                    request.Title,
+                    request.PerformedAt,
+                    request.DurationMinutes,
+                    request.Notes),
                 ct);
 
             var response = new CreateCheckInResponse(

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Xpeak.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCheckInsAndGroupConfigs : Migration
+    public partial class AddCheckInsGroupConfigsMediaAndTitle : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,7 +17,7 @@ namespace Xpeak.Api.Migrations
                 type: "character varying(64)",
                 maxLength: 64,
                 nullable: false,
-                defaultValue: "UTC");
+                defaultValue: "America/Sao_Paulo");
 
             migrationBuilder.CreateTable(
                 name: "check_ins",
@@ -27,6 +27,7 @@ namespace Xpeak.Api.Migrations
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     category_id = table.Column<Guid>(type: "uuid", nullable: false),
                     group_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    title = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     xp_earned = table.Column<int>(type: "integer", nullable: false),
                     scoring_snapshot = table.Column<string>(type: "jsonb", nullable: false),
                     performed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -40,6 +41,7 @@ namespace Xpeak.Api.Migrations
                     table.PrimaryKey("PK_check_ins", x => x.id);
                     table.CheckConstraint("ck_check_ins_duration_positive", "duration_minutes IS NULL OR duration_minutes > 0");
                     table.CheckConstraint("ck_check_ins_notes_length", "notes IS NULL OR length(notes) <= 280");
+                    table.CheckConstraint("ck_check_ins_title_shape", "length(trim(title)) > 0 AND length(title) <= 60");
                     table.CheckConstraint("ck_check_ins_xp_earned_positive", "xp_earned > 0");
                     table.ForeignKey(
                         name: "FK_check_ins_categories_category_id",
@@ -81,10 +83,52 @@ namespace Xpeak.Api.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "check_in_media",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    check_in_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    kind = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    storage_key = table.Column<string>(type: "text", nullable: false),
+                    width = table.Column<int>(type: "integer", nullable: true),
+                    height = table.Column<int>(type: "integer", nullable: true),
+                    duration_seconds = table.Column<int>(type: "integer", nullable: true),
+                    position = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_check_in_media", x => x.id);
+                    table.CheckConstraint("ck_check_in_media_dimensions_non_negative", "(width IS NULL OR width > 0) AND (height IS NULL OR height > 0)");
+                    table.CheckConstraint("ck_check_in_media_duration_non_negative", "duration_seconds IS NULL OR duration_seconds > 0");
+                    table.CheckConstraint("ck_check_in_media_kind", "kind IN ('photo', 'video')");
+                    table.CheckConstraint("ck_check_in_media_position_non_negative", "position >= 0");
+                    table.CheckConstraint("ck_check_in_media_storage_key_not_blank", "length(trim(storage_key)) > 0");
+                    table.ForeignKey(
+                        name: "FK_check_in_media_check_ins_check_in_id",
+                        column: x => x.check_in_id,
+                        principalTable: "check_ins",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.InsertData(
                 table: "group_configs",
                 columns: new[] { "group_id", "created_at", "streak_config", "updated_at" },
                 values: new object[] { new Guid("00000000-0000-0000-0000-000000000001"), new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "{\"mode\":\"daily\",\"required_days_per_week\":null,\"week_start\":null}", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)) });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_check_in_media_check_in_position",
+                table: "check_in_media",
+                columns: new[] { "check_in_id", "position" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_check_in_media_storage_key",
+                table: "check_in_media",
+                column: "storage_key",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_check_ins_category_id",
@@ -114,10 +158,13 @@ namespace Xpeak.Api.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "check_ins");
+                name: "check_in_media");
 
             migrationBuilder.DropTable(
                 name: "group_configs");
+
+            migrationBuilder.DropTable(
+                name: "check_ins");
 
             migrationBuilder.DropColumn(
                 name: "time_zone",

@@ -281,6 +281,7 @@ public sealed class ConfirmMediaEndpointTests
         var checkIn = new CheckIn
         {
             Id = Guid.NewGuid(),
+            Title = "test",
             UserId = fixture.User.Id,
             CategoryId = fixture.Category.Id,
             GroupId = fixture.Group.Id,
