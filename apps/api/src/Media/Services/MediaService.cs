@@ -21,6 +21,9 @@ public sealed class MediaService(
     private const string VideoMime = "video/mp4";
     private const long PresignPlaceholderByteSize = 1;
 
+    private const int SignedGetTtlSeconds = 300;
+    private static readonly TimeSpan SignedGetTtl = TimeSpan.FromSeconds(SignedGetTtlSeconds);
+
     public async Task<PresignMediaResponse> RequestPresignsAsync(
         Guid userId,
         Guid checkInId,
@@ -102,6 +105,25 @@ public sealed class MediaService(
         await db.SaveChangesAsync(ct);
 
         return new ConfirmMediaResponse(rows.Select(ToResponse).ToList());
+    }
+
+    public async Task<MediaUrlResponse> GetSignedUrlAsync(
+        Guid userId,
+        Guid checkInId,
+        Guid mediaId,
+        CancellationToken ct)
+    {
+        await EnsureOwnershipAsync(userId, checkInId, ct);
+
+        var row = await db.CheckInMedia
+            .AsNoTracking()
+            .Where(m => m.Id == mediaId && m.CheckInId == checkInId)
+            .Select(m => new { m.StorageKey })
+            .SingleOrDefaultAsync(ct)
+            ?? throw new MediaNotFoundException(mediaId, checkInId);
+
+        var url = await storage.PresignedGetUrlAsync(row.StorageKey, SignedGetTtl, ct);
+        return new MediaUrlResponse(url, SignedGetTtlSeconds);
     }
 
     private static CheckInMediaResponse ToResponse(CheckInMedia row) => new(

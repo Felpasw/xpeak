@@ -15,4 +15,10 @@ public interface IMediaService
         Guid checkInId,
         ConfirmMediaRequest request,
         CancellationToken ct);
+
+    Task<MediaUrlResponse> GetSignedUrlAsync(
+        Guid userId,
+        Guid checkInId,
+        Guid mediaId,
+        CancellationToken ct);
 }

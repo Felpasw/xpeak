@@ -34,3 +34,12 @@ public sealed class StorageKeyCheckInMismatchException(string storageKey, Guid e
     public Guid Expected { get; } = expected;
     public Guid Actual { get; } = actual;
 }
+
+/// <summary>Thrown when the referenced media row does not exist under
+/// the given check-in. Endpoint layer maps to HTTP 404.</summary>
+public sealed class MediaNotFoundException(Guid mediaId, Guid checkInId)
+    : Exception($"Media '{mediaId}' not found under check-in '{checkInId}'.")
+{
+    public Guid MediaId { get; } = mediaId;
+    public Guid CheckInId { get; } = checkInId;
+}

@@ -36,6 +36,7 @@ public static class MediaModule
     {
         PresignMediaEndpoint.Map(app);
         ConfirmMediaEndpoint.Map(app);
+        GetMediaUrlEndpoint.Map(app);
         return app;
     }
 
