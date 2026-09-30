@@ -68,6 +68,7 @@ app.UsePasswordAuth();
 app.UseGoogleAuth();
 app.UseProgression();
 app.UseCheckIns();
+app.UseMedia();
 
 app.Run();
 

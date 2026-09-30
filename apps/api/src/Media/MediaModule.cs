@@ -1,5 +1,8 @@
+using FluentValidation;
+using Xpeak.Api.Media.Endpoints;
 using Xpeak.Api.Media.Providers.Cloudinary;
 using Xpeak.Api.Media.Providers.Fake;
+using Xpeak.Api.Media.Services;
 
 namespace Xpeak.Api.Media;
 
@@ -14,6 +17,10 @@ public static class MediaModule
     {
         services.Configure<MediaOptions>(configuration.GetSection(MediaOptions.SectionName));
         services.AddSingleton(TimeProvider.System);
+        services.AddMemoryCache();
+        services.AddSingleton<IPendingMediaCache, PendingMediaCache>();
+        services.AddScoped<IMediaService, MediaService>();
+        services.AddValidatorsFromAssemblyContaining(typeof(MediaModule));
 
         var provider = configuration[$"{MediaOptions.SectionName}:Provider"] ?? CloudinaryProvider;
         return provider.ToLowerInvariant() switch
@@ -23,6 +30,13 @@ public static class MediaModule
             _ => throw new InvalidOperationException(
                 $"Unknown media provider '{provider}'. Supported: '{CloudinaryProvider}', '{FakeProvider}'."),
         };
+    }
+
+    public static IEndpointRouteBuilder UseMedia(this IEndpointRouteBuilder app)
+    {
+        PresignMediaEndpoint.Map(app);
+        ConfirmMediaEndpoint.Map(app);
+        return app;
     }
 
     private static IServiceCollection AddFake(IServiceCollection services)

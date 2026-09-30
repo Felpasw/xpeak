@@ -1,4 +1,5 @@
 using Xpeak.Api.Media.Dto;
+using Xpeak.Api.Media.Entities;
 
 namespace Xpeak.Api.Media;
 
@@ -19,4 +20,15 @@ public interface IMediaStorage
         CancellationToken ct);
 
     Task DeleteAsync(string key, CancellationToken ct);
+
+    /// <summary>
+    /// Looks up the authoritative metadata for a stored asset. Returns
+    /// null when the backend has no record of it — the confirm flow
+    /// uses this both as an existence check and as the source of
+    /// truth for width, height and duration.
+    /// </summary>
+    Task<MediaMetadata?> GetMetadataAsync(
+        string key,
+        MediaKind kind,
+        CancellationToken ct);
 }

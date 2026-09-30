@@ -1,4 +1,6 @@
+using System.Collections.Concurrent;
 using Xpeak.Api.Media.Dto;
+using Xpeak.Api.Media.Entities;
 
 namespace Xpeak.Api.Media.Providers.Fake;
 
@@ -12,10 +14,17 @@ public sealed class FakeMediaStorage : IMediaStorage
     private readonly List<string> _puts = [];
     private readonly List<string> _gets = [];
     private readonly List<string> _deletes = [];
+    private readonly ConcurrentDictionary<string, MediaMetadata> _metadata = new();
 
     public IReadOnlyList<string> PutCalls => _puts;
     public IReadOnlyList<string> GetCalls => _gets;
     public IReadOnlyList<string> DeleteCalls => _deletes;
+
+    /// <summary>Test hook: pre-load the metadata that
+    /// <see cref="GetMetadataAsync"/> should report for <paramref name="key"/>.
+    /// Simulates the state after a successful upload.</summary>
+    public void SeedMetadata(string key, MediaMetadata metadata) =>
+        _metadata[key] = metadata;
 
     public Task<PresignedUpload> PresignedPutUrlAsync(
         string key,
@@ -44,7 +53,16 @@ public sealed class FakeMediaStorage : IMediaStorage
         EnsureKey(key);
 
         _deletes.Add(key);
+        _metadata.TryRemove(key, out _);
         return Task.CompletedTask;
+    }
+
+    public Task<MediaMetadata?> GetMetadataAsync(string key, MediaKind kind, CancellationToken ct)
+    {
+        EnsureKey(key);
+
+        _metadata.TryGetValue(key, out var meta);
+        return Task.FromResult<MediaMetadata?>(meta);
     }
 
     private static void EnsureKey(string key)

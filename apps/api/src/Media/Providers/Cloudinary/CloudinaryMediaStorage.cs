@@ -1,7 +1,11 @@
+using System.Net;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Xpeak.Api.Media.Dto;
+using Xpeak.Api.Media.Entities;
 
 namespace Xpeak.Api.Media.Providers.Cloudinary;
 
@@ -92,6 +96,38 @@ public sealed class CloudinaryMediaStorage(
         var uri = $"{_opts.ApiBaseUrl}/v1_1/{_opts.CloudName}/image/destroy";
         using var response = await http.PostAsync(uri, body, ct);
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<MediaMetadata?> GetMetadataAsync(string key, MediaKind kind, CancellationToken ct)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
+        var resource = kind == MediaKind.Video ? "video" : "image";
+        var uri = $"{_opts.ApiBaseUrl}/v1_1/{_opts.CloudName}/resources/{resource}/upload/{Uri.EscapeDataString(key)}";
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+        request.Headers.Authorization = new AuthenticationHeaderValue(
+            "Basic",
+            Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_opts.ApiKey}:{_opts.ApiSecret}")));
+
+        using var response = await http.SendAsync(request, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+        response.EnsureSuccessStatusCode();
+
+        using var stream = await response.Content.ReadAsStreamAsync(ct);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+        var root = doc.RootElement;
+
+        int width = root.TryGetProperty("width", out var w) ? w.GetInt32() : 0;
+        int height = root.TryGetProperty("height", out var h) ? h.GetInt32() : 0;
+        int? duration = root.TryGetProperty("duration", out var d) && d.ValueKind != JsonValueKind.Null
+            ? (int)Math.Round(d.GetDouble())
+            : null;
+
+        return new MediaMetadata(width, height, duration);
     }
 
     private string Sign(SortedDictionary<string, string> parameters)
