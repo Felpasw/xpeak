@@ -256,8 +256,6 @@ namespace Xpeak.Api.Migrations
                             t.HasCheckConstraint("ck_check_ins_notes_length", "notes IS NULL OR length(notes) <= 280");
 
                             t.HasCheckConstraint("ck_check_ins_title_shape", "length(trim(title)) > 0 AND length(title) <= 60");
-
-                            t.HasCheckConstraint("ck_check_ins_xp_earned_positive", "xp_earned > 0");
                         });
                 });
 

@@ -202,7 +202,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             b.ToTable("check_ins", t =>
             {
-                t.HasCheckConstraint("ck_check_ins_xp_earned_positive", "xp_earned > 0");
+                // No CHECK on xp_earned: it's server-written, never from
+                // user input, and the "pending media upload" state uses
+                // the natural value 0 (flipped to a positive total on
+                // publish). The old `> 0` CHECK was defensive against a
+                // scenario the code never produces.
                 t.HasCheckConstraint(
                     "ck_check_ins_duration_positive",
                     "duration_minutes IS NULL OR duration_minutes > 0");

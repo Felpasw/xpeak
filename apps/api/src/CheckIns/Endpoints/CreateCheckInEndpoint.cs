@@ -37,7 +37,8 @@ public static class CreateCheckInEndpoint
                     request.Title,
                     request.PerformedAt,
                     request.DurationMinutes,
-                    request.Notes),
+                    request.Notes,
+                    request.WithMedia),
                 ct);
 
             var response = new CreateCheckInResponse(

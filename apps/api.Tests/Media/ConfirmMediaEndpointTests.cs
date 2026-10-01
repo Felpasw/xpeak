@@ -190,6 +190,70 @@ public sealed class ConfirmMediaEndpointTests
     }
 
     [Fact]
+    public async Task Confirming_media_on_a_pending_check_in_publishes_it_and_returns_delta()
+    {
+        var fixture = await SeedFixtureAsync();
+        await JoinGroupAsync(fixture);
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var create = await client.PostAsJsonAsync("/check_ins", new
+        {
+            categoryId = fixture.Category.Id,
+            title = "pending leg day",
+            withMedia = true,
+        });
+        create.StatusCode.Should().Be(HttpStatusCode.Created);
+        var createdId = (await create.Content.ReadFromJsonAsync<CreatedResponseDto>())!.CheckIn.Id;
+
+        var storageKey = await IssuePresignAsync(client, createdId, "photo");
+        SeedBackendMetadata(storageKey, new MediaMetadata(800, 600, null));
+
+        var confirm = await client.PostAsJsonAsync(
+            $"/check_ins/{createdId}/media",
+            new { items = new[] { new { storageKey, kind = "photo", position = 0 } } });
+
+        confirm.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await confirm.Content.ReadFromJsonAsync<ConfirmWithPublishDto>();
+        body!.Publish.Should().NotBeNull();
+        body.Publish!.User.Xp.Should().BeGreaterThan(0);
+        body.Publish.Streak.Current.Should().Be(1);
+        body.Publish.Streak.Unit.Should().Be("day");
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var persisted = await db.CheckIns.AsNoTracking().SingleAsync(c => c.Id == createdId);
+        persisted.XpEarned.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task Confirming_media_on_an_already_published_check_in_omits_publish_delta()
+    {
+        var fixture = await SeedFixtureAsync();
+        await JoinGroupAsync(fixture);
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var create = await client.PostAsJsonAsync("/check_ins", new
+        {
+            categoryId = fixture.Category.Id,
+            title = "published without media",
+            // withMedia defaults to false → published on create
+        });
+        create.StatusCode.Should().Be(HttpStatusCode.Created);
+        var createdId = (await create.Content.ReadFromJsonAsync<CreatedResponseDto>())!.CheckIn.Id;
+
+        var storageKey = await IssuePresignAsync(client, createdId, "photo");
+        SeedBackendMetadata(storageKey, new MediaMetadata(800, 600, null));
+
+        var confirm = await client.PostAsJsonAsync(
+            $"/check_ins/{createdId}/media",
+            new { items = new[] { new { storageKey, kind = "photo", position = 0 } } });
+
+        confirm.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await confirm.Content.ReadFromJsonAsync<ConfirmWithPublishDto>();
+        body!.Publish.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Consumed_storage_key_cannot_be_confirmed_twice()
     {
         var fixture = await SeedFixtureAsync();
@@ -274,6 +338,19 @@ public sealed class ConfirmMediaEndpointTests
         return new SeededFixture(user, group, category);
     }
 
+    private async Task JoinGroupAsync(SeededFixture fixture)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.GroupMemberships.Add(new GroupMembership
+        {
+            UserId = fixture.User.Id,
+            GroupId = fixture.Group.Id,
+            JoinedAt = DateTimeOffset.UtcNow,
+        });
+        await db.SaveChangesAsync();
+    }
+
     private async Task<CheckIn> SeedCheckInAsync(SeededFixture fixture)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
@@ -299,6 +376,14 @@ public sealed class ConfirmMediaEndpointTests
     private sealed record PresignResponseDto(IReadOnlyList<PresignSlotDto> Presigned);
     private sealed record PresignSlotDto(string StorageKey, string Url, int ExpiresIn);
     private sealed record ConfirmResponseDto(IReadOnlyList<CheckInMediaDto> Media);
+    private sealed record ConfirmWithPublishDto(
+        IReadOnlyList<CheckInMediaDto> Media,
+        PublishDeltaDto? Publish);
+    private sealed record PublishDeltaDto(UserDeltaDto User, StreakDeltaDto Streak);
+    private sealed record UserDeltaDto(Guid Id, int Xp, int Level, bool LeveledUp, int LevelsGained);
+    private sealed record StreakDeltaDto(int Current, int Longest, string Unit);
+    private sealed record CreatedResponseDto(CreatedCheckInDto CheckIn);
+    private sealed record CreatedCheckInDto(Guid Id);
     private sealed record CheckInMediaDto(
         Guid Id,
         Guid CheckInId,

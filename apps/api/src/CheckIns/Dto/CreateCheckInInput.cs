@@ -12,4 +12,5 @@ public sealed record CreateCheckInInput(
     string Title,
     DateTimeOffset? PerformedAt = null,
     int? DurationMinutes = null,
-    string? Notes = null);
+    string? Notes = null,
+    bool WithMedia = false);

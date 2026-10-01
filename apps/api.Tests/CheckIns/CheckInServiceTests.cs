@@ -146,6 +146,84 @@ public sealed class CheckInServiceTests
         result.CheckIn.GroupId.Should().Be(fixture.Category.GroupId);
     }
 
+    [Fact]
+    public async Task Create_with_media_persists_pending_row_without_xp_award()
+    {
+        var fixture = await SeedFixtureAsync(baseXp: 15, weight: 1.40m);
+        await JoinGroupAsync(fixture);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<ICheckInService>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var result = await service.CreateAsync(
+            fixture.User.Id,
+            new CreateCheckInInput(fixture.Category.Id, "leg day", WithMedia: true));
+
+        result.CheckIn.XpEarned.Should().Be(0);
+        result.CheckIn.ScoringSnapshot.Total.Should().Be(0);
+
+        result.User.Xp.Should().Be(0);
+        result.User.Level.Should().Be(0);
+        result.LevelUp.LeveledUp.Should().BeFalse();
+        result.LevelUp.LevelsGained.Should().Be(0);
+        result.Streak.Current.Should().Be(0);
+        result.Streak.Longest.Should().Be(0);
+
+        var persisted = await db.CheckIns.AsNoTracking().SingleAsync(c => c.Id == result.CheckIn.Id);
+        persisted.XpEarned.Should().Be(0);
+
+        var persistedUser = await db.Users.AsNoTracking().SingleAsync(u => u.Id == fixture.User.Id);
+        persistedUser.Xp.Should().Be(0);
+        persistedUser.Level.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task PublishAsync_awards_xp_and_bumps_user_on_a_pending_check_in()
+    {
+        var fixture = await SeedFixtureAsync(baseXp: 15, weight: 1.40m);
+        await JoinGroupAsync(fixture);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<ICheckInService>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var created = await service.CreateAsync(
+            fixture.User.Id,
+            new CreateCheckInInput(fixture.Category.Id, "leg day", WithMedia: true));
+
+        var published = await service.PublishAsync(created.CheckIn.Id);
+
+        published.CheckIn.XpEarned.Should().Be(21);
+        published.CheckIn.ScoringSnapshot.Total.Should().Be(21);
+        published.User.Xp.Should().Be(21);
+        published.Streak.Current.Should().Be(1);
+
+        var persisted = await db.CheckIns.AsNoTracking().SingleAsync(c => c.Id == created.CheckIn.Id);
+        persisted.XpEarned.Should().Be(21);
+
+        var persistedUser = await db.Users.AsNoTracking().SingleAsync(u => u.Id == fixture.User.Id);
+        persistedUser.Xp.Should().Be(21);
+    }
+
+    [Fact]
+    public async Task PublishAsync_on_an_already_published_check_in_throws()
+    {
+        var fixture = await SeedFixtureAsync();
+        await JoinGroupAsync(fixture);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<ICheckInService>();
+
+        var created = await service.CreateAsync(
+            fixture.User.Id,
+            new CreateCheckInInput(fixture.Category.Id, "leg day"));
+
+        var act = async () => await service.PublishAsync(created.CheckIn.Id);
+
+        await act.Should().ThrowAsync<CheckInAlreadyPublishedException>();
+    }
+
     private sealed record SeededFixture(AppUser User, Group Group, Category Category);
 
     private async Task<SeededFixture> SeedFixtureAsync(int baseXp = 10, decimal weight = 1.0m)

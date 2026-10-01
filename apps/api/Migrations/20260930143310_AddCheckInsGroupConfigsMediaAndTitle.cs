@@ -42,7 +42,6 @@ namespace Xpeak.Api.Migrations
                     table.CheckConstraint("ck_check_ins_duration_positive", "duration_minutes IS NULL OR duration_minutes > 0");
                     table.CheckConstraint("ck_check_ins_notes_length", "notes IS NULL OR length(notes) <= 280");
                     table.CheckConstraint("ck_check_ins_title_shape", "length(trim(title)) > 0 AND length(title) <= 60");
-                    table.CheckConstraint("ck_check_ins_xp_earned_positive", "xp_earned > 0");
                     table.ForeignKey(
                         name: "FK_check_ins_categories_category_id",
                         column: x => x.category_id,

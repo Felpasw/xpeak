@@ -23,6 +23,32 @@ public sealed class CreateCheckInEndpointTests
     }
 
     [Fact]
+    public async Task Pending_path_returns_201_with_zero_xp_when_with_media_is_true()
+    {
+        var fixture = await SeedFixtureAsync(baseXp: 15, weight: 1.40m);
+        await JoinGroupAsync(fixture);
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var response = await client.PostAsJsonAsync("/check_ins", new
+        {
+            categoryId = fixture.Category.Id,
+            title = "with media",
+            withMedia = true,
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var body = await response.Content.ReadFromJsonAsync<CreateCheckInResponseDto>();
+        body.Should().NotBeNull();
+        body!.CheckIn.XpEarned.Should().Be(0);
+        body.CheckIn.HasMedia.Should().BeFalse();
+
+        body.User.Xp.Should().Be(0);
+        body.User.LeveledUp.Should().BeFalse();
+        body.Streak.Current.Should().Be(0);
+    }
+
+    [Fact]
     public async Task Rejects_without_a_token_with_401()
     {
         var client = _factory.CreateClient();
@@ -61,6 +87,7 @@ public sealed class CreateCheckInEndpointTests
         body.CheckIn.DurationMinutes.Should().Be(45);
         body.CheckIn.ScoringSnapshot.BaseXp.Should().Be(15);
         body.CheckIn.ScoringSnapshot.Total.Should().Be(21);
+        body.CheckIn.HasMedia.Should().BeFalse();
 
         body.User.Xp.Should().Be(21);
         body.User.Level.Should().Be(0);
@@ -148,7 +175,8 @@ public sealed class CreateCheckInEndpointTests
         ScoringSnapshotBody ScoringSnapshot,
         DateTimeOffset PerformedAt,
         int? DurationMinutes,
-        string? Notes);
+        string? Notes,
+        bool HasMedia);
 
     private sealed record ScoringSnapshotBody(
         int BaseXp,

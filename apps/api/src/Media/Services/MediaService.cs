@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Xpeak.Api.CheckIns.Services;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Media.Dto;
 using Xpeak.Api.Media.Entities;
@@ -9,6 +10,7 @@ public sealed class MediaService(
     AppDbContext db,
     IMediaStorage storage,
     IPendingMediaCache pending,
+    ICheckInService checkIns,
     TimeProvider time) : IMediaService
 {
     private const int PresignTtlSeconds = 600;
@@ -104,7 +106,39 @@ public sealed class MediaService(
         db.CheckInMedia.AddRange(rows);
         await db.SaveChangesAsync(ct);
 
-        return new ConfirmMediaResponse(rows.Select(ToResponse).ToList());
+        var publish = await MaybePublishAsync(checkInId, ct);
+        return new ConfirmMediaResponse(rows.Select(ToResponse).ToList(), publish);
+    }
+
+    private async Task<PublishDeltaResponse?> MaybePublishAsync(Guid checkInId, CancellationToken ct)
+    {
+        // xp_earned = 0 is the "pending" signal (see CheckIn mapping).
+        // The batch confirm itself is the "done" trigger — no counting,
+        // no intent comparison. Subsequent confirms on an already-
+        // published row are no-ops here.
+        var xpEarned = await db.CheckIns
+            .AsNoTracking()
+            .Where(c => c.Id == checkInId)
+            .Select(c => c.XpEarned)
+            .SingleAsync(ct);
+
+        if (xpEarned != 0)
+        {
+            return null;
+        }
+
+        var result = await checkIns.PublishAsync(checkInId, ct);
+        return new PublishDeltaResponse(
+            new UserProgressionDeltaResponse(
+                result.User.Id,
+                result.User.Xp,
+                result.User.Level,
+                result.LevelUp.LeveledUp,
+                result.LevelUp.LevelsGained),
+            new StreakDeltaResponse(
+                result.Streak.Current,
+                result.Streak.Longest,
+                result.Streak.Unit.ToString().ToLowerInvariant()));
     }
 
     public async Task<MediaUrlResponse> GetSignedUrlAsync(

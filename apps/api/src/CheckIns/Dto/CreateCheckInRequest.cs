@@ -13,4 +13,5 @@ public sealed record CreateCheckInRequest(
     string Title,
     DateTimeOffset? PerformedAt = null,
     int? DurationMinutes = null,
-    string? Notes = null);
+    string? Notes = null,
+    bool WithMedia = false);
