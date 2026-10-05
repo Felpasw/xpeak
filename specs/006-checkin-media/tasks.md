@@ -13,13 +13,13 @@
   - Paste credentials into local `.env` (not committed).
   - Update `.env.example` with placeholders.
 
-- [ ] **T-006-02 `[T][S]`** — `IMediaStorage` interface + `FakeMediaStorage`
+- [x] **T-006-02 `[T][S]`** ✅ commit `10b43c2` — `IMediaStorage` interface + `FakeMediaStorage`
   - Failing test: `FakeMediaStorage.PresignedPutUrlAsync` returns a
     deterministic URL.
   - Implement interface + fake.
   - Green.
 
-- [ ] **T-006-03 `[T][S]`** — `CloudinaryMediaStorage`
+- [x] **T-006-03 `[T][S]`** ✅ commit `10b43c2` — `CloudinaryMediaStorage`
   - Failing test with `WireMock.Net` (or `HttpMessageHandler` stub)
     simulating Cloudinary.
   - Implement using `CloudinaryDotNet`.
@@ -27,25 +27,25 @@
 
 ## Section B — Schema
 
-- [ ] **T-006-04 `[T][S]`** — `check_in_media` migration + schema
+- [x] **T-006-04 `[T][S]`** ✅ commit `5a65d56` — `check_in_media` migration + schema
   - Failing tests: FK, kind whitelist, unique storage_key.
   - Implement.
   - Green.
 
 ## Section C — Presign + attach endpoints
 
-- [ ] **T-006-05 `[T][S]`** — `POST /check_ins/{id}/media/presign`
+- [x] **T-006-05 `[T][S]`** ✅ commit `1fe5fb0` — `POST /check_ins/{id}/media/presign`
   - Failing controller tests: happy, 403 not owner, 422 over-cap.
   - Implement.
   - Green.
 
-- [ ] **T-006-06 `[T][S]`** — `POST /check_ins/{id}/media`
+- [x] **T-006-06 `[T][S]`** ✅ commit `1fe5fb0` — `POST /check_ins/{id}/media`
   - Failing controller tests: happy, 422 mismatched keys, 403 not
     owner.
   - Implement (records rows + updates check-in status if needed).
   - Green.
 
-- [ ] **T-006-07 `[T][S]`** — `GET /check_ins/{id}/media/{media_id}/url`
+- [x] **T-006-07 `[T][S]`** ✅ commit `5036b72` — `GET /check_ins/{id}/media/{media_id}/url`
   - Failing test: returns fresh signed URL; TTL respected.
   - Implement.
   - Green.
