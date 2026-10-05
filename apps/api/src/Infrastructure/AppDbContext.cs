@@ -142,6 +142,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
                 .HasColumnType("numeric(4,2)");
             b.Property(r => r.CreatedAt).HasColumnName("created_at");
             b.Property(r => r.UpdatedAt).HasColumnName("updated_at");
+
+            b.HasData(new XpRule
+            {
+                Id = SeedIds.DefaultXpRule,
+                BaseXp = 10,
+                WeightMultiplier = 1.0m,
+                CreatedAt = SeedIds.SeedTimestamp,
+                UpdatedAt = SeedIds.SeedTimestamp,
+            });
         });
 
         modelBuilder.Entity<Category>(b =>
@@ -168,6 +177,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
                 .OnDelete(DeleteBehavior.Restrict);
 
             b.HasIndex(c => new { c.GroupId, c.Slug }).IsUnique();
+
+            b.HasData(SeedIds.GlobalCategories);
         });
 
         modelBuilder.Entity<GroupConfig>(b =>
