@@ -91,10 +91,13 @@ describe('<CheckinForm />', () => {
         await renderForm();
         await waitFor(() => expect(screen.getByRole('radio', { name: 'Legs' })).toBeInTheDocument());
 
+        await user.type(screen.getByLabelText(/t(í|i)tulo/i), 'Perna B');
         await user.click(screen.getByRole('button', { name: /registrar check-in/i }));
 
         await waitFor(() =>
-            expect(screen.getByRole('alert')).toHaveTextContent(/escolha uma categoria/i),
+            expect(
+                screen.getByText(/escolha uma categoria/i),
+            ).toBeInTheDocument(),
         );
     });
 
@@ -131,17 +134,22 @@ describe('<CheckinForm />', () => {
         await renderForm();
         await waitFor(() => expect(screen.getByRole('radio', { name: 'Chest' })).toBeInTheDocument());
 
+        await user.type(screen.getByLabelText(/t(í|i)tulo/i), '  Perna A  ');
         await user.click(screen.getByRole('radio', { name: 'Chest' }));
         await user.type(screen.getByLabelText(/dura(ç|c)ão/i), '45');
         await user.type(screen.getByPlaceholderText(/como foi/i), '  hard set  ');
         await user.click(screen.getByRole('button', { name: /registrar check-in/i }));
 
         await waitFor(() => expect(routerReplace).toHaveBeenCalledWith('/profile'));
-        expect(receivedBody).toEqual({
+        expect(receivedBody).toMatchObject({
             categoryId: 'cat-chest',
+            title: 'Perna A',
             durationMinutes: 45,
             notes: 'hard set',
         });
+        expect((receivedBody as { performedAt: string }).performedAt).toMatch(
+            /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+        );
     });
 
     it('renders the empty state when the group has no categories', async () => {
@@ -189,6 +197,7 @@ describe('<CheckinForm />', () => {
         await renderForm();
         await waitFor(() => expect(screen.getByRole('radio', { name: 'Legs' })).toBeInTheDocument());
 
+        await user.type(screen.getByLabelText(/t(í|i)tulo/i), 'Leg day');
         await user.click(screen.getByRole('radio', { name: 'Legs' }));
         await user.click(screen.getByRole('button', { name: /registrar check-in/i }));
 

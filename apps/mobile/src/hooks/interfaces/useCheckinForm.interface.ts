@@ -7,6 +7,8 @@ import type {
 
 export interface CheckinFormValues {
     categoryId: string;
+    title: string;
+    performedOn: string;
     duration: string;
     notes: string;
 }

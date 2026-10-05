@@ -90,12 +90,14 @@ describe('checkInService', () => {
 
         const result = await service.create({
             categoryId: 'cat-1',
+            title: 'Leg day',
             durationMinutes: 45,
             notes: 'leg day',
         });
 
         expect(receivedBody).toEqual({
             categoryId: 'cat-1',
+            title: 'Leg day',
             durationMinutes: 45,
             notes: 'leg day',
         });
