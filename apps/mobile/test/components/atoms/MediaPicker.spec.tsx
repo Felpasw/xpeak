@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MediaKind } from '@xpeak/shared';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,7 +17,7 @@ const { pickFromGallery, pickFromCamera } = await import('@/lib/media/picker');
 function buildMedia(id: string): SelectedMedia {
     return {
         id,
-        kind: 'photo',
+        kind: MediaKind.Photo,
         previewUrl: `blob:fake/${id}`,
         blob: new Blob(['x']),
         mimeType: 'image/jpeg',

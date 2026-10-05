@@ -1,4 +1,5 @@
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { MediaKind } from '@xpeak/shared';
 
 import type { SelectedMedia } from '@/lib/media/types';
 
@@ -23,7 +24,7 @@ export async function pickFromGallery({ limit }: PickOptions): Promise<SelectedM
             const blob = await urlToBlob(previewUrl);
             return {
                 id: randomId(),
-                kind: 'photo' as const,
+                kind: MediaKind.Photo,
                 previewUrl,
                 blob,
                 mimeType: blob.type || `image/${photo.format}`,
@@ -42,7 +43,7 @@ export async function pickFromCamera(): Promise<SelectedMedia> {
     const blob = await urlToBlob(previewUrl);
     return {
         id: randomId(),
-        kind: 'photo',
+        kind: MediaKind.Photo,
         previewUrl,
         blob,
         mimeType: blob.type || `image/${photo.format}`,

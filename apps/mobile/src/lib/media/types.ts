@@ -1,4 +1,4 @@
-export type MediaKind = 'photo' | 'video';
+import type { MediaKind } from '@xpeak/shared';
 
 export interface SelectedMedia {
     id: string;
