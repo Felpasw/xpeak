@@ -5,12 +5,15 @@ import type {
     UseFormWatch,
 } from 'react-hook-form';
 
+import type { SelectedMedia } from '@/lib/media/types';
+
 export interface CheckinFormValues {
     categoryId: string;
     title: string;
     performedOn: string;
     duration: string;
     notes: string;
+    media: SelectedMedia[];
 }
 
 export interface UseCheckinFormResult {

@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { useCreateCheckIn } from '@/hooks/useCheckIn';
+import { uploadCheckInMedia } from '@/lib/media/uploader';
+import type { SelectedMedia } from '@/lib/media/types';
 
 import type {
     CheckinFormValues,
@@ -29,10 +31,12 @@ export const CHECKIN_MESSAGES = {
     dateTooOld: `A data não pode ser mais de ${MAX_BACKFILL_DAYS} dias atrás.`,
     durationInvalid: 'Duração precisa ser um número inteiro positivo.',
     notesTooLong: `Descrição deve ter no máximo ${NOTES_MAX_LENGTH} caracteres.`,
+    mediaRequired: 'Anexa pelo menos uma foto do treino.',
     submit: 'Registrar check-in',
     submitting: 'Registrando…',
     successToast: 'Check-in registrado!',
     genericError: 'Não deu pra salvar o check-in.',
+    uploadError: 'Não deu pra enviar as fotos.',
 } as const;
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -62,6 +66,7 @@ const checkinSchema = z.object({
             CHECKIN_MESSAGES.durationInvalid,
         ),
     notes: z.string().max(NOTES_MAX_LENGTH, CHECKIN_MESSAGES.notesTooLong),
+    media: z.array(z.custom<SelectedMedia>()).min(1, CHECKIN_MESSAGES.mediaRequired),
 });
 
 export function useCheckinForm(): UseCheckinFormResult {
@@ -76,6 +81,7 @@ export function useCheckinForm(): UseCheckinFormResult {
             performedOn: todayIso(),
             duration: '',
             notes: '',
+            media: [],
         },
         resolver: standardSchemaResolver(checkinSchema),
         mode: 'onSubmit',
@@ -93,10 +99,15 @@ export function useCheckinForm(): UseCheckinFormResult {
                 performedAt: performedOnToIso(values.performedOn),
                 durationMinutes: parsedDuration,
                 notes: trimmedNotes === '' ? null : trimmedNotes,
+                withMedia: true,
             });
+
+            const confirmation = await uploadCheckInMedia(result.checkIn.id, values.media);
+            const publishedUser = confirmation.publish?.user ?? result.user;
+
             toast.success(CHECKIN_MESSAGES.successToast);
-            if (result.user.leveledUp) {
-                setLevelUpTo(result.user.level);
+            if (publishedUser.leveledUp) {
+                setLevelUpTo(publishedUser.level);
                 return;
             }
             router.replace('/profile');
@@ -121,8 +132,6 @@ export function useCheckinForm(): UseCheckinFormResult {
     };
 }
 
-// Anchor the date input to noon so timezone shifts don't push it into
-// the previous day when serialized as UTC.
 function performedOnToIso(performedOn: string) {
     return new Date(`${performedOn}T12:00:00`).toISOString();
 }

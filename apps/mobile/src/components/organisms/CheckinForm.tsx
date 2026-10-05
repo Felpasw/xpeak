@@ -7,6 +7,7 @@ import { AnimatedBorderFab } from '@/components/atoms/AnimatedBorderFab';
 import { ControlledCategoryPicker } from '@/components/atoms/ControlledCategoryPicker';
 import { ControlledDatePicker } from '@/components/atoms/ControlledDatePicker';
 import { ControlledInput } from '@/components/atoms/ControlledInput';
+import { ControlledMediaPicker } from '@/components/atoms/ControlledMediaPicker';
 import { ControlledTextarea } from '@/components/atoms/ControlledTextarea';
 import { LevelUpOverlay } from '@/components/atoms/LevelUpOverlay';
 import { PageHeader } from '@/components/atoms/PageHeader';
@@ -90,6 +91,8 @@ export function CheckinForm() {
                     maxLength={DESCRIPTION_LIMIT}
                     counter
                 />
+
+                <ControlledMediaPicker control={control} name="media" />
 
                 <AnimatedBorderFab
                     type="submit"

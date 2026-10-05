@@ -42,6 +42,7 @@ export interface CreateCheckInRequest {
   performedAt?: string | null;
   durationMinutes?: number | null;
   notes?: string | null;
+  withMedia?: boolean;
 }
 
 export interface UserProgression {
