@@ -66,15 +66,29 @@ function DockIcon({ item, active }: DockIconProps) {
                 className="relative flex h-14 w-14 items-center justify-center"
             >
                 <motion.span
-                    className="relative flex h-16 w-16 -translate-y-6 items-center justify-center overflow-hidden rounded-full border-2 border-sky-300/70 bg-sky-500 text-zinc-950 shadow-[0_12px_28px_-6px_rgba(56,189,248,0.7)]"
+                    className="relative flex h-16 w-16 -translate-y-6 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-white/5 text-white shadow-2xl backdrop-blur-md"
                     whileTap={{ scale: 0.92 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                 >
-                    <Icon className="h-7 w-7" strokeWidth={2.75} />
                     <span
                         aria-hidden="true"
-                        className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/40 to-transparent"
-                    />
+                        className="pointer-events-none absolute -inset-px rounded-full border-2 border-transparent [mask-clip:padding-box,border-box] [mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]"
+                    >
+                        <motion.span
+                            className="absolute aspect-square bg-gradient-to-r from-transparent via-sky-400 to-sky-300"
+                            animate={{ offsetDistance: ['0%', '100%'] }}
+                            style={{
+                                width: 24,
+                                offsetPath: 'circle(50% at 50% 50%)',
+                            }}
+                            transition={{
+                                repeat: Number.POSITIVE_INFINITY,
+                                duration: 4,
+                                ease: 'linear',
+                            }}
+                        />
+                    </span>
+                    <Icon className="relative h-7 w-7" strokeWidth={2.75} />
                 </motion.span>
             </Link>
         );
