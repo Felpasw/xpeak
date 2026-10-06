@@ -77,18 +77,29 @@ from `ComingSoon` to the primary history surface.
 duplicates work that Phase 13 will properly deliver as a
 poliforme event feed. Home stays action-oriented.
 
-### 3.4. Pending check-ins are filtered server-side
+### 3.4. Pending check-ins — fix at the source, not at the listing
 
-**Decided: yes.** The current query returns everything, including
-rows left pending by Phase 6's two-step media flow. These have
-`xp_earned = 0` and look broken in the list. The listing filter
-is `xp_earned > 0`, applied in `CheckInRepository.ListAsync`.
+**Decided: fix at the source.** The listing originally planned a
+server-side filter (`xp_earned > 0`), tracked as T-028-01. That
+was cancelled after review: filtering hides a real inconsistency
+instead of repairing it.
 
-- This is additive to Phase 6 — the repository filter does not
-  change the pending row's lifecycle, only hides it from the
-  "finished history" surface.
-- A dedicated "pending uploads" view, if ever needed, is a
-  Phase 6 polish task.
+Root cause lives in `apps/mobile/src/hooks/useCheckinForm.ts`
+(lines 95-116): on upload failure the pending check-in row stays
+in the DB forever with `xp_earned = 0`, no media, no scoring —
+exactly the "Acabei" orphan currently sitting in the dev DB.
+
+Fix moves to **Phase 6** as **T-006-18**: on upload failure (or
+any error between `POST /check_ins` and `media/confirm` success),
+the mobile calls a new `DELETE /check_ins/{id}` endpoint that
+hard-deletes the pending row. Guarded server-side to only accept
+deletion when `XpEarned == 0` and the caller is the owner, so a
+published check-in can never be nuked.
+
+Consequence for this phase: the listing endpoint is unchanged,
+tests only cover `xp_earned > 0` paths implicitly (the pending
+rows will never reach the listing once rollback ships), and the
+dev DB `Acabei` orphan is a manual-cleanup artifact.
 
 ### 3.5. Media preview URL comes from Cloudinary transformation
 
