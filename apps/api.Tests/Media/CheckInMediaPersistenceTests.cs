@@ -221,16 +221,16 @@ public sealed class CheckInMediaPersistenceTests
         MediaKind kind = MediaKind.Photo,
         string? storageKey = null,
         int? duration = null) => new()
-    {
-        Id = Guid.NewGuid(),
-        CheckInId = fixture.CheckIn.Id,
-        Kind = kind,
-        StorageKey = storageKey ?? $"checkins/{fixture.CheckIn.Id}/{Guid.NewGuid()}.jpg",
-        Width = kind == MediaKind.Photo ? 1920 : null,
-        Height = kind == MediaKind.Photo ? 1080 : null,
-        DurationSeconds = duration,
-        Position = 0,
-    };
+        {
+            Id = Guid.NewGuid(),
+            CheckInId = fixture.CheckIn.Id,
+            Kind = kind,
+            StorageKey = storageKey ?? $"checkins/{fixture.CheckIn.Id}/{Guid.NewGuid()}.jpg",
+            Width = kind == MediaKind.Photo ? 1920 : null,
+            Height = kind == MediaKind.Photo ? 1080 : null,
+            DurationSeconds = duration,
+            Position = 0,
+        };
 
     private sealed record Fixture(AppUser User, Group Group, Category Category, CheckIn CheckIn);
 }
