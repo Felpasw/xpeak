@@ -107,7 +107,7 @@ public sealed class CheckInService(
 
         var noLevelUp = new LevelUpResult(false, user.Level, 0);
         var noStreak = new StreakInfo(0, 0, StreakUnit.Day);
-        return new CreateCheckInResult(checkIn, user, noLevelUp, noStreak);
+        return new CreateCheckInResult(checkIn, user, noLevelUp, noStreak, category);
     }
 
     private async Task<CreateCheckInResult> ApplyScoringAndCommitAsync(
@@ -129,7 +129,7 @@ public sealed class CheckInService(
         await db.SaveChangesAsync(ct);
 
         var streakInfo = await ComputeStreakAsync(user, category.GroupId, checkIn.PerformedAt, ct);
-        return new CreateCheckInResult(checkIn, user, levelUp, streakInfo);
+        return new CreateCheckInResult(checkIn, user, levelUp, streakInfo, category);
     }
 
     private async Task<ScoringResult> BuildScoringAsync(Category category, CancellationToken ct)

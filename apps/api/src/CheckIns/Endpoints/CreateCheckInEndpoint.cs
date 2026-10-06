@@ -41,8 +41,14 @@ public static class CreateCheckInEndpoint
                     request.WithMedia),
                 ct);
 
+            var categorySnapshot = new CategorySnapshot(
+                result.Category.Id,
+                result.Category.Slug,
+                result.Category.Name,
+                result.Category.IconPublicId);
+
             var response = new CreateCheckInResponse(
-                CheckInResponse.From(result.CheckIn),
+                CheckInResponse.From(result.CheckIn, categorySnapshot),
                 new UserProgressionResponse(
                     result.User.Id,
                     result.User.Xp,

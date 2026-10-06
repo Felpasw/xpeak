@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Repositories;
+using Xpeak.Api.Media;
 
 namespace Xpeak.Api.CheckIns.Endpoints;
 
@@ -20,6 +21,7 @@ public static class ListCheckInsEndpoint
     private static async Task<IResult> Handle(
         ClaimsPrincipal principal,
         ICheckInRepository repository,
+        IMediaStorage storage,
         HttpContext ctx,
         int? limit,
         string? cursor,
@@ -36,9 +38,20 @@ public static class ListCheckInsEndpoint
         var page = await repository.ListAsync(userId, effectiveLimit, cursor, group_id, ct);
 
         var response = new ListCheckInsResponse(
-            page.Items.Select(i => CheckInResponse.From(i.CheckIn, i.HasMedia)).ToList(),
+            page.Items.Select(i => CheckInResponse.From(
+                i.CheckIn,
+                i.Category,
+                BuildPreview(storage, i.FirstMedia),
+                i.HasMedia)).ToList(),
             page.NextCursor);
 
         return Results.Ok(response);
     }
+
+    private static MediaPreview? BuildPreview(IMediaStorage storage, FirstMediaSource? source) =>
+        source is null
+            ? null
+            : new MediaPreview(
+                source.Kind.ToString().ToLowerInvariant(),
+                storage.BuildThumbUrl(source.StorageKey, source.Kind));
 }

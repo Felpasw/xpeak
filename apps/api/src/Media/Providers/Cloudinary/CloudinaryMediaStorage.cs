@@ -98,6 +98,27 @@ public sealed class CloudinaryMediaStorage(
         response.EnsureSuccessStatusCode();
     }
 
+    public string BuildThumbUrl(string key, MediaKind kind)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
+        var resource = kind == MediaKind.Video ? "video" : "image";
+        var transformation = kind == MediaKind.Video
+            ? "so_auto,c_fill,w_240,h_240,q_auto"
+            : "c_fill,w_240,h_240,q_auto";
+        // Video posters are delivered as .jpg frames of the source clip.
+        var suffix = kind == MediaKind.Video ? ".jpg" : string.Empty;
+
+        var toSign = $"{transformation}/{key}{_opts.ApiSecret}";
+        var digest = SHA1.HashData(Encoding.UTF8.GetBytes(toSign));
+        var shortSig = Convert.ToBase64String(digest)
+            .Replace('+', '-')
+            .Replace('/', '_')
+            .TrimEnd('=')[..8];
+
+        return $"{DeliveryHost}/{_opts.CloudName}/{resource}/upload/s--{shortSig}--/{transformation}/{key}{suffix}";
+    }
+
     public async Task<MediaMetadata?> GetMetadataAsync(string key, MediaKind kind, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);

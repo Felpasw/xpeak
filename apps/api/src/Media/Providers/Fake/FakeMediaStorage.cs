@@ -57,6 +57,12 @@ public sealed class FakeMediaStorage : IMediaStorage
         return Task.CompletedTask;
     }
 
+    public string BuildThumbUrl(string key, MediaKind kind)
+    {
+        EnsureKey(key);
+        return $"https://fake.local/thumb/{key}?kind={kind.ToString().ToLowerInvariant()}";
+    }
+
     public Task<MediaMetadata?> GetMetadataAsync(string key, MediaKind kind, CancellationToken ct)
     {
         EnsureKey(key);

@@ -88,6 +88,51 @@ public sealed class ListCheckInsEndpointTests
     }
 
     [Fact]
+    public async Task Response_carries_a_media_preview_when_the_row_has_media()
+    {
+        var fixture = await SeedFixtureAsync();
+        var now = DateTimeOffset.UtcNow;
+        var withMediaId = await InsertAsync(fixture, now);
+        await InsertAsync(fixture, now.AddDays(-1));
+        await InsertMediaAsync(withMediaId, "checkins/abc/photo-key", "photo");
+
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var body = await client.GetFromJsonAsync<ListBodyWithPreview>("/check_ins?limit=10");
+
+        body.Should().NotBeNull();
+        body!.CheckIns.Should().HaveCount(2);
+
+        var withPreview = body.CheckIns.First(c => c.Id == withMediaId);
+        withPreview.MediaPreview.Should().NotBeNull();
+        withPreview.MediaPreview!.Kind.Should().Be("photo");
+        withPreview.MediaPreview.ThumbUrl.Should().NotBeNullOrWhiteSpace();
+        withPreview.MediaPreview.ThumbUrl.Should().Contain("checkins/abc/photo-key");
+
+        var withoutPreview = body.CheckIns.First(c => c.Id != withMediaId);
+        withoutPreview.MediaPreview.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Response_carries_a_category_snapshot_per_row()
+    {
+        var fixture = await SeedFixtureAsync();
+        await InsertAsync(fixture, DateTimeOffset.UtcNow);
+
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var body = await client.GetFromJsonAsync<ListBodyWithCategory>("/check_ins?limit=10");
+
+        body.Should().NotBeNull();
+        var item = body!.CheckIns.Should().ContainSingle().Subject;
+        item.Category.Should().NotBeNull();
+        item.Category.Id.Should().Be(fixture.Category.Id);
+        item.Category.Slug.Should().Be(fixture.Category.Slug);
+        item.Category.Name.Should().Be(fixture.Category.Name);
+        item.Category.IconPublicId.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Group_id_query_param_narrows_the_result()
     {
         var mine = await SeedFixtureAsync();
@@ -116,6 +161,30 @@ public sealed class ListCheckInsEndpointTests
         Guid GroupId,
         int XpEarned,
         DateTimeOffset PerformedAt);
+
+    private sealed record ListBodyWithCategory(
+        IReadOnlyList<CheckInBodyWithCategory> CheckIns,
+        string? NextCursor);
+
+    private sealed record CheckInBodyWithCategory(
+        Guid Id,
+        CategoryBody Category);
+
+    private sealed record CategoryBody(
+        Guid Id,
+        string Slug,
+        string Name,
+        string? IconPublicId);
+
+    private sealed record ListBodyWithPreview(
+        IReadOnlyList<CheckInBodyWithPreview> CheckIns,
+        string? NextCursor);
+
+    private sealed record CheckInBodyWithPreview(
+        Guid Id,
+        MediaPreviewBody? MediaPreview);
+
+    private sealed record MediaPreviewBody(string Kind, string ThumbUrl);
 
     private HttpClient AuthenticatedClientFor(AppUser user)
     {
@@ -185,13 +254,14 @@ public sealed class ListCheckInsEndpointTests
         return new SeededFixture(existing.User, group, category);
     }
 
-    private async Task InsertAsync(SeededFixture fixture, DateTimeOffset at)
+    private async Task<Guid> InsertAsync(SeededFixture fixture, DateTimeOffset at)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var id = Guid.NewGuid();
         db.CheckIns.Add(new CheckIn
         {
-            Id = Guid.NewGuid(),
+            Id = id,
             Title = "test",
             UserId = fixture.User.Id,
             CategoryId = fixture.Category.Id,
@@ -202,6 +272,24 @@ public sealed class ListCheckInsEndpointTests
                 [new ScoringMultiplier("category_weight", 1.00m)],
                 10),
             PerformedAt = at,
+        });
+        await db.SaveChangesAsync();
+        return id;
+    }
+
+    private async Task InsertMediaAsync(Guid checkInId, string storageKey, string kind)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.CheckInMedia.Add(new Xpeak.Api.Media.Entities.CheckInMedia
+        {
+            Id = Guid.NewGuid(),
+            CheckInId = checkInId,
+            Kind = kind == "video"
+                ? Xpeak.Api.Media.Entities.MediaKind.Video
+                : Xpeak.Api.Media.Entities.MediaKind.Photo,
+            StorageKey = storageKey,
+            Position = 0,
         });
         await db.SaveChangesAsync();
     }

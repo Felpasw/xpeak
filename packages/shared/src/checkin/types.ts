@@ -24,6 +24,18 @@ export interface ScoringSnapshot {
   total: number;
 }
 
+export interface CategorySnapshot {
+  id: string;
+  slug: string;
+  name: string;
+  iconPublicId: string | null;
+}
+
+export interface MediaPreview {
+  kind: 'photo' | 'video';
+  thumbUrl: string;
+}
+
 export interface CheckIn {
   id: string;
   categoryId: string;
@@ -34,6 +46,9 @@ export interface CheckIn {
   performedAt: string;
   durationMinutes: number | null;
   notes: string | null;
+  hasMedia: boolean;
+  category: CategorySnapshot;
+  mediaPreview: MediaPreview | null;
 }
 
 export interface CreateCheckInRequest {

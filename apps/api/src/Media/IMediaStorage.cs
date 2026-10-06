@@ -31,4 +31,13 @@ public interface IMediaStorage
         string key,
         MediaKind kind,
         CancellationToken ct);
+
+    /// <summary>
+    /// Builds a deterministic thumbnail URL for the stored asset.
+    /// Photos get a square 240px fill with auto quality; videos get
+    /// a poster-frame (<c>so_auto</c>) under the same box. Used by
+    /// the listing feed where cards need a preview without an extra
+    /// round-trip.
+    /// </summary>
+    string BuildThumbUrl(string key, MediaKind kind);
 }
