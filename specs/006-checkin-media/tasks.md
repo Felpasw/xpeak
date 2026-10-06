@@ -132,22 +132,22 @@
 
 ## Section E — Mobile media flow
 
-- [ ] **T-006-10 `[T][S]`** — Media picker component
+- [x] **T-006-10 `[T][S]`** ✅ commit `2b72a05` — Media picker component
   - Failing spec: renders selected items, respects max count.
   - Implement using Capacitor Camera + Filesystem.
   - Green.
 
-- [ ] **T-006-11 `[T][S]`** — Upload flow orchestration
+- [x] **T-006-11 `[T][S]`** ✅ commit `36a3b6f` — Upload flow orchestration
   - Failing spec: happy path (mock adapter), retry path.
   - Implement `lib/media/uploader.ts`.
   - Green.
 
-- [ ] **T-006-12 `[T][S]`** — Wire picker into check-in screen
+- [x] **T-006-12 `[T][S]`** ✅ commit `c62d0ef` — Wire picker into check-in screen
   - Extend Phase 5 screen: media required.
   - Failing spec: submit disabled without media.
   - Green.
 
-- [ ] **T-006-13 `[T][S]`** — Full-screen viewer
+- [x] **T-006-13 `[T][S]`** ✅ commit `62bebda` — Full-screen viewer
   - Failing spec: opens on thumbnail tap; video renders.
   - Implement.
   - Green.
