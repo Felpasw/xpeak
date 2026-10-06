@@ -33,6 +33,7 @@ public sealed class CheckInPersistenceTests
         var checkIn = new CheckIn
         {
             Id = Guid.NewGuid(),
+            Title = "test",
             UserId = fixture.User.Id,
             CategoryId = fixture.Category.Id,
             GroupId = fixture.Group.Id,
@@ -59,27 +60,6 @@ public sealed class CheckInPersistenceTests
         reloaded.ScoringSnapshot.Total.Should().Be(21);
         reloaded.ScoringSnapshot.Multipliers.Should().ContainSingle()
             .Which.Should().Be(new ScoringMultiplier("category_weight", 1.40m));
-    }
-
-    [Fact]
-    public async Task Rejects_negative_xp_earned()
-    {
-        // 0 is the CLR default for int; EF Core substitutes it with the
-        // column default when one exists. `xp_earned` has no default, so
-        // 0 would be sent through and rejected — but using -1 makes the
-        // intent unambiguous and matches the negative-base_xp precedent.
-        var fixture = await SeedFixtureAsync();
-
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var checkIn = NewCheckIn(fixture);
-        checkIn.XpEarned = -1;
-        db.CheckIns.Add(checkIn);
-
-        var act = async () => await db.SaveChangesAsync();
-
-        await act.Should().ThrowAsync<DbUpdateException>();
     }
 
     [Fact]
@@ -114,6 +94,27 @@ public sealed class CheckInPersistenceTests
         var act = async () => await db.SaveChangesAsync();
 
         await act.Should().ThrowAsync<DbUpdateException>();
+    }
+
+    [Fact]
+    public async Task Accepts_zero_xp_earned_for_pending_rows()
+    {
+        var fixture = await SeedFixtureAsync();
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        // xp_earned = 0 is the "pending media upload" signal — must be
+        // accepted by the DB. Publish flips it to a positive value, or
+        // the cleanup cron deletes the row (T-006-09).
+        var checkIn = NewCheckIn(fixture);
+        checkIn.XpEarned = 0;
+        checkIn.ScoringSnapshot = new ScoringSnapshot(0, [], 0);
+
+        db.CheckIns.Add(checkIn);
+        var act = async () => await db.SaveChangesAsync();
+
+        await act.Should().NotThrowAsync();
     }
 
     [Fact]
@@ -189,6 +190,7 @@ public sealed class CheckInPersistenceTests
         UserId = fixture.User.Id,
         CategoryId = fixture.Category.Id,
         GroupId = fixture.Group.Id,
+        Title = "test",
         XpEarned = 10,
         ScoringSnapshot = new ScoringSnapshot(
             10,

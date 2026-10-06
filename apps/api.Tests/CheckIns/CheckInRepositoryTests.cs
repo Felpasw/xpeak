@@ -40,8 +40,8 @@ public sealed class CheckInRepositoryTests
         var page = await repo.ListAsync(mine.User.Id, limit: 10, cursor: null, groupId: null);
 
         page.Items.Should().HaveCount(3);
-        page.Items.Select(c => c.UserId).Should().OnlyContain(id => id == mine.User.Id);
-        page.Items.Should().BeInDescendingOrder(c => c.PerformedAt);
+        page.Items.Select(i => i.CheckIn.UserId).Should().OnlyContain(id => id == mine.User.Id);
+        page.Items.Should().BeInDescendingOrder(i => i.CheckIn.PerformedAt);
         page.NextCursor.Should().BeNull();
     }
 
@@ -73,7 +73,7 @@ public sealed class CheckInRepositoryTests
         page3.Items.Should().HaveCount(1);
         page3.NextCursor.Should().BeNull();
 
-        var seen = page1.Items.Concat(page2.Items).Concat(page3.Items).Select(c => c.Id).ToList();
+        var seen = page1.Items.Concat(page2.Items).Concat(page3.Items).Select(i => i.CheckIn.Id).ToList();
         seen.Should().OnlyHaveUniqueItems();
         seen.Should().HaveCount(5);
         seen.Should().BeEquivalentTo(inserted);
@@ -95,8 +95,8 @@ public sealed class CheckInRepositoryTests
         var firstGroupOnly = await repo.ListAsync(mine.User.Id, limit: 10, cursor: null, groupId: mine.Group.Id);
         var secondGroupOnly = await repo.ListAsync(mine.User.Id, limit: 10, cursor: null, groupId: second.Group.Id);
 
-        firstGroupOnly.Items.Should().ContainSingle().Which.GroupId.Should().Be(mine.Group.Id);
-        secondGroupOnly.Items.Should().ContainSingle().Which.GroupId.Should().Be(second.Group.Id);
+        firstGroupOnly.Items.Should().ContainSingle().Which.CheckIn.GroupId.Should().Be(mine.Group.Id);
+        secondGroupOnly.Items.Should().ContainSingle().Which.CheckIn.GroupId.Should().Be(second.Group.Id);
     }
 
     [Fact]
@@ -182,6 +182,7 @@ public sealed class CheckInRepositoryTests
         db.CheckIns.Add(new CheckIn
         {
             Id = id,
+            Title = "test",
             UserId = fixture.User.Id,
             CategoryId = fixture.Category.Id,
             GroupId = fixture.Group.Id,

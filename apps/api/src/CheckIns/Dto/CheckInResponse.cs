@@ -11,21 +11,25 @@ public sealed record CheckInResponse(
     Guid Id,
     Guid CategoryId,
     Guid GroupId,
+    string Title,
     int XpEarned,
     ScoringSnapshot ScoringSnapshot,
     DateTimeOffset PerformedAt,
     int? DurationMinutes,
-    string? Notes)
+    string? Notes,
+    bool HasMedia)
 {
-    public static CheckInResponse From(CheckIn c) => new(
+    public static CheckInResponse From(CheckIn c, bool hasMedia = false) => new(
         c.Id,
         c.CategoryId,
         c.GroupId,
+        c.Title,
         c.XpEarned,
         c.ScoringSnapshot,
         c.PerformedAt,
         c.DurationMinutes,
-        c.Notes);
+        c.Notes,
+        hasMedia);
 }
 
 /// <summary>User progression block returned inside the create response.</summary>

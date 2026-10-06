@@ -20,3 +20,14 @@ public sealed class NotAGroupMemberException(Guid userId, Guid groupId)
     public Guid UserId { get; } = userId;
     public Guid GroupId { get; } = groupId;
 }
+
+/// <summary>
+/// Thrown when <c>PublishAsync</c> is called against a check-in
+/// that is already <see cref="Xpeak.Api.CheckIns.Entities.CheckInStatus.Published"/>.
+/// Guards the publish path from double-awarding XP.
+/// </summary>
+public sealed class CheckInAlreadyPublishedException(Guid checkInId)
+    : Exception($"Check-in '{checkInId}' is already published.")
+{
+    public Guid CheckInId { get; } = checkInId;
+}

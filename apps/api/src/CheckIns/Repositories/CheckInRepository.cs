@@ -37,11 +37,13 @@ public sealed class CheckInRepository(AppDbContext db) : ICheckInRepository
         }
 
         // Take limit+1 to detect the presence of a next page without a
-        // second round-trip.
+        // second round-trip. HasMedia is projected via EXISTS so a
+        // single query covers both the list and the badge flag.
         var rows = await query
             .OrderByDescending(c => c.PerformedAt)
             .ThenByDescending(c => c.Id)
             .Take(limit + 1)
+            .Select(c => new CheckInListItem(c, db.CheckInMedia.Any(m => m.CheckInId == c.Id)))
             .ToListAsync(ct);
 
         var hasNext = rows.Count > limit;
@@ -51,7 +53,7 @@ public sealed class CheckInRepository(AppDbContext db) : ICheckInRepository
         }
 
         var nextCursor = hasNext && rows.Count > 0
-            ? EncodeCursor(rows[^1].PerformedAt, rows[^1].Id)
+            ? EncodeCursor(rows[^1].CheckIn.PerformedAt, rows[^1].CheckIn.Id)
             : null;
 
         return new CheckInPage(rows, nextCursor);

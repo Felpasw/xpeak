@@ -36,6 +36,10 @@ services:
       Google__ClientId: ${GOOGLE_CLIENT_ID:-}
       Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
       Auth__CallbackUri: ${AUTH_CALLBACK_URI:-xpeak://auth/callback}
+      Media__Provider: ${MEDIA_PROVIDER:-fake}
+      Cloudinary__CloudName: ${CLOUDINARY_CLOUD_NAME:-}
+      Cloudinary__ApiKey: ${CLOUDINARY_API_KEY:-}
+      Cloudinary__ApiSecret: ${CLOUDINARY_API_SECRET:-}
     ports:
       - "5000:5000"
     depends_on:

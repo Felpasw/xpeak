@@ -2,6 +2,7 @@ import type { PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MediaKind } from '@xpeak/shared';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import {
@@ -14,6 +15,8 @@ import {
     it,
     vi,
 } from 'vitest';
+
+import type { SelectedMedia } from '@/lib/media/types';
 
 const routerReplace = vi.fn();
 
@@ -32,11 +35,35 @@ vi.mock('@capacitor/preferences', () => ({
     },
 }));
 
+vi.mock('@/lib/media/picker', () => ({
+    pickFromGallery: vi.fn(),
+    pickFromCamera: vi.fn(),
+}));
+
+vi.mock('@/lib/media/uploader', () => ({
+    uploadCheckInMedia: vi.fn(),
+}));
+
+const { pickFromGallery } = await import('@/lib/media/picker');
+const { uploadCheckInMedia } = await import('@/lib/media/uploader');
+
+function buildMedia(id: string): SelectedMedia {
+    return {
+        id,
+        kind: MediaKind.Photo,
+        previewUrl: `blob:fake/${id}`,
+        blob: new Blob([id], { type: 'image/jpeg' }),
+        mimeType: 'image/jpeg',
+    };
+}
+
 const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => {
     server.resetHandlers();
     routerReplace.mockReset();
+    vi.mocked(pickFromGallery).mockReset();
+    vi.mocked(uploadCheckInMedia).mockReset();
 });
 afterAll(() => server.close());
 
@@ -79,6 +106,15 @@ const renderForm = async () => {
     render(<CheckinForm />, { wrapper: Wrapper });
 };
 
+async function attachOnePhoto() {
+    const user = userEvent.setup();
+    vi.mocked(pickFromGallery).mockResolvedValueOnce([buildMedia('a')]);
+    await user.click(screen.getByRole('button', { name: /galeria/i }));
+    await waitFor(() =>
+        expect(screen.getByAltText(/mídia 1/i)).toBeInTheDocument(),
+    );
+}
+
 describe('<CheckinForm />', () => {
     it('blocks submit until a category is picked (zod schema)', async () => {
         const user = userEvent.setup();
@@ -91,14 +127,41 @@ describe('<CheckinForm />', () => {
         await renderForm();
         await waitFor(() => expect(screen.getByRole('radio', { name: 'Legs' })).toBeInTheDocument());
 
+        await user.type(screen.getByLabelText(/t(í|i)tulo/i), 'Perna B');
+        await attachOnePhoto();
         await user.click(screen.getByRole('button', { name: /registrar check-in/i }));
 
         await waitFor(() =>
-            expect(screen.getByRole('alert')).toHaveTextContent(/escolha uma categoria/i),
+            expect(
+                screen.getByText(/escolha uma categoria/i),
+            ).toBeInTheDocument(),
         );
     });
 
-    it('submits with the selected category, trimmed notes and parsed duration', async () => {
+    it('blocks submit when no media is attached', async () => {
+        const user = userEvent.setup();
+        server.use(
+            http.get(`http://localhost:5000/groups/${GLOBAL}/categories`, () =>
+                HttpResponse.json(categoriesResponse),
+            ),
+        );
+
+        await renderForm();
+        await waitFor(() => expect(screen.getByRole('radio', { name: 'Legs' })).toBeInTheDocument());
+
+        await user.type(screen.getByLabelText(/t(í|i)tulo/i), 'Perna B');
+        await user.click(screen.getByRole('radio', { name: 'Legs' }));
+        await user.click(screen.getByRole('button', { name: /registrar check-in/i }));
+
+        await waitFor(() =>
+            expect(
+                screen.getByText(/anexa pelo menos uma foto/i),
+            ).toBeInTheDocument(),
+        );
+        expect(uploadCheckInMedia).not.toHaveBeenCalled();
+    });
+
+    it('creates the check-in with withMedia=true, uploads and redirects', async () => {
         const user = userEvent.setup();
         let receivedBody: unknown = null;
 
@@ -111,37 +174,53 @@ describe('<CheckinForm />', () => {
                 return HttpResponse.json(
                     {
                         checkIn: {
-                            id: 'ci',
+                            id: 'ck-chest',
                             categoryId: 'cat-chest',
                             groupId: GLOBAL,
-                            xpEarned: 14,
-                            scoringSnapshot: { baseXp: 12, multipliers: [], total: 14 },
+                            title: 'Perna A',
+                            xpEarned: 0,
+                            scoringSnapshot: { baseXp: 0, multipliers: [], total: 0 },
                             performedAt: '2026-09-25T12:00:00Z',
                             durationMinutes: 45,
                             notes: 'hard set',
                         },
-                        user: { id: 'u', xp: 14, level: 0, leveledUp: false, levelsGained: 0 },
-                        streak: { current: 1, longest: 1, unit: 'day' },
+                        user: { id: 'u', xp: 0, level: 0, leveledUp: false, levelsGained: 0 },
+                        streak: { current: 0, longest: 0, unit: 'day' },
                     },
                     { status: 201 },
                 );
             }),
         );
+        vi.mocked(uploadCheckInMedia).mockResolvedValue({
+            media: [],
+            publish: {
+                user: { id: 'u', xp: 14, level: 0, leveledUp: false, levelsGained: 0 },
+                streak: { current: 1, longest: 1, unit: 'day' },
+            },
+        });
 
         await renderForm();
         await waitFor(() => expect(screen.getByRole('radio', { name: 'Chest' })).toBeInTheDocument());
 
+        await user.type(screen.getByLabelText(/t(í|i)tulo/i), '  Perna A  ');
         await user.click(screen.getByRole('radio', { name: 'Chest' }));
         await user.type(screen.getByLabelText(/dura(ç|c)ão/i), '45');
         await user.type(screen.getByPlaceholderText(/como foi/i), '  hard set  ');
+        await attachOnePhoto();
         await user.click(screen.getByRole('button', { name: /registrar check-in/i }));
 
         await waitFor(() => expect(routerReplace).toHaveBeenCalledWith('/profile'));
-        expect(receivedBody).toEqual({
+        expect(receivedBody).toMatchObject({
             categoryId: 'cat-chest',
+            title: 'Perna A',
             durationMinutes: 45,
             notes: 'hard set',
+            withMedia: true,
         });
+        expect(uploadCheckInMedia).toHaveBeenCalledWith(
+            'ck-chest',
+            expect.arrayContaining([expect.objectContaining({ kind: MediaKind.Photo })]),
+        );
     });
 
     it('renders the empty state when the group has no categories', async () => {
@@ -158,7 +237,7 @@ describe('<CheckinForm />', () => {
         );
     });
 
-    it('shows the level-up overlay when the response reports leveled_up', async () => {
+    it('shows the level-up overlay when the publish delta reports leveled_up', async () => {
         const user = userEvent.setup();
 
         server.use(
@@ -169,27 +248,37 @@ describe('<CheckinForm />', () => {
                 HttpResponse.json(
                     {
                         checkIn: {
-                            id: 'ci',
+                            id: 'ck-legs',
                             categoryId: 'cat-legs',
                             groupId: GLOBAL,
-                            xpEarned: 100,
-                            scoringSnapshot: { baseXp: 100, multipliers: [], total: 100 },
+                            title: 'Leg day',
+                            xpEarned: 0,
+                            scoringSnapshot: { baseXp: 0, multipliers: [], total: 0 },
                             performedAt: '2026-09-25T12:00:00Z',
                             durationMinutes: null,
                             notes: null,
                         },
-                        user: { id: 'u', xp: 100, level: 1, leveledUp: true, levelsGained: 1 },
-                        streak: { current: 1, longest: 1, unit: 'day' },
+                        user: { id: 'u', xp: 0, level: 0, leveledUp: false, levelsGained: 0 },
+                        streak: { current: 0, longest: 0, unit: 'day' },
                     },
                     { status: 201 },
                 ),
             ),
         );
+        vi.mocked(uploadCheckInMedia).mockResolvedValue({
+            media: [],
+            publish: {
+                user: { id: 'u', xp: 100, level: 1, leveledUp: true, levelsGained: 1 },
+                streak: { current: 1, longest: 1, unit: 'day' },
+            },
+        });
 
         await renderForm();
         await waitFor(() => expect(screen.getByRole('radio', { name: 'Legs' })).toBeInTheDocument());
 
+        await user.type(screen.getByLabelText(/t(í|i)tulo/i), 'Leg day');
         await user.click(screen.getByRole('radio', { name: 'Legs' }));
+        await attachOnePhoto();
         await user.click(screen.getByRole('button', { name: /registrar check-in/i }));
 
         await waitFor(() =>

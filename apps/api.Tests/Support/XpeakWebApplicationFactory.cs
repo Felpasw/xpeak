@@ -8,9 +8,12 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 using Xpeak.Api.Auth.Password;
 using Xpeak.Api.Infrastructure;
+using Xpeak.Api.Media;
+using Xpeak.Api.Media.Providers.Fake;
 
 namespace Xpeak.Api.Tests.Support;
 
@@ -60,6 +63,7 @@ public class XpeakWebApplicationFactory
                 ["Google:ClientId"] = "test-client-id",
                 ["Google:ClientSecret"] = "test-client-secret",
                 ["Auth:CallbackUri"] = "xpeak://auth/callback",
+                ["Media:Provider"] = "fake",
             });
         });
 
@@ -69,6 +73,13 @@ public class XpeakWebApplicationFactory
             {
                 services.PostConfigure<RateLimiterOptions>(ReplaceWithNoLimiter);
             }
+
+            // MediaModule.AddMedia is eager on configuration, so the
+            // in-memory `Media:Provider = fake` override above lands
+            // too late to influence the initial provider pick. Force
+            // the fake singleton here so tests can seed metadata.
+            services.RemoveAll<IMediaStorage>();
+            services.AddSingleton<IMediaStorage, FakeMediaStorage>();
 
             using var scope = services.BuildServiceProvider().CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

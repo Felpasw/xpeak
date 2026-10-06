@@ -36,7 +36,7 @@ public static class ListCheckInsEndpoint
         var page = await repository.ListAsync(userId, effectiveLimit, cursor, group_id, ct);
 
         var response = new ListCheckInsResponse(
-            page.Items.Select(CheckInResponse.From).ToList(),
+            page.Items.Select(i => CheckInResponse.From(i.CheckIn, i.HasMedia)).ToList(),
             page.NextCursor);
 
         return Results.Ok(response);

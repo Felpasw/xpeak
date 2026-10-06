@@ -162,6 +162,7 @@ public sealed class StreakServiceTests : IClassFixture<XpeakWebApplicationFactor
         db.CheckIns.Add(new CheckIn
         {
             Id = Guid.NewGuid(),
+            Title = "test",
             UserId = fixture.User.Id,
             CategoryId = fixture.Category.Id,
             GroupId = fixture.Group.Id,

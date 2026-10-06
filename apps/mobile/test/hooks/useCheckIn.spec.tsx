@@ -118,7 +118,7 @@ describe('useCreateCheckIn', () => {
             wrapper: Wrapper,
         });
 
-        await mutationResult.current.mutateAsync({ categoryId: 'cat-1' });
+        await mutationResult.current.mutateAsync({ categoryId: 'cat-1', title: 'Leg day' });
 
         await waitFor(() =>
             expect(authResult.current.me.dataUpdatedAt).toBeGreaterThan(meStateBefore),

@@ -28,6 +28,7 @@ export interface CheckIn {
   id: string;
   categoryId: string;
   groupId: string;
+  title: string;
   xpEarned: number;
   scoringSnapshot: ScoringSnapshot;
   performedAt: string;
@@ -37,8 +38,11 @@ export interface CheckIn {
 
 export interface CreateCheckInRequest {
   categoryId: string;
+  title: string;
+  performedAt?: string | null;
   durationMinutes?: number | null;
   notes?: string | null;
+  withMedia?: boolean;
 }
 
 export interface UserProgression {
