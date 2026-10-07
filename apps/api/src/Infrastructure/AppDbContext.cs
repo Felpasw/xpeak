@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Xpeak.Api.Auth.Core;
+using Xpeak.Api.Challenges.Entities;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
 using Xpeak.Api.Groups;
@@ -41,6 +42,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<CheckIn> CheckIns => Set<CheckIn>();
 
     public DbSet<CheckInMedia> CheckInMedia => Set<CheckInMedia>();
+
+    public DbSet<Challenge> Challenges => Set<Challenge>();
+
+    public DbSet<ChallengeCategory> ChallengeCategories => Set<ChallengeCategory>();
+
+    public DbSet<ChallengeMembership> ChallengeMemberships => Set<ChallengeMembership>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -320,6 +327,145 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
                 .HasDatabaseName("ux_check_in_media_storage_key");
             b.HasIndex(m => new { m.CheckInId, m.Position })
                 .HasDatabaseName("ix_check_in_media_check_in_position");
+        });
+
+        modelBuilder.Entity<Challenge>(b =>
+        {
+            b.ToTable("challenges", t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_challenges_visibility",
+                    "visibility IN ('public', 'private')");
+                t.HasCheckConstraint(
+                    "ck_challenges_state",
+                    "state IN ('active', 'completed', 'failed')");
+                t.HasCheckConstraint(
+                    "ck_challenges_xp_multiplier_range",
+                    "xp_multiplier >= 0.5 AND xp_multiplier <= 1.5");
+                t.HasCheckConstraint(
+                    "ck_challenges_window",
+                    "starts_at < ends_at");
+                t.HasCheckConstraint(
+                    "ck_challenges_title_shape",
+                    "length(trim(title)) > 0 AND length(title) <= 80");
+                t.HasCheckConstraint(
+                    "ck_challenges_member_cap_positive",
+                    "member_cap IS NULL OR member_cap > 0");
+                t.HasCheckConstraint(
+                    "ck_challenges_target_level_positive",
+                    "target_level > 0");
+            });
+
+            b.HasKey(c => c.Id);
+            b.Property(c => c.Id).HasColumnName("id");
+            b.Property(c => c.OwnerId).HasColumnName("owner_id");
+            b.Property(c => c.Title).HasColumnName("title").HasMaxLength(80).IsRequired();
+            b.Property(c => c.Description).HasColumnName("description");
+            b.Property(c => c.IconPublicId).HasColumnName("icon_public_id");
+            b.Property(c => c.Visibility)
+                .HasColumnName("visibility")
+                .HasMaxLength(16)
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<ChallengeVisibility>(v, true));
+            b.Property(c => c.TargetLevel).HasColumnName("target_level");
+            b.Property(c => c.XpMultiplier)
+                .HasColumnName("xp_multiplier")
+                .HasColumnType("numeric(4,2)")
+                .HasDefaultValue(1.0m);
+            b.Property(c => c.StartsAt).HasColumnName("starts_at");
+            b.Property(c => c.EndsAt).HasColumnName("ends_at");
+            b.Property(c => c.MemberCap).HasColumnName("member_cap");
+            b.Property(c => c.State)
+                .HasColumnName("state")
+                .HasMaxLength(16)
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<ChallengeState>(v, true));
+            b.Property(c => c.CreatedAt).HasColumnName("created_at");
+            b.Property(c => c.UpdatedAt).HasColumnName("updated_at");
+
+            b.HasOne<AppUser>()
+                .WithMany()
+                .HasForeignKey(c => c.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(c => c.OwnerId).HasDatabaseName("ix_challenges_owner_id");
+            b.HasIndex(c => c.State).HasDatabaseName("ix_challenges_state");
+            b.HasIndex(c => c.Visibility).HasDatabaseName("ix_challenges_visibility");
+        });
+
+        modelBuilder.Entity<ChallengeCategory>(b =>
+        {
+            b.ToTable("challenge_categories");
+            b.HasKey(cc => cc.Id);
+            b.Property(cc => cc.Id).HasColumnName("id");
+            b.Property(cc => cc.ChallengeId).HasColumnName("challenge_id");
+            b.Property(cc => cc.CategoryId).HasColumnName("category_id");
+
+            b.HasOne<Challenge>()
+                .WithMany()
+                .HasForeignKey(cc => cc.ChallengeId)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasOne<Category>()
+                .WithMany()
+                .HasForeignKey(cc => cc.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasIndex(cc => new { cc.ChallengeId, cc.CategoryId })
+                .IsUnique()
+                .HasDatabaseName("ux_challenge_categories_challenge_category");
+        });
+
+        modelBuilder.Entity<ChallengeMembership>(b =>
+        {
+            b.ToTable("challenge_memberships", t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_challenge_memberships_role",
+                    "role IN ('owner', 'member')");
+                t.HasCheckConstraint(
+                    "ck_challenge_memberships_result",
+                    "result IS NULL OR result IN ('completed', 'failed', 'cancelled')");
+            });
+
+            b.HasKey(m => m.Id);
+            b.Property(m => m.Id).HasColumnName("id");
+            b.Property(m => m.ChallengeId).HasColumnName("challenge_id");
+            b.Property(m => m.UserId).HasColumnName("user_id");
+            b.Property(m => m.Role)
+                .HasColumnName("role")
+                .HasMaxLength(16)
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<ChallengeMembershipRole>(v, true));
+            b.Property(m => m.JoinedAt).HasColumnName("joined_at");
+            b.Property(m => m.LeftAt).HasColumnName("left_at");
+            b.Property(m => m.Progress)
+                .HasColumnName("progress")
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, JsonOpts),
+                    v => JsonSerializer.Deserialize<MembershipProgress>(v, JsonOpts)!);
+            b.Property(m => m.Result)
+                .HasColumnName("result")
+                .HasMaxLength(16)
+                .HasConversion(
+                    v => v == null ? null : v.ToString()!.ToLowerInvariant(),
+                    v => v == null ? null : Enum.Parse<ChallengeMembershipResult>(v, true));
+
+            b.HasOne<Challenge>()
+                .WithMany()
+                .HasForeignKey(m => m.ChallengeId)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasOne<AppUser>()
+                .WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(m => new { m.ChallengeId, m.UserId })
+                .IsUnique()
+                .HasDatabaseName("ux_challenge_memberships_challenge_user");
         });
     }
 }
