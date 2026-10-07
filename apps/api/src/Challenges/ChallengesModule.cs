@@ -7,6 +7,7 @@ public static class ChallengesModule
     public static IServiceCollection AddChallenges(this IServiceCollection services)
     {
         services.AddScoped<IChallengeService, ChallengeService>();
+        services.AddScoped<IProgressCalculator, ProgressCalculator>();
         return services;
     }
 }
