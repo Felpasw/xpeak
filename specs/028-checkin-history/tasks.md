@@ -30,7 +30,7 @@
     pending check-in on upload failure. T-028-02 onwards no
     longer depend on this.
 
-- [ ] **T-028-02 `[T][S]`** — Backend: enrich `CheckInResponse` with `category`
+- [x] **T-028-02 `[T][S]`** ✅ commit `d899c06` — Backend: enrich `CheckInResponse` with `category`
   - Depends on nothing (previous dependency on T-028-01 removed).
   - Failing test
     (`apps/api.Tests/CheckIns/ListCheckInsEndpointTests.cs`): the
@@ -49,7 +49,7 @@
     `CheckIn.category`).
   - Green.
 
-- [ ] **T-028-03 `[T][S]`** — Backend: enrich `CheckInResponse` with `mediaPreview`
+- [x] **T-028-03 `[T][S]`** ✅ commit `d899c06` — Backend: enrich `CheckInResponse` with `mediaPreview`
   - Depends on T-028-02.
   - Failing test
     (`apps/api.Tests/CheckIns/ListCheckInsEndpointTests.cs`): a
@@ -65,7 +65,7 @@
   - Mirror in `packages/shared/src/checkin/types.ts`.
   - Green.
 
-- [ ] **T-028-04 `[T][S]`** — Mobile: `useCheckInsList` infinite-query hook
+- [x] **T-028-04 `[T][S]`** ✅ commit `72e6c40` — Mobile: `useCheckInsList` infinite-query hook
   - Depends on T-028-03.
   - Failing spec
     (`apps/mobile/test/hooks/useCheckInsList.spec.ts` with MSW):
@@ -79,7 +79,7 @@
     `['checkins', 'list']` (all variants).
   - Green.
 
-- [ ] **T-028-05 `[T][S]`** — Mobile: `CheckinCard` atom
+- [x] **T-028-05 `[T][S]`** ✅ commit `72e6c40` — Mobile: `CheckinCard` atom
   - Depends on T-028-04.
   - Failing spec
     (`apps/mobile/test/components/atoms/CheckinCard.spec.tsx`):
@@ -91,7 +91,7 @@
     bg-zinc-900/40` surface used in `/home`.
   - Green.
 
-- [ ] **T-028-06 `[T][S]`** — Mobile: `CheckinList` organism
+- [x] **T-028-06 `[T][S]`** ✅ commit `72e6c40` — Mobile: `CheckinList` organism
   - Depends on T-028-05.
   - Failing spec
     (`apps/mobile/test/components/organisms/CheckinList.spec.tsx`):
@@ -106,7 +106,7 @@
     `!isFetchingNextPage && hasNextPage` before firing.
   - Green.
 
-- [ ] **T-028-07 `[T][S]`** — Mobile: `/groups` page shows Global group's history
+- [x] **T-028-07 `[T][S]`** ✅ commit `968e655` — Mobile: `/groups` page shows Global group's history
   - Depends on T-028-06.
   - Failing spec
     (`apps/mobile/test/app/(app)/groups/page.spec.tsx`): renders
