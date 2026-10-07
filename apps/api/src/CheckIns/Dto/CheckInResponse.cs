@@ -17,9 +17,15 @@ public sealed record CheckInResponse(
     DateTimeOffset PerformedAt,
     int? DurationMinutes,
     string? Notes,
-    bool HasMedia)
+    bool HasMedia,
+    CategorySnapshot Category,
+    MediaPreview? MediaPreview)
 {
-    public static CheckInResponse From(CheckIn c, bool hasMedia = false) => new(
+    public static CheckInResponse From(
+        CheckIn c,
+        CategorySnapshot category,
+        MediaPreview? mediaPreview = null,
+        bool hasMedia = false) => new(
         c.Id,
         c.CategoryId,
         c.GroupId,
@@ -29,8 +35,30 @@ public sealed record CheckInResponse(
         c.PerformedAt,
         c.DurationMinutes,
         c.Notes,
-        hasMedia);
+        hasMedia,
+        category,
+        mediaPreview);
 }
+
+/// <summary>
+/// Denormalized category info returned inline with each
+/// <see cref="CheckInResponse"/> so the client renders property-direct
+/// without a client-side join against the categories listing.
+/// </summary>
+public sealed record CategorySnapshot(
+    Guid Id,
+    string Slug,
+    string Name,
+    string? IconPublicId);
+
+/// <summary>
+/// Thumbnail hint for the first attachment of a check-in, so a feed
+/// card can render a preview without a second fetch. <c>Kind</c> is
+/// the lowercase string of <see cref="MediaKind"/> (<c>"photo"</c> or
+/// <c>"video"</c>). <c>ThumbUrl</c> is a backend-computed URL (see
+/// <c>IMediaStorage.BuildThumbUrl</c>).
+/// </summary>
+public sealed record MediaPreview(string Kind, string ThumbUrl);
 
 /// <summary>User progression block returned inside the create response.</summary>
 public sealed record UserProgressionResponse(

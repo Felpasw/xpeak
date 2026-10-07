@@ -218,11 +218,10 @@ hitting a stale paginated cache.
 - Check-in detail view (expand card, see all media, read full
   notes) → Phase 26 (reactions/comments) owns that surface.
 - Pending-media state in the list (orphan check-ins like the one
-  in dev DB today) → either filter them out server-side or render
-  with a muted "uploading…" badge. Current recommendation: filter
-  server-side (`xp_earned > 0`); mark as follow-up in Phase 6
-  cleanup work since it's the owner of the pending→published
-  transition.
+  in dev DB today) → fixed at the source in Phase 6 (T-006-18):
+  rollback the pending row via `DELETE /check_ins/{id}` when the
+  mobile upload fails. No filter on the listing — if a row makes
+  it to `check_ins`, it is considered published and shown as-is.
 - Streak heatmap / calendar visualization → Phase 21 (metrics).
 - Pull-to-refresh gesture inside Capacitor native container →
   reuse Phase 25 (mobile polish) scope; Phase 28 ships only the

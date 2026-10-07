@@ -43,7 +43,18 @@ public sealed class CheckInRepository(AppDbContext db) : ICheckInRepository
             .OrderByDescending(c => c.PerformedAt)
             .ThenByDescending(c => c.Id)
             .Take(limit + 1)
-            .Select(c => new CheckInListItem(c, db.CheckInMedia.Any(m => m.CheckInId == c.Id)))
+            .Select(c => new CheckInListItem(
+                c,
+                db.CheckInMedia.Any(m => m.CheckInId == c.Id),
+                db.Categories
+                    .Where(cat => cat.Id == c.CategoryId)
+                    .Select(cat => new CategorySnapshot(cat.Id, cat.Slug, cat.Name, cat.IconPublicId))
+                    .First(),
+                db.CheckInMedia
+                    .Where(m => m.CheckInId == c.Id)
+                    .OrderBy(m => m.Position)
+                    .Select(m => new FirstMediaSource(m.Kind, m.StorageKey))
+                    .FirstOrDefault()))
             .ToListAsync(ct);
 
         var hasNext = rows.Count > limit;

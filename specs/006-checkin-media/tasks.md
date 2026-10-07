@@ -171,6 +171,50 @@
   - Smoke spec: opens popover, selects a day, closes on Escape,
     disables out-of-range days.
 
+- [ ] **T-006-18 `[T][S]`** — Rollback pending check-in on upload failure
+  - Context: `POST /check_ins { withMedia: true }` persists a row
+    with `xp_earned = 0`. If `uploadCheckInMedia` throws (network
+    drop, Cloudinary 5xx, retries exhausted), the current `catch`
+    in `useCheckinForm` only shows a toast — the pending row
+    stays in the DB forever as an orphan, visible in the listing
+    (phase 28). The dev `Acabei` row is the exact artifact.
+  - Backend
+    - Failing test
+      (`apps/api.Tests/CheckIns/DeleteCheckInEndpointTests.cs`):
+      204 when caller owns a pending row (`XpEarned == 0`);
+      409 (`Conflict`) when the row is already published
+      (`XpEarned > 0`); 404 when the row does not exist or is
+      owned by another user; 401 without a token.
+    - Add `DELETE /check_ins/{id}` endpoint in
+      `apps/api/src/CheckIns/Endpoints/`.
+    - Service: `ICheckInService.DeletePendingAsync(userId, id)`.
+    - On delete, cascade `check_in_media` (already set by the
+      existing FK with `ON DELETE CASCADE`).
+    - Green.
+  - Mobile
+    - Failing spec
+      (`apps/mobile/test/hooks/useCheckinForm.spec.tsx` /
+      extend the existing `CheckinForm.spec.tsx`): when
+      `uploadCheckInMedia` throws, the form calls
+      `checkInService.deletePending(checkInId)` before showing
+      the error toast; the row cleanup happens regardless of
+      which step of the upload failed.
+    - Extend `apps/mobile/src/services/checkin.service.ts` with
+      `deletePending(id: string): Promise<void>` wrapping
+      `DELETE /check_ins/{id}`.
+    - Wire the call in the `catch` of
+      `apps/mobile/src/hooks/useCheckinForm.ts` (lines 95-116
+      today). If the cleanup DELETE also fails, swallow the
+      secondary error but surface the original upload error to
+      the user — nothing worse than hiding the real cause.
+    - Green.
+  - Why this task instead of filtering `xp_earned = 0` on the
+    listing: that filter was proposed as T-028-01 and cancelled
+    (see `specs/028-checkin-history/plan.md` §3.4). Fixing the
+    orphan at the source closes the hole globally — listing,
+    future admin views, metrics (phase 21), everything downstream
+    inherits consistency for free.
+
 ## Section G — Wrap-up
 
 - [ ] **T-006-15 `[P]`** — ADR `0006-media-storage.md`

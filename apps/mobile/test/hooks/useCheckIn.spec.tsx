@@ -64,6 +64,81 @@ describe('useCategories', () => {
     });
 });
 
+describe('useCheckInsList', () => {
+    const makeItem = (id: string, performedAt: string) => ({
+        id,
+        categoryId: 'cat-1',
+        groupId: GLOBAL,
+        title: 'Workout',
+        xpEarned: 10,
+        scoringSnapshot: { baseXp: 10, multipliers: [], total: 10 },
+        performedAt,
+        durationMinutes: null,
+        notes: null,
+        hasMedia: false,
+        category: { id: 'cat-1', slug: 'chest', name: 'Chest', iconPublicId: null },
+        mediaPreview: null,
+    });
+
+    it('loads the first page scoped by groupId', async () => {
+        server.use(
+            http.get('http://localhost:5000/check_ins', ({ request }) => {
+                const url = new URL(request.url);
+                expect(url.searchParams.get('group_id')).toBe(GLOBAL);
+                return HttpResponse.json({
+                    checkIns: [makeItem('a', '2026-09-25T12:00:00Z')],
+                    nextCursor: null,
+                });
+            }),
+        );
+
+        const { useCheckInsList } = await import('@/hooks/useCheckIn');
+        const { result } = renderHook(() => useCheckInsList({ groupId: GLOBAL }), {
+            wrapper: wrap(),
+        });
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(result.current.data?.pages[0]?.checkIns).toHaveLength(1);
+        expect(result.current.hasNextPage).toBe(false);
+    });
+
+    it('paginates: fetchNextPage sends the cursor and stops when nextCursor is null', async () => {
+        let callCount = 0;
+        const seenCursors: Array<string | null> = [];
+        server.use(
+            http.get('http://localhost:5000/check_ins', ({ request }) => {
+                const url = new URL(request.url);
+                seenCursors.push(url.searchParams.get('cursor'));
+                callCount += 1;
+                if (callCount === 1) {
+                    return HttpResponse.json({
+                        checkIns: [makeItem('a', '2026-09-25T12:00:00Z')],
+                        nextCursor: 'cursor-page-2',
+                    });
+                }
+                return HttpResponse.json({
+                    checkIns: [makeItem('b', '2026-09-24T12:00:00Z')],
+                    nextCursor: null,
+                });
+            }),
+        );
+
+        const { useCheckInsList } = await import('@/hooks/useCheckIn');
+        const { result } = renderHook(() => useCheckInsList({ groupId: GLOBAL }), {
+            wrapper: wrap(),
+        });
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(result.current.hasNextPage).toBe(true);
+
+        await result.current.fetchNextPage();
+
+        await waitFor(() => expect(result.current.hasNextPage).toBe(false));
+        expect(seenCursors).toEqual([null, 'cursor-page-2']);
+        expect(result.current.data?.pages).toHaveLength(2);
+    });
+});
+
 describe('useCreateCheckIn', () => {
     it('invalidates the auth me query so the profile refetches', async () => {
         server.use(
@@ -123,5 +198,59 @@ describe('useCreateCheckIn', () => {
         await waitFor(() =>
             expect(authResult.current.me.dataUpdatedAt).toBeGreaterThan(meStateBefore),
         );
+    });
+
+    it('invalidates the check-in list query so new rows surface without reload', async () => {
+        let listFetchCount = 0;
+        server.use(
+            http.get('http://localhost:5000/check_ins', () => {
+                listFetchCount += 1;
+                return HttpResponse.json({ checkIns: [], nextCursor: null });
+            }),
+            http.post('http://localhost:5000/check_ins', () =>
+                HttpResponse.json(
+                    {
+                        checkIn: {
+                            id: 'ci',
+                            categoryId: 'cat-1',
+                            groupId: GLOBAL,
+                            xpEarned: 10,
+                            scoringSnapshot: { baseXp: 10, multipliers: [], total: 10 },
+                            performedAt: '2026-09-25T12:00:00Z',
+                            durationMinutes: null,
+                            notes: null,
+                            hasMedia: false,
+                            category: {
+                                id: 'cat-1',
+                                slug: 'chest',
+                                name: 'Chest',
+                                iconPublicId: null,
+                            },
+                            mediaPreview: null,
+                        },
+                        user: { id: 'u', xp: 10, level: 0, leveledUp: false, levelsGained: 0 },
+                        streak: { current: 1, longest: 1, unit: 'day' },
+                    },
+                    { status: 201 },
+                ),
+            ),
+        );
+
+        const Wrapper = wrap();
+        const { useCheckInsList, useCreateCheckIn } = await import('@/hooks/useCheckIn');
+
+        const { result: listResult } = renderHook(
+            () => useCheckInsList({ groupId: GLOBAL }),
+            { wrapper: Wrapper },
+        );
+        await waitFor(() => expect(listResult.current.isSuccess).toBe(true));
+        expect(listFetchCount).toBe(1);
+
+        const { result: mutationResult } = renderHook(() => useCreateCheckIn(), {
+            wrapper: Wrapper,
+        });
+        await mutationResult.current.mutateAsync({ categoryId: 'cat-1', title: 'Leg day' });
+
+        await waitFor(() => expect(listFetchCount).toBeGreaterThan(1));
     });
 });

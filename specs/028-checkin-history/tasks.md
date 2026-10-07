@@ -15,19 +15,23 @@
 
 ## Section A — Groups surface (priority: testable end-to-end first)
 
-- [ ] **T-028-01 `[T][S]`** — Backend: `CheckInRepository` filters out pending rows
-  - Depends on nothing.
-  - Failing test
-    (`apps/api.Tests/CheckIns/ListCheckInsEndpointTests.cs`):
-    a row with `xp_earned = 0` is excluded from the listing; a
-    row with `xp_earned > 0` is included; cursor pagination
-    stays stable.
-  - Extend `CheckInRepository.ListAsync` with
-    `.Where(c => c.XpEarned > 0)`.
-  - Green.
+- [~] **T-028-01 `[CANCELLED]`** — Backend: filter pending rows from the listing
+  - Original plan: add `.Where(c => c.XpEarned > 0)` to
+    `CheckInRepository.ListAsync` to hide pending check-ins from
+    the history.
+  - **Cancelled** after review — the root cause is a missing
+    rollback when the mobile upload fails (the row is persisted
+    by `POST /check_ins { withMedia: true }` and never cleaned up
+    on the `catch` branch of `useCheckinForm`, see
+    `apps/mobile/src/hooks/useCheckinForm.ts:95-116`). Fixing the
+    symptom at the listing hides a real inconsistency instead of
+    repairing it.
+  - Moved to **T-006-18** (checkin-media phase): rollback the
+    pending check-in on upload failure. T-028-02 onwards no
+    longer depend on this.
 
-- [ ] **T-028-02 `[T][S]`** — Backend: enrich `CheckInResponse` with `category`
-  - Depends on T-028-01.
+- [x] **T-028-02 `[T][S]`** ✅ commit `d899c06` — Backend: enrich `CheckInResponse` with `category`
+  - Depends on nothing (previous dependency on T-028-01 removed).
   - Failing test
     (`apps/api.Tests/CheckIns/ListCheckInsEndpointTests.cs`): the
     response for a check-in with a known category exposes
@@ -45,7 +49,7 @@
     `CheckIn.category`).
   - Green.
 
-- [ ] **T-028-03 `[T][S]`** — Backend: enrich `CheckInResponse` with `mediaPreview`
+- [x] **T-028-03 `[T][S]`** ✅ commit `d899c06` — Backend: enrich `CheckInResponse` with `mediaPreview`
   - Depends on T-028-02.
   - Failing test
     (`apps/api.Tests/CheckIns/ListCheckInsEndpointTests.cs`): a
@@ -61,7 +65,7 @@
   - Mirror in `packages/shared/src/checkin/types.ts`.
   - Green.
 
-- [ ] **T-028-04 `[T][S]`** — Mobile: `useCheckInsList` infinite-query hook
+- [x] **T-028-04 `[T][S]`** ✅ commit `72e6c40` — Mobile: `useCheckInsList` infinite-query hook
   - Depends on T-028-03.
   - Failing spec
     (`apps/mobile/test/hooks/useCheckInsList.spec.ts` with MSW):
@@ -75,7 +79,7 @@
     `['checkins', 'list']` (all variants).
   - Green.
 
-- [ ] **T-028-05 `[T][S]`** — Mobile: `CheckinCard` atom
+- [x] **T-028-05 `[T][S]`** ✅ commit `72e6c40` — Mobile: `CheckinCard` atom
   - Depends on T-028-04.
   - Failing spec
     (`apps/mobile/test/components/atoms/CheckinCard.spec.tsx`):
@@ -87,7 +91,7 @@
     bg-zinc-900/40` surface used in `/home`.
   - Green.
 
-- [ ] **T-028-06 `[T][S]`** — Mobile: `CheckinList` organism
+- [x] **T-028-06 `[T][S]`** ✅ commit `72e6c40` — Mobile: `CheckinList` organism
   - Depends on T-028-05.
   - Failing spec
     (`apps/mobile/test/components/organisms/CheckinList.spec.tsx`):
@@ -102,7 +106,7 @@
     `!isFetchingNextPage && hasNextPage` before firing.
   - Green.
 
-- [ ] **T-028-07 `[T][S]`** — Mobile: `/groups` page shows Global group's history
+- [x] **T-028-07 `[T][S]`** ✅ commit `968e655` — Mobile: `/groups` page shows Global group's history
   - Depends on T-028-06.
   - Failing spec
     (`apps/mobile/test/app/(app)/groups/page.spec.tsx`): renders
@@ -150,8 +154,7 @@
 - [ ] **T-028-11 `[P]`** — ADR `docs/adr/0028-check-in-history.md`
   - Only if any decision in `plan.md` §3 is contested in review.
     Covers: backend enriches the list payload (shape rule),
-    pending rows filtered server-side, no multi-group route yet,
-    home has no list.
+    no multi-group route yet, home has no list.
 
 - [ ] **T-028-12 `[S]`** — Phase close
   - `dotnet test apps/api.Tests` green.
@@ -166,18 +169,20 @@
 ## Dependencies
 
 ```
-A1 ──▶ A2 ──▶ A3 ──▶ A4 ──▶ A5 ──▶ A6 ──▶ A7
-                                           │
-                                           ▼  (ship + test)
-                                          B1 ──▶ B2 ──▶ B3
-                                                        │
-                                                        ▼
-                                                       C1 (opt), C2
+A2 ──▶ A3 ──▶ A4 ──▶ A5 ──▶ A6 ──▶ A7
+                                    │
+                                    ▼  (ship + test)
+                                   B1 ──▶ B2 ──▶ B3
+                                                 │
+                                                 ▼
+                                                C1 (opt), C2
+
+(A1 cancelled — moved to T-006-18 in checkin-media phase)
 ```
 
 ## Bundling strategy for PRs
 
-1. `feat(check-ins): filter pending rows + enrich list response` — A1 + A2 + A3
+1. `feat(check-ins): enrich list response with category and media preview` — A2 + A3
 2. `feat(mobile): check-in list hook + card + organism` — A4 + A5 + A6
 3. `feat(mobile): groups page shows check-in history` — A7
 4. `feat(users): expose last check-in timestamp on /me` — B2 (after B1 human sign-off)
