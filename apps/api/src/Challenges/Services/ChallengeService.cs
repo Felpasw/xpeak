@@ -76,4 +76,97 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
 
         return new CreateChallengeResult(challenge, ownerMembership, categoryRows);
     }
+
+    public async Task<IReadOnlyList<ChallengeDetail>> ListForUserAsync(
+        Guid userId,
+        ChallengeState? stateFilter,
+        CancellationToken ct = default)
+    {
+        var query = db.ChallengeMemberships
+            .AsNoTracking()
+            .Where(m => m.UserId == userId)
+            .Join(db.Challenges.AsNoTracking(),
+                m => m.ChallengeId,
+                c => c.Id,
+                (m, c) => new { Membership = m, Challenge = c });
+
+        if (stateFilter.HasValue)
+        {
+            var state = stateFilter.Value;
+            query = query.Where(x => x.Challenge.State == state);
+        }
+
+        var rows = await query
+            .OrderByDescending(x => x.Challenge.CreatedAt)
+            .ToListAsync(ct);
+
+        if (rows.Count == 0)
+        {
+            return Array.Empty<ChallengeDetail>();
+        }
+
+        var challengeIds = rows.Select(r => r.Challenge.Id).ToList();
+        var categoryMap = await db.ChallengeCategories
+            .AsNoTracking()
+            .Where(cc => challengeIds.Contains(cc.ChallengeId))
+            .GroupBy(cc => cc.ChallengeId)
+            .Select(g => new { ChallengeId = g.Key, Ids = g.Select(cc => cc.CategoryId).ToList() })
+            .ToDictionaryAsync(x => x.ChallengeId, x => (IReadOnlyList<Guid>)x.Ids, ct);
+
+        return rows
+            .Select(r => new ChallengeDetail(
+                r.Challenge,
+                r.Membership,
+                categoryMap.TryGetValue(r.Challenge.Id, out var ids) ? ids : Array.Empty<Guid>()))
+            .ToList();
+    }
+
+    public async Task<ChallengeDetail?> GetForUserAsync(
+        Guid id,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        var challenge = await db.Challenges
+            .AsNoTracking()
+            .SingleOrDefaultAsync(c => c.Id == id, ct);
+        if (challenge is null)
+        {
+            return null;
+        }
+
+        var membership = await db.ChallengeMemberships
+            .AsNoTracking()
+            .SingleOrDefaultAsync(m => m.ChallengeId == id && m.UserId == userId, ct);
+
+        // Visibility: members always, non-members only on public.
+        if (membership is null && challenge.Visibility != ChallengeVisibility.Public)
+        {
+            return null;
+        }
+
+        var categoryIds = await db.ChallengeCategories
+            .AsNoTracking()
+            .Where(cc => cc.ChallengeId == id)
+            .Select(cc => cc.CategoryId)
+            .ToListAsync(ct);
+
+        return new ChallengeDetail(challenge, membership, categoryIds);
+    }
+
+    public async Task<bool> DeleteAsync(
+        Guid id,
+        Guid callerId,
+        CancellationToken ct = default)
+    {
+        var challenge = await db.Challenges
+            .SingleOrDefaultAsync(c => c.Id == id, ct);
+        if (challenge is null || challenge.OwnerId != callerId)
+        {
+            return false;
+        }
+
+        db.Challenges.Remove(challenge);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
 }

@@ -1,3 +1,5 @@
+using FluentValidation;
+using Xpeak.Api.Challenges.Endpoints;
 using Xpeak.Api.Challenges.Services;
 
 namespace Xpeak.Api.Challenges;
@@ -8,6 +10,17 @@ public static class ChallengesModule
     {
         services.AddScoped<IChallengeService, ChallengeService>();
         services.AddScoped<IProgressCalculator, ProgressCalculator>();
+        services.AddValidatorsFromAssemblyContaining(typeof(ChallengesModule));
         return services;
+    }
+
+    public static IEndpointRouteBuilder UseChallenges(this IEndpointRouteBuilder app)
+    {
+        CreateChallengeEndpoint.Map(app);
+        ListChallengesEndpoint.Map(app);
+        GetChallengeEndpoint.Map(app);
+        DeleteChallengeEndpoint.Map(app);
+        GetChallengeProgressEndpoint.Map(app);
+        return app;
     }
 }
