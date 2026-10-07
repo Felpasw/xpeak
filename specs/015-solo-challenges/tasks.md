@@ -17,7 +17,7 @@
 
 ## Section A — Schema
 
-- [ ] **T-015-01 `[T][S]`** — `challenges` + `challenge_categories` + `challenge_memberships`
+- [x] **T-015-01 `[T][S]`** ✅ commit `ebd30a4` — `challenges` + `challenge_categories` + `challenge_memberships`
   - Failing tests
     (`apps/api.Tests/Challenges/ChallengePersistenceTests.cs`):
     `mode` must be in `{"solo","friend","group"}`, `visibility` in
@@ -40,7 +40,7 @@
 
 ## Section B — Domain
 
-- [ ] **T-015-02 `[T][S]`** — `IChallengeService.CreateAsync`
+- [x] **T-015-02 `[T][S]`** ✅ commit `11b853d` — `IChallengeService.CreateAsync`
   - Depends on T-015-01.
   - Failing test
     (`apps/api.Tests/Challenges/ChallengeServiceTests.cs`):
@@ -55,32 +55,34 @@
     + `ChallengeService.cs` with `CreateAsync`.
   - Green.
 
-- [ ] **T-015-03 `[T][P]`** — `IProgressCalculator.ComputeTotalXpAsync`
+- [ ] **T-015-03 `[T][S]`** — `IProgressCalculator.ComputeAsync` (XP → target_level)
   - Depends on T-015-01.
   - Failing test
     (`apps/api.Tests/Challenges/ProgressCalculatorTests.cs`):
-    sums `check_ins.xp_earned` where the check-in's `category_id`
-    is in `challenge_categories` and `performed_at` is within
-    `[starts_at, ends_at]` and the user is a member.
+    for a membership, sums `check_ins.xp_earned` where the
+    check-in's `category_id` is in `challenge_categories` and
+    `performed_at` is within `[starts_at, ends_at]` and the user
+    is the membership's user; converts the sum to a level via
+    `LevelCurve.LevelForXp` and compares against the challenge's
+    `target_level`; returns a `MembershipProgress` with
+    `Value = xp accumulated`, `Target = XpForLevel(target_level)`,
+    `AchievedAt` set when level reached, null otherwise.
   - Add
     `apps/api/src/Challenges/Services/IProgressCalculator.cs` +
-    `ProgressCalculator.cs` with `ComputeTotalXpAsync`.
+    `ProgressCalculator.cs` with `ComputeAsync`.
+  - Register in `ChallengesModule`.
   - Green.
 
-- [ ] **T-015-04 `[T][P]`** — `IProgressCalculator.ComputeTotalCheckInsAsync`
-  - Depends on T-015-01.
-  - Failing test: counts check-ins (not XP) under the same scoping
-    rules as T-015-03.
-  - Extend `ProgressCalculator`.
-  - Green.
+- [~] **T-015-04 `[CANCELLED]`** — `ComputeTotalCheckInsAsync`
+  - Cancelled: the `TotalCheckIns` win rule was removed when we
+    collapsed to `target_level` as the only win mechanic. If
+    "count N check-ins" ever comes back as a rule, re-open this
+    task with a new T-015-NN number.
 
-- [ ] **T-015-05 `[T][P]`** — `IProgressCalculator.ComputeConsecutiveDaysAsync`
-  - Depends on T-015-01.
-  - Failing test: longest run of consecutive days (in the user's
-    time zone) with at least one qualifying check-in inside the
-    challenge window.
-  - Extend `ProgressCalculator`.
-  - Green.
+- [~] **T-015-05 `[CANCELLED]`** — `ComputeConsecutiveDaysAsync`
+  - Cancelled: the `ConsecutiveDays` win rule was removed with
+    the same simplification as T-015-04. Streak-style challenges
+    will live on Phase 7's streak infra, not here.
 
 - [ ] **T-015-06 `[T][S][DEFERRED]`** — Challenge bonus multiplier
   - **Deferred** — depends on Phase 7
@@ -221,28 +223,23 @@
 ## Dependencies
 
 ```
-A1 ──▶ A2
-        │
-        ▼
-       B1 ──▶ (B2, B3, B4 in parallel)
-        │
-        ▼
-       C1 ──▶ D1 ──▶ D2
-                     │
-                     ▼
-                    E1 ──▶ E2 ──▶ E3
-                                   │
-                                   ▼
-                                  F1 (opt), F2
+A1 ──▶ A2 ──▶ B1 ──▶ C1 ──▶ D1 ──▶ D2
+                              │
+                              ▼
+                             E1 ──▶ E2 ──▶ E3
+                                            │
+                                            ▼
+                                           F1 (opt), F2
 
-B6 (multiplier bonus) is DEFERRED → re-enters the chain after
-Phase 7 ships IMultiplierResolver.
+B2 and B3 are CANCELLED (TotalCheckIns / ConsecutiveDays win rules
+were dropped during spec review). B6 (challenge-bonus multiplier)
+is DEFERRED until Phase 7 ships IMultiplierResolver.
 ```
 
 ## Bundling strategy for PRs
 
 1. `feat(challenges): add schema (challenges, categories, memberships)` — A1
-2. `feat(challenges): add service + progress calculators` — A2 + B1..B5
+2. `feat(challenges): add service + progress calculator` — A2 + B1
 3. `feat(challenges): add lifecycle job + CRUD + progress endpoint` — C1 + D1 + D2
 4. `feat(mobile): add challenges service, hooks, tab and create wizard` — E1 + E2
 5. `feat(mobile): add challenge detail screen with progress` — E3
