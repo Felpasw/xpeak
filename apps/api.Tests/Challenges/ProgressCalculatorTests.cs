@@ -5,7 +5,7 @@ using Xpeak.Api.Challenges.Entities;
 using Xpeak.Api.Challenges.Services;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
-using Xpeak.Api.Groups.Entities;
+using Xpeak.Api.Groups;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
@@ -26,37 +26,28 @@ public sealed class ProgressCalculatorTests
     }
 
     [Fact]
-    public async Task Sums_only_whitelisted_in_window_for_the_membership_user()
+    public async Task Sums_all_check_ins_in_window_for_the_membership_user()
     {
-        var fixture = await SeedFixtureAsync();
-        var challenge = await CreateChallengeAsync(fixture, targetLevel: 10,
-            whitelistCategory: fixture.Whitelisted.Id);
-        var otherUser = await CreateUserAsync();
+        var owner = await CreateUserAsync("pcowner");
+        var categoryId = await EnsureCategoryAsync("pc-any");
+        var challengeId = await CreateChallengeAsync(owner, targetLevel: 10);
+        var otherUser = await CreateUserAsync("pcother");
         var now = DateTimeOffset.UtcNow;
 
-        // Should count: owner, whitelisted category, in window.
-        await InsertCheckInAsync(fixture.Owner.Id, fixture.Whitelisted.Id, fixture.Group.Id,
-            xp: 100, at: now.AddDays(1));
-        await InsertCheckInAsync(fixture.Owner.Id, fixture.Whitelisted.Id, fixture.Group.Id,
-            xp: 50, at: now.AddDays(2));
-
-        // Should NOT count: category not in whitelist.
-        await InsertCheckInAsync(fixture.Owner.Id, fixture.OtherCategory.Id, fixture.Group.Id,
-            xp: 500, at: now.AddDays(1));
+        // Should count: owner, in window (category doesn't matter anymore).
+        await InsertCheckInAsync(owner.Id, categoryId, xp: 100, at: now.AddDays(1));
+        await InsertCheckInAsync(owner.Id, categoryId, xp: 50, at: now.AddDays(2));
 
         // Should NOT count: before challenge window (StartsAt - 1d).
-        await InsertCheckInAsync(fixture.Owner.Id, fixture.Whitelisted.Id, fixture.Group.Id,
-            xp: 500, at: now.AddDays(-1));
+        await InsertCheckInAsync(owner.Id, categoryId, xp: 500, at: now.AddDays(-1));
 
         // Should NOT count: after challenge window (EndsAt + 1d).
-        await InsertCheckInAsync(fixture.Owner.Id, fixture.Whitelisted.Id, fixture.Group.Id,
-            xp: 500, at: now.AddDays(31));
+        await InsertCheckInAsync(owner.Id, categoryId, xp: 500, at: now.AddDays(31));
 
-        // Should NOT count: other user, same whitelisted category + window.
-        await InsertCheckInAsync(otherUser.Id, fixture.Whitelisted.Id, fixture.Group.Id,
-            xp: 500, at: now.AddDays(1));
+        // Should NOT count: other user, in window.
+        await InsertCheckInAsync(otherUser.Id, categoryId, xp: 500, at: now.AddDays(1));
 
-        var ownerMembership = await LookupOwnerMembership(challenge.Id);
+        var ownerMembership = await LookupOwnerMembership(challengeId);
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var calc = scope.ServiceProvider.GetRequiredService<IProgressCalculator>();
@@ -70,16 +61,15 @@ public sealed class ProgressCalculatorTests
     [Fact]
     public async Task Flags_achieved_when_summed_xp_reaches_target_level()
     {
-        var fixture = await SeedFixtureAsync();
-        var challenge = await CreateChallengeAsync(fixture, targetLevel: 2,
-            whitelistCategory: fixture.Whitelisted.Id);
+        var owner = await CreateUserAsync("pcach");
+        var categoryId = await EnsureCategoryAsync("pc-any-2");
+        var challengeId = await CreateChallengeAsync(owner, targetLevel: 2);
         var now = DateTimeOffset.UtcNow;
 
         // target level 2 → XpForLevel(2) = 283. Give 400 to clear it.
-        await InsertCheckInAsync(fixture.Owner.Id, fixture.Whitelisted.Id, fixture.Group.Id,
-            xp: 400, at: now.AddDays(1));
+        await InsertCheckInAsync(owner.Id, categoryId, xp: 400, at: now.AddDays(1));
 
-        var ownerMembership = await LookupOwnerMembership(challenge.Id);
+        var ownerMembership = await LookupOwnerMembership(challengeId);
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var calc = scope.ServiceProvider.GetRequiredService<IProgressCalculator>();
@@ -93,11 +83,10 @@ public sealed class ProgressCalculatorTests
     [Fact]
     public async Task Zero_check_ins_produces_empty_progress()
     {
-        var fixture = await SeedFixtureAsync();
-        var challenge = await CreateChallengeAsync(fixture, targetLevel: 5,
-            whitelistCategory: fixture.Whitelisted.Id);
+        var owner = await CreateUserAsync("pcempty");
+        var challengeId = await CreateChallengeAsync(owner, targetLevel: 5);
 
-        var ownerMembership = await LookupOwnerMembership(challenge.Id);
+        var ownerMembership = await LookupOwnerMembership(challengeId);
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var calc = scope.ServiceProvider.GetRequiredService<IProgressCalculator>();
@@ -108,15 +97,12 @@ public sealed class ProgressCalculatorTests
         progress.AchievedAt.Should().BeNull();
     }
 
-    private async Task<Challenge> CreateChallengeAsync(
-        SeededFixture fixture,
-        int targetLevel,
-        Guid whitelistCategory)
+    private async Task<Guid> CreateChallengeAsync(AppUser owner, int targetLevel)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
         var now = DateTimeOffset.UtcNow;
-        var result = await service.CreateAsync(fixture.Owner.Id, new(
+        var result = await service.CreateAsync(owner.Id, new(
             Title: "P",
             Description: null,
             IconPublicId: null,
@@ -125,9 +111,29 @@ public sealed class ProgressCalculatorTests
             XpMultiplier: 1.0m,
             StartsAt: now,
             EndsAt: now.AddDays(30),
-            MemberCap: null,
-            CategoryIds: new[] { whitelistCategory }));
-        return result.Challenge;
+            MemberCap: null));
+        return result.Challenge.Id;
+    }
+
+    private async Task<Guid> EnsureCategoryAsync(string slug)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        // SeedIds.DefaultXpRule is internal to the api assembly; the
+        // test knows the stable value from the migration seed.
+        var defaultXpRuleId = new Guid("00000000-0000-0000-0000-000000000010");
+        var fullSlug = $"{slug}-{Guid.NewGuid():N}";
+        var category = new Category
+        {
+            Id = Guid.NewGuid(),
+            GroupId = GroupIds.Global,
+            XpRuleId = defaultXpRuleId,
+            Slug = fullSlug,
+            Name = fullSlug,
+        };
+        db.Categories.Add(category);
+        await db.SaveChangesAsync();
+        return category.Id;
     }
 
     private async Task<ChallengeMembership> LookupOwnerMembership(Guid challengeId)
@@ -140,8 +146,7 @@ public sealed class ProgressCalculatorTests
                 && m.Role == ChallengeMembershipRole.Owner);
     }
 
-    private async Task InsertCheckInAsync(Guid userId, Guid categoryId, Guid groupId,
-        int xp, DateTimeOffset at)
+    private async Task InsertCheckInAsync(Guid userId, Guid categoryId, int xp, DateTimeOffset at)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -151,7 +156,7 @@ public sealed class ProgressCalculatorTests
             Title = "t",
             UserId = userId,
             CategoryId = categoryId,
-            GroupId = groupId,
+            GroupId = GroupIds.Global,
             XpEarned = xp,
             ScoringSnapshot = new ScoringSnapshot(xp, [], xp),
             PerformedAt = at,
@@ -159,58 +164,13 @@ public sealed class ProgressCalculatorTests
         await db.SaveChangesAsync();
     }
 
-    private async Task<AppUser> CreateUserAsync()
+    private async Task<AppUser> CreateUserAsync(string prefix)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var suffix = Guid.NewGuid().ToString("N")[..6];
-        var user = new AppUser { UserName = $"pc_{suffix}", Email = $"pc_{suffix}@x.com" };
+        var user = new AppUser { UserName = $"{prefix}_{suffix}", Email = $"{prefix}_{suffix}@x.com" };
         (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
         return user;
     }
-
-    private async Task<SeededFixture> SeedFixtureAsync()
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-        var suffix = Guid.NewGuid().ToString("N")[..6];
-
-        var owner = new AppUser { UserName = $"pc_{suffix}", Email = $"pc_{suffix}@x.com" };
-        (await users.CreateAsync(owner, "hunter22!")).Succeeded.Should().BeTrue();
-
-        var group = new Group { Id = Guid.NewGuid(), Name = $"g_{suffix}", IsRoot = false };
-        var config = new GroupConfig { GroupId = group.Id, StreakConfig = new StreakConfig(StreakMode.Daily) };
-        var rule = new XpRule { Id = Guid.NewGuid(), BaseXp = 10, WeightMultiplier = 1.0m };
-        var whitelisted = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"w_{suffix}",
-            Name = "Whitelisted",
-        };
-        var other = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"o_{suffix}",
-            Name = "Other",
-        };
-
-        db.Groups.Add(group);
-        db.GroupConfigs.Add(config);
-        db.XpRules.Add(rule);
-        db.Categories.AddRange(whitelisted, other);
-        await db.SaveChangesAsync();
-
-        return new SeededFixture(owner, group, whitelisted, other);
-    }
-
-    private sealed record SeededFixture(
-        AppUser Owner,
-        Group Group,
-        Category Whitelisted,
-        Category OtherCategory);
 }

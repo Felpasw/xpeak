@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Plus, Trophy, User, Users } from 'lucide-react';
+import { Flag, Home, Plus, Trophy, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
@@ -19,10 +19,10 @@ interface DockItem {
 const DOCK_ITEMS: DockItem[] = [
     { id: 'home', name: 'Home', href: '/home', Icon: Home, variant: 'default' },
     {
-        id: 'groups',
-        name: 'Groups',
-        href: '/groups',
-        Icon: Users,
+        id: 'challenges',
+        name: 'Challenges',
+        href: '/challenges',
+        Icon: Flag,
         variant: 'default',
     },
     {

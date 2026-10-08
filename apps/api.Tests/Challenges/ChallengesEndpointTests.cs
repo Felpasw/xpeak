@@ -6,9 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.Auth.Core;
 using Xpeak.Api.Challenges.Entities;
-using Xpeak.Api.Groups.Entities;
 using Xpeak.Api.Infrastructure;
-using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
 using Xpeak.Api.Users;
 
@@ -52,7 +50,6 @@ public sealed class ChallengesEndpointTests
             startsAt = now,
             endsAt = now.AddDays(30),
             memberCap = (int?)null,
-            categoryIds = new[] { fixture.Category.Id },
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -64,7 +61,7 @@ public sealed class ChallengesEndpointTests
     }
 
     [Fact]
-    public async Task Create_rejects_empty_category_list_with_422()
+    public async Task Create_rejects_blank_title_with_422()
     {
         var fixture = await SeedFixtureAsync();
         var client = AuthenticatedClientFor(fixture.User);
@@ -72,37 +69,15 @@ public sealed class ChallengesEndpointTests
         var now = DateTimeOffset.UtcNow;
         var response = await client.PostAsJsonAsync("/challenges", new
         {
-            title = "x",
+            title = "   ",
             visibility = "private",
             targetLevel = 5,
             xpMultiplier = 1.0m,
             startsAt = now,
             endsAt = now.AddDays(30),
-            categoryIds = Array.Empty<Guid>(),
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-    }
-
-    [Fact]
-    public async Task Create_rejects_unknown_category_with_404()
-    {
-        var fixture = await SeedFixtureAsync();
-        var client = AuthenticatedClientFor(fixture.User);
-
-        var now = DateTimeOffset.UtcNow;
-        var response = await client.PostAsJsonAsync("/challenges", new
-        {
-            title = "x",
-            visibility = "private",
-            targetLevel = 5,
-            xpMultiplier = 1.0m,
-            startsAt = now,
-            endsAt = now.AddDays(30),
-            categoryIds = new[] { Guid.NewGuid() },
-        });
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -230,8 +205,7 @@ public sealed class ChallengesEndpointTests
             XpMultiplier: 1.0m,
             StartsAt: now,
             EndsAt: now.AddDays(30),
-            MemberCap: null,
-            CategoryIds: new[] { fixture.Category.Id }));
+            MemberCap: null));
         return result.Challenge.Id;
     }
 
@@ -256,35 +230,16 @@ public sealed class ChallengesEndpointTests
     private async Task<SeededFixture> SeedFixtureAsync()
     {
         await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var suffix = Guid.NewGuid().ToString("N")[..6];
 
         var user = new AppUser { UserName = $"ce_{suffix}", Email = $"ce_{suffix}@x.com" };
         (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
 
-        var group = new Group { Id = Guid.NewGuid(), Name = $"g_{suffix}", IsRoot = false };
-        var config = new GroupConfig { GroupId = group.Id, StreakConfig = new StreakConfig(StreakMode.Daily) };
-        var rule = new XpRule { Id = Guid.NewGuid(), BaseXp = 10, WeightMultiplier = 1.0m };
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"s_{suffix}",
-            Name = "T",
-        };
-
-        db.Groups.Add(group);
-        db.GroupConfigs.Add(config);
-        db.XpRules.Add(rule);
-        db.Categories.Add(category);
-        await db.SaveChangesAsync();
-
-        return new SeededFixture(user, group, category);
+        return new SeededFixture(user);
     }
 
-    private sealed record SeededFixture(AppUser User, Group Group, Category Category);
+    private sealed record SeededFixture(AppUser User);
 
     private sealed record CreateBody(ChallengeBody Challenge, MembershipBody OwnerMembership);
 

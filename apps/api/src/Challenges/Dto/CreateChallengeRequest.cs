@@ -13,5 +13,4 @@ public sealed record CreateChallengeRequest(
     decimal XpMultiplier,
     DateTimeOffset StartsAt,
     DateTimeOffset EndsAt,
-    int? MemberCap,
-    IReadOnlyList<Guid> CategoryIds);
+    int? MemberCap);

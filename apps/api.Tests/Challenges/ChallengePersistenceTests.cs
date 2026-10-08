@@ -125,35 +125,6 @@ public sealed class ChallengePersistenceTests
     }
 
     [Fact]
-    public async Task Enforces_unique_challenge_category_pair()
-    {
-        var fixture = await SeedFixtureAsync();
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var challenge = NewChallenge(fixture);
-        db.Challenges.Add(challenge);
-        db.ChallengeCategories.Add(new ChallengeCategory
-        {
-            Id = Guid.NewGuid(),
-            ChallengeId = challenge.Id,
-            CategoryId = fixture.Category.Id,
-        });
-        await db.SaveChangesAsync();
-
-        db.ChallengeCategories.Add(new ChallengeCategory
-        {
-            Id = Guid.NewGuid(),
-            ChallengeId = challenge.Id,
-            CategoryId = fixture.Category.Id,
-        });
-
-        var act = async () => await db.SaveChangesAsync();
-
-        await act.Should().ThrowAsync<DbUpdateException>();
-    }
-
-    [Fact]
     public async Task Enforces_unique_challenge_user_membership_pair()
     {
         var fixture = await SeedFixtureAsync();

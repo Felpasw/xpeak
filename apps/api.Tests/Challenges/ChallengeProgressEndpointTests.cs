@@ -2,14 +2,13 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.Auth.Core;
 using Xpeak.Api.Challenges.Entities;
 using Xpeak.Api.Challenges.Services;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
-using Xpeak.Api.Groups.Entities;
+using Xpeak.Api.Groups;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
@@ -31,11 +30,12 @@ public sealed class ChallengeProgressEndpointTests
     [Fact]
     public async Task Returns_progress_payload_for_a_member()
     {
-        var fixture = await SeedFixtureAsync();
-        var challengeId = await CreateChallengeAsync(fixture, targetLevel: 5);
-        await InsertCheckInAsync(fixture, xp: 50);
+        var user = await CreateUserAsync("cp");
+        var categoryId = await EnsureCategoryAsync("cp-any");
+        var challengeId = await CreateChallengeAsync(user, targetLevel: 5);
+        await InsertCheckInAsync(user.Id, categoryId, xp: 50);
 
-        var client = AuthenticatedClientFor(fixture.User);
+        var client = AuthenticatedClientFor(user);
         var response = await client.GetAsync($"/challenges/{challengeId}/progress");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -48,11 +48,11 @@ public sealed class ChallengeProgressEndpointTests
     [Fact]
     public async Task Returns_404_when_caller_is_not_a_member()
     {
-        var owner = await SeedFixtureAsync();
-        var outsider = await SeedFixtureAsync();
+        var owner = await CreateUserAsync("cpowner");
+        var outsider = await CreateUserAsync("cpoutsider");
         var challengeId = await CreateChallengeAsync(owner, targetLevel: 5);
 
-        var client = AuthenticatedClientFor(outsider.User);
+        var client = AuthenticatedClientFor(outsider);
         var response = await client.GetAsync($"/challenges/{challengeId}/progress");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -68,12 +68,12 @@ public sealed class ChallengeProgressEndpointTests
         return client;
     }
 
-    private async Task<Guid> CreateChallengeAsync(SeededFixture fixture, int targetLevel)
+    private async Task<Guid> CreateChallengeAsync(AppUser owner, int targetLevel)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
         var now = DateTimeOffset.UtcNow;
-        var result = await service.CreateAsync(fixture.User.Id, new(
+        var result = await service.CreateAsync(owner.Id, new(
             Title: "p",
             Description: null,
             IconPublicId: null,
@@ -82,12 +82,30 @@ public sealed class ChallengeProgressEndpointTests
             XpMultiplier: 1.0m,
             StartsAt: now.AddDays(-1),
             EndsAt: now.AddDays(30),
-            MemberCap: null,
-            CategoryIds: new[] { fixture.Category.Id }));
+            MemberCap: null));
         return result.Challenge.Id;
     }
 
-    private async Task InsertCheckInAsync(SeededFixture fixture, int xp)
+    private async Task<Guid> EnsureCategoryAsync(string slug)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var defaultXpRuleId = new Guid("00000000-0000-0000-0000-000000000010");
+        var fullSlug = $"{slug}-{Guid.NewGuid():N}";
+        var category = new Category
+        {
+            Id = Guid.NewGuid(),
+            GroupId = GroupIds.Global,
+            XpRuleId = defaultXpRuleId,
+            Slug = fullSlug,
+            Name = fullSlug,
+        };
+        db.Categories.Add(category);
+        await db.SaveChangesAsync();
+        return category.Id;
+    }
+
+    private async Task InsertCheckInAsync(Guid userId, Guid categoryId, int xp)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -95,9 +113,9 @@ public sealed class ChallengeProgressEndpointTests
         {
             Id = Guid.NewGuid(),
             Title = "t",
-            UserId = fixture.User.Id,
-            CategoryId = fixture.Category.Id,
-            GroupId = fixture.Group.Id,
+            UserId = userId,
+            CategoryId = categoryId,
+            GroupId = GroupIds.Global,
             XpEarned = xp,
             ScoringSnapshot = new ScoringSnapshot(xp, [], xp),
             PerformedAt = DateTimeOffset.UtcNow,
@@ -105,38 +123,15 @@ public sealed class ChallengeProgressEndpointTests
         await db.SaveChangesAsync();
     }
 
-    private async Task<SeededFixture> SeedFixtureAsync()
+    private async Task<AppUser> CreateUserAsync(string prefix)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var suffix = Guid.NewGuid().ToString("N")[..6];
-
-        var user = new AppUser { UserName = $"cp_{suffix}", Email = $"cp_{suffix}@x.com" };
+        var user = new AppUser { UserName = $"{prefix}_{suffix}", Email = $"{prefix}_{suffix}@x.com" };
         (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
-
-        var group = new Group { Id = Guid.NewGuid(), Name = $"g_{suffix}", IsRoot = false };
-        var config = new GroupConfig { GroupId = group.Id, StreakConfig = new StreakConfig(StreakMode.Daily) };
-        var rule = new XpRule { Id = Guid.NewGuid(), BaseXp = 10, WeightMultiplier = 1.0m };
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"s_{suffix}",
-            Name = "T",
-        };
-
-        db.Groups.Add(group);
-        db.GroupConfigs.Add(config);
-        db.XpRules.Add(rule);
-        db.Categories.Add(category);
-        await db.SaveChangesAsync();
-
-        return new SeededFixture(user, group, category);
+        return user;
     }
-
-    private sealed record SeededFixture(AppUser User, Group Group, Category Category);
 
     private sealed record ProgressBody(ProgressBlock Progress);
 

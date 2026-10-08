@@ -18,10 +18,9 @@ public sealed record ChallengeResponse(
     DateTimeOffset EndsAt,
     int? MemberCap,
     ChallengeState State,
-    IReadOnlyList<Guid> CategoryIds,
     DateTimeOffset CreatedAt)
 {
-    public static ChallengeResponse From(Challenge c, IReadOnlyList<Guid> categoryIds) => new(
+    public static ChallengeResponse From(Challenge c) => new(
         c.Id,
         c.OwnerId,
         c.Title,
@@ -34,7 +33,6 @@ public sealed record ChallengeResponse(
         c.EndsAt,
         c.MemberCap,
         c.State,
-        categoryIds,
         c.CreatedAt);
 }
 

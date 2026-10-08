@@ -1,14 +1,14 @@
 namespace Xpeak.Api.Challenges.Entities;
 
 /// <summary>
-/// A time-boxed goal. Owned by a user, scoped to a set of
-/// <see cref="Progression.Entities.Category"/> rows via
-/// <c>challenge_categories</c>, joined by users via
+/// A time-boxed goal. Owned by a user, joined by users via
 /// <c>challenge_memberships</c>. The target lives on the challenge
 /// itself (same for every member); per-member progress is cached on
-/// each membership row. Every challenge is inherently group-shaped
-/// (owner is the first member); the distinction between "solo",
-/// "friend" and "group" is just <see cref="MemberCap"/>.
+/// each membership row. Every check-in a member posts inside the
+/// window contributes — there is no category whitelist. Every
+/// challenge is inherently group-shaped (owner is the first
+/// member); the distinction between "solo", "friend" and "group"
+/// is just <see cref="MemberCap"/>.
 /// </summary>
 public sealed class Challenge
 {

@@ -1,10 +1,23 @@
-export type ChallengeVisibility = 'public' | 'private';
+export enum ChallengeVisibility {
+    Public = 'public',
+    Private = 'private',
+}
 
-export type ChallengeState = 'active' | 'completed' | 'failed';
+export enum ChallengeState {
+    Active = 'active',
+    Completed = 'completed',
+    Failed = 'failed',
+}
 
-export type ChallengeMembershipRole = 'owner' | 'member';
+export enum ChallengeMembershipRole {
+    Owner = 'owner',
+    Member = 'member',
+}
 
-export type ChallengeMembershipResult = 'completed' | 'failed';
+export enum ChallengeMembershipResult {
+    Completed = 'completed',
+    Failed = 'failed',
+}
 
 export interface MembershipProgress {
   value: number;
@@ -25,7 +38,6 @@ export interface Challenge {
   endsAt: string;
   memberCap: number | null;
   state: ChallengeState;
-  categoryIds: string[];
   createdAt: string;
 }
 
@@ -50,7 +62,6 @@ export interface CreateChallengeRequest {
   startsAt: string;
   endsAt: string;
   memberCap?: number | null;
-  categoryIds: string[];
 }
 
 export interface CreateChallengeResponse {

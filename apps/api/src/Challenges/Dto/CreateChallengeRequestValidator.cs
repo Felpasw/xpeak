@@ -45,11 +45,5 @@ public sealed class CreateChallengeRequestValidator : AbstractValidator<CreateCh
             .When(x => x.MemberCap.HasValue)
             .WithMessage("memberCap must be positive when provided.")
             .OverridePropertyName(nameof(CreateChallengeRequest.MemberCap));
-
-        RuleFor(x => x.CategoryIds)
-            .NotNull()
-            .WithMessage("categoryIds is required.")
-            .Must(ids => ids.Count > 0)
-            .WithMessage("categoryIds must contain at least one category.");
     }
 }

@@ -29,40 +29,24 @@ public static class CreateChallengeEndpoint
             return Results.Unauthorized();
         }
 
-        try
-        {
-            var result = await service.CreateAsync(
-                userId,
-                new CreateChallengeInput(
-                    request.Title,
-                    request.Description,
-                    request.IconPublicId,
-                    request.Visibility,
-                    request.TargetLevel,
-                    request.XpMultiplier,
-                    request.StartsAt,
-                    request.EndsAt,
-                    request.MemberCap,
-                    request.CategoryIds),
-                ct);
+        var result = await service.CreateAsync(
+            userId,
+            new CreateChallengeInput(
+                request.Title,
+                request.Description,
+                request.IconPublicId,
+                request.Visibility,
+                request.TargetLevel,
+                request.XpMultiplier,
+                request.StartsAt,
+                request.EndsAt,
+                request.MemberCap),
+            ct);
 
-            var response = new CreateChallengeResponse(
-                ChallengeResponse.From(
-                    result.Challenge,
-                    result.Categories.Select(c => c.CategoryId).ToList()),
-                MembershipResponse.From(result.OwnerMembership));
+        var response = new CreateChallengeResponse(
+            ChallengeResponse.From(result.Challenge),
+            MembershipResponse.From(result.OwnerMembership));
 
-            return Results.Created($"/challenges/{result.Challenge.Id}", response);
-        }
-        catch (CategoryNotFoundException ex)
-        {
-            return Results.NotFound(new { error = "category_not_found", categoryId = ex.CategoryId });
-        }
-        catch (NoCategoriesException)
-        {
-            // Validator should catch empty list earlier; this is a belt
-            // against programmatic callers that bypass validation.
-            return Results.UnprocessableEntity(new { error = "no_categories" });
-        }
+        return Results.Created($"/challenges/{result.Challenge.Id}", response);
     }
 }

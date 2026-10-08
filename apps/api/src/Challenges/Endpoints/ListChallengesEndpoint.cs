@@ -40,7 +40,7 @@ public static class ListChallengesEndpoint
 
         var details = await service.ListForUserAsync(userId, stateFilter, ct);
         var response = new ListChallengesResponse(
-            details.Select(d => ChallengeResponse.From(d.Challenge, d.CategoryIds)).ToList());
+            details.Select(d => ChallengeResponse.From(d.Challenge)).ToList());
 
         return Results.Ok(response);
     }

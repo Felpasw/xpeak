@@ -12,25 +12,6 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
         CreateChallengeInput input,
         CancellationToken ct = default)
     {
-        if (input.CategoryIds.Count == 0)
-        {
-            throw new NoCategoriesException();
-        }
-
-        var categoryIds = input.CategoryIds.Distinct().ToList();
-        var existing = await db.Categories
-            .AsNoTracking()
-            .Where(c => categoryIds.Contains(c.Id))
-            .Select(c => c.Id)
-            .ToListAsync(ct);
-        var existingSet = existing.ToHashSet();
-
-        var missing = categoryIds.FirstOrDefault(id => !existingSet.Contains(id));
-        if (missing != default)
-        {
-            throw new CategoryNotFoundException(missing);
-        }
-
         var now = time.GetUtcNow();
         var challenge = new Challenge
         {
@@ -60,21 +41,11 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
             Progress = MembershipProgress.Empty(input.TargetLevel),
         };
 
-        var categoryRows = categoryIds
-            .Select(cid => new ChallengeCategory
-            {
-                Id = Guid.NewGuid(),
-                ChallengeId = challenge.Id,
-                CategoryId = cid,
-            })
-            .ToList();
-
         db.Challenges.Add(challenge);
         db.ChallengeMemberships.Add(ownerMembership);
-        db.ChallengeCategories.AddRange(categoryRows);
         await db.SaveChangesAsync(ct);
 
-        return new CreateChallengeResult(challenge, ownerMembership, categoryRows);
+        return new CreateChallengeResult(challenge, ownerMembership);
     }
 
     public async Task<IReadOnlyList<ChallengeDetail>> ListForUserAsync(
@@ -100,24 +71,8 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
             .OrderByDescending(x => x.Challenge.CreatedAt)
             .ToListAsync(ct);
 
-        if (rows.Count == 0)
-        {
-            return Array.Empty<ChallengeDetail>();
-        }
-
-        var challengeIds = rows.Select(r => r.Challenge.Id).ToList();
-        var categoryMap = await db.ChallengeCategories
-            .AsNoTracking()
-            .Where(cc => challengeIds.Contains(cc.ChallengeId))
-            .GroupBy(cc => cc.ChallengeId)
-            .Select(g => new { ChallengeId = g.Key, Ids = g.Select(cc => cc.CategoryId).ToList() })
-            .ToDictionaryAsync(x => x.ChallengeId, x => (IReadOnlyList<Guid>)x.Ids, ct);
-
         return rows
-            .Select(r => new ChallengeDetail(
-                r.Challenge,
-                r.Membership,
-                categoryMap.TryGetValue(r.Challenge.Id, out var ids) ? ids : Array.Empty<Guid>()))
+            .Select(r => new ChallengeDetail(r.Challenge, r.Membership))
             .ToList();
     }
 
@@ -144,13 +99,7 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
             return null;
         }
 
-        var categoryIds = await db.ChallengeCategories
-            .AsNoTracking()
-            .Where(cc => cc.ChallengeId == id)
-            .Select(cc => cc.CategoryId)
-            .ToListAsync(ct);
-
-        return new ChallengeDetail(challenge, membership, categoryIds);
+        return new ChallengeDetail(challenge, membership);
     }
 
     public async Task<bool> DeleteAsync(

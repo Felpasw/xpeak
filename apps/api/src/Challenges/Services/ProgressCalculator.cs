@@ -22,19 +22,11 @@ public sealed class ProgressCalculator(
             .AsNoTracking()
             .SingleAsync(c => c.Id == membership.ChallengeId, ct);
 
-        var whitelistedCategoryIds = await db.ChallengeCategories
-            .AsNoTracking()
-            .Where(cc => cc.ChallengeId == challenge.Id)
-            .Select(cc => cc.CategoryId)
-            .ToListAsync(ct);
-
-        // SumAsync over an int column returns 0 for empty sets, but we
-        // project to int? first so an all-null set (shouldn't happen,
-        // but defensive) still coalesces to 0.
+        // No category whitelist — every check-in the member posts
+        // inside the window contributes.
         var totalXp = await db.CheckIns
             .AsNoTracking()
             .Where(ci => ci.UserId == membership.UserId
-                && whitelistedCategoryIds.Contains(ci.CategoryId)
                 && ci.PerformedAt >= challenge.StartsAt
                 && ci.PerformedAt <= challenge.EndsAt)
             .SumAsync(ci => (int?)ci.XpEarned, ct) ?? 0;

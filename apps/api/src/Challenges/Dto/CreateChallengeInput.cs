@@ -4,9 +4,9 @@ namespace Xpeak.Api.Challenges.Dto;
 
 /// <summary>Input to <c>IChallengeService.CreateAsync</c>. The owner
 /// id comes from the authenticated principal, never from the body.
-/// <see cref="CategoryIds"/> is the whitelist of category rows that
-/// count toward the win condition; duplicates are silently
-/// deduplicated, empty list is rejected.</summary>
+/// A challenge has no category whitelist — every check-in a member
+/// posts inside <c>[starts_at, ends_at]</c> contributes to the
+/// progress tally.</summary>
 public sealed record CreateChallengeInput(
     string Title,
     string? Description,
@@ -16,5 +16,4 @@ public sealed record CreateChallengeInput(
     decimal XpMultiplier,
     DateTimeOffset StartsAt,
     DateTimeOffset EndsAt,
-    int? MemberCap,
-    IReadOnlyList<Guid> CategoryIds);
+    int? MemberCap);

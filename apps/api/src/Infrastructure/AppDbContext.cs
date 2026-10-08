@@ -45,8 +45,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Challenge> Challenges => Set<Challenge>();
 
-    public DbSet<ChallengeCategory> ChallengeCategories => Set<ChallengeCategory>();
-
     public DbSet<ChallengeMembership> ChallengeMemberships => Set<ChallengeMembership>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -393,28 +391,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             b.HasIndex(c => c.OwnerId).HasDatabaseName("ix_challenges_owner_id");
             b.HasIndex(c => c.State).HasDatabaseName("ix_challenges_state");
             b.HasIndex(c => c.Visibility).HasDatabaseName("ix_challenges_visibility");
-        });
-
-        modelBuilder.Entity<ChallengeCategory>(b =>
-        {
-            b.ToTable("challenge_categories");
-            b.HasKey(cc => cc.Id);
-            b.Property(cc => cc.Id).HasColumnName("id");
-            b.Property(cc => cc.ChallengeId).HasColumnName("challenge_id");
-            b.Property(cc => cc.CategoryId).HasColumnName("category_id");
-
-            b.HasOne<Challenge>()
-                .WithMany()
-                .HasForeignKey(cc => cc.ChallengeId)
-                .OnDelete(DeleteBehavior.Cascade);
-            b.HasOne<Category>()
-                .WithMany()
-                .HasForeignKey(cc => cc.CategoryId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            b.HasIndex(cc => new { cc.ChallengeId, cc.CategoryId })
-                .IsUnique()
-                .HasDatabaseName("ux_challenge_categories_challenge_category");
         });
 
         modelBuilder.Entity<ChallengeMembership>(b =>

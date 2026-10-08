@@ -4,6 +4,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ChallengeState, ChallengeVisibility } from '@xpeak/shared';
 
 vi.mock('@capacitor/core', () => ({
     Capacitor: { isNativePlatform: () => false },
@@ -25,8 +26,6 @@ beforeEach(() => {
     window.localStorage.clear();
     window.localStorage.setItem('xpeak.auth.token', 'test.jwt');
 });
-
-const CATEGORY_ID = '00000000-0000-0000-0000-000000000011';
 
 const wrap = () => {
     const client = new QueryClient({
@@ -50,7 +49,6 @@ const challenge = (overrides: Partial<Record<string, unknown>> = {}) => ({
     endsAt: '2026-11-06T00:00:00Z',
     memberCap: null,
     state: 'active',
-    categoryIds: [CATEGORY_ID],
     createdAt: '2026-10-07T00:00:00Z',
     ...overrides,
 });
@@ -82,7 +80,7 @@ describe('useChallengesList', () => {
         );
 
         const { useChallengesList } = await import('@/hooks/useChallenges');
-        const { result } = renderHook(() => useChallengesList({ state: 'completed' }), {
+        const { result } = renderHook(() => useChallengesList({ state: ChallengeState.Completed }), {
             wrapper: wrap(),
         });
 
@@ -166,12 +164,11 @@ describe('useCreateChallenge', () => {
         const { result: mutation } = renderHook(() => useCreateChallenge(), { wrapper: Wrapper });
         await mutation.current.mutateAsync({
             title: 'New',
-            visibility: 'private',
+            visibility: ChallengeVisibility.Private,
             targetLevel: 5,
             xpMultiplier: 1.0,
             startsAt: '2026-10-07T00:00:00Z',
             endsAt: '2026-11-06T00:00:00Z',
-            categoryIds: [CATEGORY_ID],
         });
 
         await waitFor(() => expect(listFetchCount).toBeGreaterThan(1));

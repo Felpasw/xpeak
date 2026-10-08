@@ -275,32 +275,6 @@ namespace Xpeak.Api.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("category_id");
-
-                    b.Property<Guid>("ChallengeId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("challenge_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("ChallengeId", "CategoryId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_challenge_categories_challenge_category");
-
-                    b.ToTable("challenge_categories", (string)null);
-                });
-
             modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeMembership", b =>
                 {
                     b.Property<Guid>("Id")
@@ -924,21 +898,6 @@ namespace Xpeak.Api.Migrations
                     b.HasOne("Xpeak.Api.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeCategory", b =>
-                {
-                    b.HasOne("Xpeak.Api.Progression.Entities.Category", null)
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Xpeak.Api.Challenges.Entities.Challenge", null)
-                        .WithMany()
-                        .HasForeignKey("ChallengeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
