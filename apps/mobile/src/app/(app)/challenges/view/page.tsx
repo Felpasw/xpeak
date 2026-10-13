@@ -1,6 +1,7 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ChallengeMembershipRole } from '@xpeak/shared';
 
 import { ChallengeDetailNotFound } from '@/components/atoms/ChallengeDetailNotFound';
@@ -9,10 +10,14 @@ import { ChallengeDetailHeader } from '@/components/organisms/ChallengeDetailHea
 import { ChallengeDetailProgress } from '@/components/organisms/ChallengeDetailProgress';
 import { useChallenge } from '@/hooks/useChallenges';
 
-export default function ChallengeDetailPage() {
-    const params = useParams<{ id: string }>();
-    const id = params.id ?? '';
+function ChallengeDetailBody() {
+    const searchParams = useSearchParams();
+    const id = searchParams.get('id') ?? '';
     const detail = useChallenge(id);
+
+    if (!id) {
+        return <ChallengeDetailNotFound />;
+    }
 
     if (detail.isPending) {
         return (
@@ -38,5 +43,13 @@ export default function ChallengeDetailPage() {
             <ChallengeDetailProgress challengeId={challenge.id} />
             {isOwner && <ChallengeDetailDeleteButton challengeId={challenge.id} />}
         </main>
+    );
+}
+
+export default function ChallengeDetailPage() {
+    return (
+        <Suspense fallback={null}>
+            <ChallengeDetailBody />
+        </Suspense>
     );
 }

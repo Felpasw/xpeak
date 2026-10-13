@@ -6,9 +6,11 @@ import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const replaceMock = vi.fn();
+const searchParamsGet = vi.fn<(key: string) => string | null>(() => 'ch-1');
+
 vi.mock('next/navigation', () => ({
     useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
-    useParams: () => ({ id: 'ch-1' }),
+    useSearchParams: () => ({ get: searchParamsGet }),
 }));
 
 vi.mock('@capacitor/core', () => ({
@@ -27,6 +29,8 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => {
     server.resetHandlers();
     replaceMock.mockReset();
+    searchParamsGet.mockReset();
+    searchParamsGet.mockImplementation(() => 'ch-1');
 });
 afterAll(() => server.close());
 
@@ -85,7 +89,7 @@ describe('ChallengeDetailPage', () => {
             ),
         );
 
-        const { default: Page } = await import('@/app/(app)/challenges/[id]/page');
+        const { default: Page } = await import('@/app/(app)/challenges/view/page');
         render(<Page />, { wrapper: wrap() });
 
         await waitFor(() => expect(screen.getByText('Rumo ao level 10')).toBeInTheDocument());
@@ -98,12 +102,21 @@ describe('ChallengeDetailPage', () => {
         expect(screen.getByRole('button', { name: /deletar/i })).toBeInTheDocument();
     });
 
+    it('shows the not-found fallback when the id is missing from the url', async () => {
+        searchParamsGet.mockImplementation(() => null);
+
+        const { default: Page } = await import('@/app/(app)/challenges/view/page');
+        render(<Page />, { wrapper: wrap() });
+
+        expect(screen.getByTestId('challenge-detail-not-found')).toBeInTheDocument();
+    });
+
     it('shows the not-found fallback when the API returns 404', async () => {
         server.use(
             http.get('http://localhost:5000/challenges/ch-1', () => new HttpResponse(null, { status: 404 })),
         );
 
-        const { default: Page } = await import('@/app/(app)/challenges/[id]/page');
+        const { default: Page } = await import('@/app/(app)/challenges/view/page');
         render(<Page />, { wrapper: wrap() });
 
         await waitFor(() =>
@@ -135,7 +148,7 @@ describe('ChallengeDetailPage', () => {
             ),
         );
 
-        const { default: Page } = await import('@/app/(app)/challenges/[id]/page');
+        const { default: Page } = await import('@/app/(app)/challenges/view/page');
         render(<Page />, { wrapper: wrap() });
 
         await waitFor(() => expect(screen.getByText('Rumo ao level 10')).toBeInTheDocument());

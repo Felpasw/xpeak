@@ -19,7 +19,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
     });
     return (
         <Link
-            href={`/challenges/${challenge.id}`}
+            href={`/challenges/view?id=${challenge.id}`}
             className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 transition-colors hover:border-zinc-700"
         >
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 text-sky-300">

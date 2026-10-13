@@ -59,14 +59,14 @@ describe('<CreateChallengeForm />', () => {
                         challenge: {
                             id: 'ch-new',
                             ownerId: 'u-1',
-                            title: posted.title,
+                            title: posted['title'],
                             description: null,
                             iconPublicId: null,
-                            visibility: posted.visibility,
-                            targetLevel: posted.targetLevel,
-                            xpMultiplier: posted.xpMultiplier,
-                            startsAt: posted.startsAt,
-                            endsAt: posted.endsAt,
+                            visibility: posted['visibility'],
+                            targetLevel: posted['targetLevel'],
+                            xpMultiplier: posted['xpMultiplier'],
+                            startsAt: posted['startsAt'],
+                            endsAt: posted['endsAt'],
                             memberCap: null,
                             state: 'active',
                             createdAt: '2026-10-07T00:00:00Z',
@@ -98,10 +98,10 @@ describe('<CreateChallengeForm />', () => {
         await user.click(screen.getByRole('button', { name: /criar challenge/i }));
 
         await waitFor(() => expect(posted).not.toBeNull());
-        expect(posted!.title).toBe('Perna Épica');
-        expect(posted!.visibility).toBe('private');
-        expect(posted!.targetLevel).toBe(5);
-        expect(posted!.xpMultiplier).toBe(1);
+        expect(posted!['title']).toBe('Perna Épica');
+        expect(posted!['visibility']).toBe('private');
+        expect(posted!['targetLevel']).toBe(5);
+        expect(posted!['xpMultiplier']).toBe(1);
         await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/challenges'));
     });
 });
