@@ -5,23 +5,12 @@ import { ptBR } from 'date-fns/locale';
 import { Flag } from 'lucide-react';
 import Link from 'next/link';
 import type { Challenge } from '@xpeak/shared';
-import { ChallengeState } from '@xpeak/shared';
+
+import { ChallengeStateBadge } from '@/components/atoms/ChallengeStateBadge';
 
 interface ChallengeCardProps {
     challenge: Challenge;
 }
-
-const STATE_STYLES: Record<ChallengeState, string> = {
-    [ChallengeState.Active]: 'border-sky-500/40 bg-sky-500/10 text-sky-300',
-    [ChallengeState.Completed]: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
-    [ChallengeState.Failed]: 'border-zinc-700 bg-zinc-800/60 text-zinc-400',
-};
-
-const STATE_LABEL: Record<ChallengeState, string> = {
-    [ChallengeState.Active]: 'Ativo',
-    [ChallengeState.Completed]: 'Completo',
-    [ChallengeState.Failed]: 'Falhou',
-};
 
 export function ChallengeCard({ challenge }: ChallengeCardProps) {
     const endsIn = formatDistanceToNow(parseISO(challenge.endsAt), {
@@ -44,11 +33,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
                     Level {challenge.targetLevel} · termina {endsIn}
                 </p>
             </div>
-            <span
-                className={`shrink-0 rounded-full border px-3 py-1 font-mono text-xs font-semibold ${STATE_STYLES[challenge.state]}`}
-            >
-                {STATE_LABEL[challenge.state]}
-            </span>
+            <ChallengeStateBadge state={challenge.state} />
         </Link>
     );
 }
