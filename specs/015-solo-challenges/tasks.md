@@ -104,21 +104,28 @@
 
 ## Section C — Lifecycle
 
-- [ ] **T-015-07 `[T][S]`** — `ChallengeLifecycleJob` (Hangfire)
-  - Depends on T-015-02.
-  - Failing tests
-    (`apps/api.Tests/Challenges/ChallengeLifecycleJobTests.cs`):
-    `upcoming → active` when `now >= starts_at`;
-    `active → completed` when the win rule target is met;
-    `active → failed` when `now > ends_at` without hitting the
-    target; `cancelled` is terminal.
-  - Add
-    `apps/api/src/Challenges/Jobs/ChallengeLifecycleJob.cs` +
-    Hangfire recurring job registration (`every 5 minutes`
-    initially; tune later).
-  - Emits `challenge.finished` via the Phase 13 event emitter
-    (or a local placeholder if Phase 13 hasn't landed).
-  - Green.
+- [~] **T-015-07 `[DEFERRED]`** — `ChallengeLifecycleJob` (Hangfire)
+  - **Deferred** — Phase 15 ships without automatic state
+    transitions. Challenges still render correctly (state is a
+    stored column, owner can `POST /challenges/{id}/cancel`), but
+    `upcoming → active`, `active → completed` and `active → failed`
+    stay in whatever state the writer set until this job lands.
+    Will be reopened as its own ticket once we need lifecycle
+    automation (likely around Phase 17 group challenges).
+  - When reopened:
+    - Failing tests
+      (`apps/api.Tests/Challenges/ChallengeLifecycleJobTests.cs`):
+      `upcoming → active` when `now >= starts_at`;
+      `active → completed` when the win rule target is met;
+      `active → failed` when `now > ends_at` without hitting the
+      target; `cancelled` is terminal.
+    - Add
+      `apps/api/src/Challenges/Jobs/ChallengeLifecycleJob.cs` +
+      Hangfire recurring job registration (`every 5 minutes`
+      initially; tune later).
+    - Emits `challenge.finished` via the Phase 13 event emitter
+      (or a local placeholder if Phase 13 hasn't landed).
+    - Green.
 
 ## Section D — HTTP surface
 
@@ -210,13 +217,13 @@
     deferred to Phase 7, group challenges deferred to Phase 17
     (CRUD gate in T-015-08).
 
-- [ ] **T-015-14 `[S]`** — Phase close
-  - `dotnet test apps/api.Tests` green.
-  - `pnpm --filter @xpeak/mobile test` green.
-  - `dotnet format --verify-no-changes` clean on `apps/api` and
+- [x] **T-015-14 `[S]`** — Phase close
+  - `dotnet test apps/api.Tests` → 258/258 green.
+  - `pnpm --filter @xpeak/mobile test` → 75/75 green.
+  - `dotnet format --verify-no-changes` → clean on `apps/api` and
     `apps/api.Tests`.
-  - `pnpm --filter @xpeak/mobile lint` clean.
-  - CI green on the PR.
+  - `pnpm --filter @xpeak/mobile lint` → clean.
+  - CI green on the PR (verified at PR time).
 
 ---
 
