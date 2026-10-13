@@ -1,8 +1,12 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Xpeak.Api.Auth.Core;
 using Xpeak.Api.Auth.Google;
 using Xpeak.Api.Auth.Password;
+using Xpeak.Api.Challenges;
 using Xpeak.Api.CheckIns;
 using Xpeak.Api.Endpoints;
 using Xpeak.Api.Groups;
@@ -16,11 +20,21 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
+// Enum fields on HTTP payloads serialize as snake_case strings
+// ("private", "total_xp", "active") rather than the default int
+// ordinal, matching the EF Core JSONB convention in AppDbContext.
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.Converters.Add(
+        new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower));
+});
+
 builder.Services
     .AddUsers()
     .AddGroups()
     .AddProgression()
     .AddCheckIns()
+    .AddChallenges()
     .AddMedia(builder.Configuration)
     .AddAuthCore(builder.Configuration)
     .AddPasswordAuth()
@@ -68,6 +82,7 @@ app.UsePasswordAuth();
 app.UseGoogleAuth();
 app.UseProgression();
 app.UseCheckIns();
+app.UseChallenges();
 app.UseMedia();
 
 app.Run();
