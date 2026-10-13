@@ -55,7 +55,7 @@
     + `ChallengeService.cs` with `CreateAsync`.
   - Green.
 
-- [ ] **T-015-03 `[T][S]`** — `IProgressCalculator.ComputeAsync` (XP → target_level)
+- [x] **T-015-03 `[T][S]`** ✅ commit `23eb8d2` — `IProgressCalculator.ComputeAsync` (XP → target_level)
   - Depends on T-015-01.
   - Failing test
     (`apps/api.Tests/Challenges/ProgressCalculatorTests.cs`):
@@ -122,7 +122,7 @@
 
 ## Section D — HTTP surface
 
-- [ ] **T-015-08 `[T][S]`** — Challenges CRUD endpoints
+- [x] **T-015-08 `[T][S]`** ✅ commit `2301c07` — Challenges CRUD endpoints
   - Depends on T-015-02.
   - Failing tests
     (`apps/api.Tests/Challenges/ChallengesEndpointTests.cs`):
@@ -142,7 +142,7 @@
     `apps/api/src/Challenges/Dto/`.
   - Green.
 
-- [ ] **T-015-09 `[T][S]`** — `GET /challenges/{id}/progress`
+- [x] **T-015-09 `[T][S]`** ✅ commit `2301c07` — `GET /challenges/{id}/progress`
   - Depends on T-015-08 and T-015-03..05.
   - Failing test
     (`apps/api.Tests/Challenges/ChallengeProgressEndpointTests.cs`):
@@ -156,7 +156,7 @@
 
 ## Section E — Mobile
 
-- [ ] **T-015-10 `[T][S]`** — Shared types + challenges service + hooks
+- [x] **T-015-10 `[T][S]`** ✅ commit `74a9c18` — Shared types + challenges service + hooks
   - Depends on T-015-08 and T-015-09.
   - Add `packages/shared/src/challenges/types.ts` with
     `Challenge`, `ChallengeMembership`, `CreateChallengeRequest`,
@@ -173,7 +173,7 @@
     the list key.
   - Green.
 
-- [ ] **T-015-11 `[T][S]`** — Challenges tab + create wizard
+- [x] **T-015-11 `[T][S]`** ✅ commit `1418db6` — Challenges tab + create form
   - Depends on T-015-10.
   - New tab `/challenges` with a segmented control
     (`upcoming | active | completed`).
@@ -188,7 +188,7 @@
     payload and navigates to the new challenge's detail route.
   - Green.
 
-- [ ] **T-015-12 `[T][S]`** — Challenge detail screen with progress
+- [x] **T-015-12 `[T][S]`** ✅ commit `da8badd` — Challenge detail screen with progress
   - Depends on T-015-11.
   - New route `/challenges/[id]` renders:
     - Header: title, mode badge, countdown to `ends_at`.
