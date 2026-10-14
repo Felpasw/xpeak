@@ -3,21 +3,17 @@ using Xpeak.Api.CheckIns.Dto;
 namespace Xpeak.Api.CheckIns.Entities;
 
 /// <summary>
-/// A single check-in. Owned by a <see cref="Users.AppUser"/>, scoped
-/// to a category (which lives inside a group). <c>GroupId</c> is
-/// denormalized from the category at insert time so per-group
-/// queries (ranking, timeline) stay single-table and the historical
-/// scope is immutable if a category is ever moved between groups.
+/// A single check-in. Owned by a <see cref="Users.AppUser"/>; pays a
+/// fixed XP amount (<see cref="Xp.XpCalculator.CheckInXp"/>) on
+/// publish. Phase 30 removed the category and group scopes — every
+/// check-in is a user-level event, and challenges observe them by
+/// time window.
 /// </summary>
 public sealed class CheckIn
 {
     public Guid Id { get; set; }
 
     public Guid UserId { get; set; }
-
-    public Guid CategoryId { get; set; }
-
-    public Guid GroupId { get; set; }
 
     /// <summary>Short label the user gave this workout ("Leg day",
     /// "Cardio manhã"). Required (max 60 chars, trimmed).</summary>

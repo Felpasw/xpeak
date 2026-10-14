@@ -8,9 +8,7 @@ using Xpeak.Api.Challenges.Entities;
 using Xpeak.Api.Challenges.Services;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
-using Xpeak.Api.Groups;
 using Xpeak.Api.Infrastructure;
-using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
 using Xpeak.Api.Users;
 using Xpeak.Api.Xp;
@@ -31,9 +29,8 @@ public sealed class ChallengeProgressEndpointTests
     public async Task Returns_progress_payload_for_a_member()
     {
         var user = await CreateUserAsync("cp");
-        var categoryId = await EnsureCategoryAsync("cp-any");
         var challengeId = await CreateChallengeAsync(user, targetLevel: 5);
-        await InsertCheckInAsync(user.Id, categoryId, xp: 50);
+        await InsertCheckInAsync(user.Id, xp: 50);
 
         var client = AuthenticatedClientFor(user);
         var response = await client.GetAsync($"/challenges/{challengeId}/progress");
@@ -86,26 +83,7 @@ public sealed class ChallengeProgressEndpointTests
         return result.Challenge.Id;
     }
 
-    private async Task<Guid> EnsureCategoryAsync(string slug)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var defaultXpRuleId = new Guid("00000000-0000-0000-0000-000000000010");
-        var fullSlug = $"{slug}-{Guid.NewGuid():N}";
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = GroupIds.Global,
-            XpRuleId = defaultXpRuleId,
-            Slug = fullSlug,
-            Name = fullSlug,
-        };
-        db.Categories.Add(category);
-        await db.SaveChangesAsync();
-        return category.Id;
-    }
-
-    private async Task InsertCheckInAsync(Guid userId, Guid categoryId, int xp)
+    private async Task InsertCheckInAsync(Guid userId, int xp)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -114,8 +92,6 @@ public sealed class ChallengeProgressEndpointTests
             Id = Guid.NewGuid(),
             Title = "t",
             UserId = userId,
-            CategoryId = categoryId,
-            GroupId = GroupIds.Global,
             XpEarned = xp,
             ScoringSnapshot = new ScoringSnapshot(xp, [], xp),
             PerformedAt = DateTimeOffset.UtcNow,

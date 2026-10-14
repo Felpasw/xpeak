@@ -2,9 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.Challenges.Entities;
-using Xpeak.Api.Groups.Entities;
 using Xpeak.Api.Infrastructure;
-using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
 using Xpeak.Api.Users;
 
@@ -24,11 +22,11 @@ public sealed class ChallengePersistenceTests
     [Fact]
     public async Task Happy_path_persists_challenge_with_target_level()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var challenge = NewChallenge(fixture);
+        var challenge = NewChallenge(user);
         db.Challenges.Add(challenge);
         await db.SaveChangesAsync();
 
@@ -36,7 +34,7 @@ public sealed class ChallengePersistenceTests
             .AsNoTracking()
             .SingleAsync(c => c.Id == challenge.Id);
 
-        reloaded.OwnerId.Should().Be(fixture.User.Id);
+        reloaded.OwnerId.Should().Be(user.Id);
         reloaded.Visibility.Should().Be(ChallengeVisibility.Private);
         reloaded.State.Should().Be(ChallengeState.Active);
         reloaded.TargetLevel.Should().Be(10);
@@ -47,11 +45,11 @@ public sealed class ChallengePersistenceTests
     [Fact]
     public async Task Rejects_target_level_zero_or_negative()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var challenge = NewChallenge(fixture);
+        var challenge = NewChallenge(user);
         challenge.TargetLevel = 0;
         db.Challenges.Add(challenge);
 
@@ -63,11 +61,11 @@ public sealed class ChallengePersistenceTests
     [Fact]
     public async Task Rejects_xp_multiplier_below_the_floor()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var challenge = NewChallenge(fixture);
+        var challenge = NewChallenge(user);
         challenge.XpMultiplier = 0.4m;
         db.Challenges.Add(challenge);
 
@@ -79,11 +77,11 @@ public sealed class ChallengePersistenceTests
     [Fact]
     public async Task Rejects_xp_multiplier_above_the_ceiling()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var challenge = NewChallenge(fixture);
+        var challenge = NewChallenge(user);
         challenge.XpMultiplier = 1.6m;
         db.Challenges.Add(challenge);
 
@@ -95,11 +93,11 @@ public sealed class ChallengePersistenceTests
     [Fact]
     public async Task Rejects_window_where_starts_at_is_not_before_ends_at()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var challenge = NewChallenge(fixture);
+        var challenge = NewChallenge(user);
         challenge.EndsAt = challenge.StartsAt;
         db.Challenges.Add(challenge);
 
@@ -111,11 +109,11 @@ public sealed class ChallengePersistenceTests
     [Fact]
     public async Task Rejects_blank_title()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var challenge = NewChallenge(fixture);
+        var challenge = NewChallenge(user);
         challenge.Title = "   ";
         db.Challenges.Add(challenge);
 
@@ -127,17 +125,17 @@ public sealed class ChallengePersistenceTests
     [Fact]
     public async Task Enforces_unique_challenge_user_membership_pair()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var challenge = NewChallenge(fixture);
+        var challenge = NewChallenge(user);
         db.Challenges.Add(challenge);
         db.ChallengeMemberships.Add(new ChallengeMembership
         {
             Id = Guid.NewGuid(),
             ChallengeId = challenge.Id,
-            UserId = fixture.User.Id,
+            UserId = user.Id,
             Role = ChallengeMembershipRole.Owner,
             Progress = MembershipProgress.Empty(1500),
         });
@@ -147,7 +145,7 @@ public sealed class ChallengePersistenceTests
         {
             Id = Guid.NewGuid(),
             ChallengeId = challenge.Id,
-            UserId = fixture.User.Id,
+            UserId = user.Id,
             Role = ChallengeMembershipRole.Member,
             Progress = MembershipProgress.Empty(1500),
         });
@@ -160,17 +158,17 @@ public sealed class ChallengePersistenceTests
     [Fact]
     public async Task Round_trips_membership_progress_jsonb()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var challenge = NewChallenge(fixture);
+        var challenge = NewChallenge(user);
         db.Challenges.Add(challenge);
         var membership = new ChallengeMembership
         {
             Id = Guid.NewGuid(),
             ChallengeId = challenge.Id,
-            UserId = fixture.User.Id,
+            UserId = user.Id,
             Role = ChallengeMembershipRole.Owner,
             Progress = new MembershipProgress(
                 Value: 900,
@@ -189,10 +187,10 @@ public sealed class ChallengePersistenceTests
         reloaded.Progress.AchievedAt.Should().BeNull();
     }
 
-    private static Challenge NewChallenge(SeededFixture fixture) => new()
+    private static Challenge NewChallenge(AppUser user) => new()
     {
         Id = Guid.NewGuid(),
-        OwnerId = fixture.User.Id,
+        OwnerId = user.Id,
         Title = "30 dias de treino",
         Description = "Levantar peso toda semana por 30 dias.",
         IconPublicId = "challenges/sample-icon",
@@ -204,36 +202,14 @@ public sealed class ChallengePersistenceTests
         State = ChallengeState.Active,
     };
 
-    private async Task<SeededFixture> SeedFixtureAsync()
+    private async Task<AppUser> SeedUserAsync()
     {
         await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var suffix = Guid.NewGuid().ToString("N")[..6];
 
         var user = new AppUser { UserName = $"ch_{suffix}", Email = $"ch_{suffix}@x.com" };
         (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
-
-        var group = new Group { Id = Guid.NewGuid(), Name = $"g_{suffix}", IsRoot = false };
-        var config = new GroupConfig { GroupId = group.Id, StreakConfig = new StreakConfig(StreakMode.Daily) };
-        var rule = new XpRule { Id = Guid.NewGuid(), BaseXp = 10, WeightMultiplier = 1.0m };
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"s_{suffix}",
-            Name = "T",
-        };
-
-        db.Groups.Add(group);
-        db.GroupConfigs.Add(config);
-        db.XpRules.Add(rule);
-        db.Categories.Add(category);
-        await db.SaveChangesAsync();
-
-        return new SeededFixture(user, group, category);
+        return user;
     }
-
-    private sealed record SeededFixture(AppUser User, Group Group, Category Category);
 }

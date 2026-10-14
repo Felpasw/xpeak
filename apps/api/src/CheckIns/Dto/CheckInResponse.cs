@@ -9,8 +9,6 @@ namespace Xpeak.Api.CheckIns.Dto;
 /// </summary>
 public sealed record CheckInResponse(
     Guid Id,
-    Guid CategoryId,
-    Guid GroupId,
     string Title,
     int XpEarned,
     ScoringSnapshot ScoringSnapshot,
@@ -18,17 +16,13 @@ public sealed record CheckInResponse(
     int? DurationMinutes,
     string? Notes,
     bool HasMedia,
-    CategorySnapshot Category,
     MediaPreview? MediaPreview)
 {
     public static CheckInResponse From(
         CheckIn c,
-        CategorySnapshot category,
         MediaPreview? mediaPreview = null,
         bool hasMedia = false) => new(
         c.Id,
-        c.CategoryId,
-        c.GroupId,
         c.Title,
         c.XpEarned,
         c.ScoringSnapshot,
@@ -36,20 +30,8 @@ public sealed record CheckInResponse(
         c.DurationMinutes,
         c.Notes,
         hasMedia,
-        category,
         mediaPreview);
 }
-
-/// <summary>
-/// Denormalized category info returned inline with each
-/// <see cref="CheckInResponse"/> so the client renders property-direct
-/// without a client-side join against the categories listing.
-/// </summary>
-public sealed record CategorySnapshot(
-    Guid Id,
-    string Slug,
-    string Name,
-    string? IconPublicId);
 
 /// <summary>
 /// Thumbnail hint for the first attachment of a check-in, so a feed
@@ -68,7 +50,7 @@ public sealed record UserProgressionResponse(
     bool LeveledUp,
     int LevelsGained);
 
-/// <summary>Per-group streak block returned inside the create response.</summary>
+/// <summary>Per-user streak block returned inside the create response.</summary>
 public sealed record StreakResponse(
     int Current,
     int Longest,

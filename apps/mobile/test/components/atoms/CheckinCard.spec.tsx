@@ -6,8 +6,6 @@ import { CheckinCard } from '@/components/atoms/CheckinCard';
 
 const base: CheckIn = {
     id: 'ci-1',
-    categoryId: 'cat-1',
-    groupId: 'g-1',
     title: 'Treino de perna',
     xpEarned: 14,
     scoringSnapshot: { baseXp: 10, multipliers: [], total: 14 },
@@ -15,16 +13,14 @@ const base: CheckIn = {
     durationMinutes: 55,
     notes: 'Agachamento pesado',
     hasMedia: false,
-    category: { id: 'cat-1', slug: 'perna', name: 'Perna', iconPublicId: null },
     mediaPreview: null,
 };
 
 describe('<CheckinCard />', () => {
-    it('renders title, category name and the XP pill', () => {
+    it('renders title and the XP pill', () => {
         render(<CheckinCard checkIn={base} />);
 
         expect(screen.getByText('Treino de perna')).toBeInTheDocument();
-        expect(screen.getByText(/Perna/)).toBeInTheDocument();
         expect(screen.getByText(/\+14 XP/)).toBeInTheDocument();
     });
 

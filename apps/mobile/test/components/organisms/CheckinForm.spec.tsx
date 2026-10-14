@@ -72,29 +72,6 @@ beforeEach(() => {
     window.localStorage.setItem('xpeak.auth.token', 'test.jwt');
 });
 
-const GLOBAL = '00000000-0000-0000-0000-000000000001';
-
-const categoriesResponse = {
-    categories: [
-        {
-            id: 'cat-legs',
-            groupId: GLOBAL,
-            slug: 'legs',
-            name: 'Legs',
-            iconPublicId: null,
-            active: true,
-        },
-        {
-            id: 'cat-chest',
-            groupId: GLOBAL,
-            slug: 'chest',
-            name: 'Chest',
-            iconPublicId: null,
-            active: true,
-        },
-    ],
-};
-
 const renderForm = async () => {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -116,41 +93,26 @@ async function attachOnePhoto() {
 }
 
 describe('<CheckinForm />', () => {
-    it('blocks submit until a category is picked (zod schema)', async () => {
+    it('blocks submit when the title is blank', async () => {
         const user = userEvent.setup();
-        server.use(
-            http.get(`http://localhost:5000/groups/${GLOBAL}/categories`, () =>
-                HttpResponse.json(categoriesResponse),
-            ),
-        );
 
         await renderForm();
-        await waitFor(() => expect(screen.getByRole('radio', { name: 'Legs' })).toBeInTheDocument());
-
-        await user.type(screen.getByLabelText(/t(í|i)tulo/i), 'Perna B');
         await attachOnePhoto();
         await user.click(screen.getByRole('button', { name: /registrar check-in/i }));
 
         await waitFor(() =>
             expect(
-                screen.getByText(/escolha uma categoria/i),
+                screen.getByText(/coloca um t(í|i)tulo/i),
             ).toBeInTheDocument(),
         );
     });
 
     it('blocks submit when no media is attached', async () => {
         const user = userEvent.setup();
-        server.use(
-            http.get(`http://localhost:5000/groups/${GLOBAL}/categories`, () =>
-                HttpResponse.json(categoriesResponse),
-            ),
-        );
 
         await renderForm();
-        await waitFor(() => expect(screen.getByRole('radio', { name: 'Legs' })).toBeInTheDocument());
 
         await user.type(screen.getByLabelText(/t(í|i)tulo/i), 'Perna B');
-        await user.click(screen.getByRole('radio', { name: 'Legs' }));
         await user.click(screen.getByRole('button', { name: /registrar check-in/i }));
 
         await waitFor(() =>
@@ -166,23 +128,20 @@ describe('<CheckinForm />', () => {
         let receivedBody: unknown = null;
 
         server.use(
-            http.get(`http://localhost:5000/groups/${GLOBAL}/categories`, () =>
-                HttpResponse.json(categoriesResponse),
-            ),
             http.post('http://localhost:5000/check_ins', async ({ request }) => {
                 receivedBody = await request.json();
                 return HttpResponse.json(
                     {
                         checkIn: {
-                            id: 'ck-chest',
-                            categoryId: 'cat-chest',
-                            groupId: GLOBAL,
+                            id: 'ck-1',
                             title: 'Perna A',
                             xpEarned: 0,
                             scoringSnapshot: { baseXp: 0, multipliers: [], total: 0 },
                             performedAt: '2026-09-25T12:00:00Z',
                             durationMinutes: 45,
                             notes: 'hard set',
+                            hasMedia: false,
+                            mediaPreview: null,
                         },
                         user: { id: 'u', xp: 0, level: 0, leveledUp: false, levelsGained: 0 },
                         streak: { current: 0, longest: 0, unit: 'day' },
@@ -194,16 +153,14 @@ describe('<CheckinForm />', () => {
         vi.mocked(uploadCheckInMedia).mockResolvedValue({
             media: [],
             publish: {
-                user: { id: 'u', xp: 14, level: 0, leveledUp: false, levelsGained: 0 },
+                user: { id: 'u', xp: 10, level: 0, leveledUp: false, levelsGained: 0 },
                 streak: { current: 1, longest: 1, unit: 'day' },
             },
         });
 
         await renderForm();
-        await waitFor(() => expect(screen.getByRole('radio', { name: 'Chest' })).toBeInTheDocument());
 
         await user.type(screen.getByLabelText(/t(í|i)tulo/i), '  Perna A  ');
-        await user.click(screen.getByRole('radio', { name: 'Chest' }));
         await user.type(screen.getByLabelText(/dura(ç|c)ão/i), '45');
         await user.type(screen.getByPlaceholderText(/como foi/i), '  hard set  ');
         await attachOnePhoto();
@@ -211,29 +168,14 @@ describe('<CheckinForm />', () => {
 
         await waitFor(() => expect(routerReplace).toHaveBeenCalledWith('/profile'));
         expect(receivedBody).toMatchObject({
-            categoryId: 'cat-chest',
             title: 'Perna A',
             durationMinutes: 45,
             notes: 'hard set',
             withMedia: true,
         });
         expect(uploadCheckInMedia).toHaveBeenCalledWith(
-            'ck-chest',
+            'ck-1',
             expect.arrayContaining([expect.objectContaining({ kind: MediaKind.Photo })]),
-        );
-    });
-
-    it('renders the empty state when the group has no categories', async () => {
-        server.use(
-            http.get(`http://localhost:5000/groups/${GLOBAL}/categories`, () =>
-                HttpResponse.json({ categories: [] }),
-            ),
-        );
-
-        await renderForm();
-
-        await waitFor(() =>
-            expect(screen.getByText(/n(ã|a)o h(á|a) categorias/i)).toBeInTheDocument(),
         );
     });
 
@@ -241,22 +183,19 @@ describe('<CheckinForm />', () => {
         const user = userEvent.setup();
 
         server.use(
-            http.get(`http://localhost:5000/groups/${GLOBAL}/categories`, () =>
-                HttpResponse.json(categoriesResponse),
-            ),
             http.post('http://localhost:5000/check_ins', () =>
                 HttpResponse.json(
                     {
                         checkIn: {
-                            id: 'ck-legs',
-                            categoryId: 'cat-legs',
-                            groupId: GLOBAL,
+                            id: 'ck-2',
                             title: 'Leg day',
                             xpEarned: 0,
                             scoringSnapshot: { baseXp: 0, multipliers: [], total: 0 },
                             performedAt: '2026-09-25T12:00:00Z',
                             durationMinutes: null,
                             notes: null,
+                            hasMedia: false,
+                            mediaPreview: null,
                         },
                         user: { id: 'u', xp: 0, level: 0, leveledUp: false, levelsGained: 0 },
                         streak: { current: 0, longest: 0, unit: 'day' },
@@ -274,10 +213,8 @@ describe('<CheckinForm />', () => {
         });
 
         await renderForm();
-        await waitFor(() => expect(screen.getByRole('radio', { name: 'Legs' })).toBeInTheDocument());
 
         await user.type(screen.getByLabelText(/t(í|i)tulo/i), 'Leg day');
-        await user.click(screen.getByRole('radio', { name: 'Legs' }));
         await attachOnePhoto();
         await user.click(screen.getByRole('button', { name: /registrar check-in/i }));
 

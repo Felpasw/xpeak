@@ -1,41 +1,25 @@
-using Xpeak.Api.Groups.Entities;
-
 namespace Xpeak.Api.CheckIns.Services;
 
 public enum StreakUnit { Day, Week }
 
 /// <summary>
-/// Outcome of a streak query. <see cref="Unit"/> reflects the
-/// group's <see cref="StreakConfig.Mode"/> — Phase 5 always returns
-/// <see cref="StreakUnit.Day"/> because only daily mode is
-/// implemented.
+/// Outcome of a streak query. <see cref="Unit"/> is always
+/// <see cref="StreakUnit.Day"/> after Phase 30 collapsed the weekly
+/// mode.
 /// </summary>
 public readonly record struct StreakInfo(int Current, int Longest, StreakUnit Unit);
 
 /// <summary>
-/// Pure static — turns a list of distinct check-in dates plus a
-/// group's <see cref="StreakConfig"/> into a <see cref="StreakInfo"/>.
-/// Zero DB, zero DI; the service layer (StreakService) queries the
-/// dates and hands them in.
-///
-/// Phase 5 only implements <see cref="StreakMode.Daily"/>; other
-/// modes throw <see cref="NotSupportedException"/> so callers fail
-/// loud instead of silently defaulting.
+/// Pure static — turns a list of distinct check-in dates into a
+/// <see cref="StreakInfo"/>. Zero DB, zero DI; the service layer
+/// queries the dates and hands them in.
 /// </summary>
 public static class StreakCalculator
 {
     public static StreakInfo Compute(
         IReadOnlyList<DateOnly> distinctDates,
-        DateOnly asOf,
-        StreakConfig config)
+        DateOnly asOf)
     {
-        if (config.Mode != StreakMode.Daily)
-        {
-            throw new NotSupportedException(
-                $"Streak mode '{config.Mode}' is not implemented in Phase 5.");
-        }
-
-        // Sort descending in place-safe way (input may be in any order).
         var descending = distinctDates
             .Distinct()
             .OrderByDescending(d => d)
@@ -55,7 +39,7 @@ public static class StreakCalculator
         {
             if (date > asOf)
             {
-                continue;   // future dates: ignore
+                continue;
             }
 
             if (date == expected)
@@ -65,7 +49,7 @@ public static class StreakCalculator
             }
             else
             {
-                break;       // gap — streak is broken
+                break;
             }
         }
         return current;

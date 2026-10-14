@@ -1,36 +1,18 @@
-using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Xp;
 
 namespace Xpeak.Api.Progression.Services;
 
 /// <summary>
-/// Only orchestration surface the Progression module exports. Composes
-/// <see cref="ICategoryRepository"/> reads with the pure static
-/// arithmetic (<see cref="XpCalculator"/>, <see cref="LevelCurve"/>,
-/// <see cref="LevelUpService"/>). Downstream modules (check-in in
-/// Phase 5, rankings later, LLM tools) depend on this interface, not
-/// on the repository or the pure services directly.
+/// Pure arithmetic surface the Progression module exposes to the rest
+/// of the app. Composition seam over the static services in
+/// <see cref="XpCalculator"/>, <see cref="LevelCurve"/> and
+/// <see cref="LevelUpService"/>. No persistence surface — Phase 30
+/// collapsed the per-category XP rules into the single constant
+/// <see cref="XpCalculator.CheckInXp"/>.
 /// </summary>
 public interface IProgressionService
 {
-    Task<IReadOnlyList<Category>> ListActiveCategoriesAsync(
-        Guid groupId,
-        CancellationToken ct = default);
-
-    Task<Category?> GetCategoryBySlugAsync(
-        Guid groupId,
-        string slug,
-        CancellationToken ct = default);
-
-    Task<Category?> GetCategoryByIdAsync(
-        Guid categoryId,
-        CancellationToken ct = default);
-
-    Task<XpRule?> GetRuleAsync(
-        Guid ruleId,
-        CancellationToken ct = default);
-
-    int ComputeXp(XpRule rule);
+    int ComputeCheckInXp();
 
     int XpForLevel(int level);
 

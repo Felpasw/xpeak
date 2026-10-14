@@ -15,7 +15,7 @@ export function CheckinCard({ checkIn }: CheckinCardProps) {
         addSuffix: true,
         locale: ptBR,
     });
-    const subtitle = `${checkIn.category.name} · ${when}`;
+    const subtitle = when;
 
     return (
         <article className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">

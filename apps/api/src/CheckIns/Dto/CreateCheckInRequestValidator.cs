@@ -10,10 +10,6 @@ public sealed class CreateCheckInRequestValidator : AbstractValidator<CreateChec
 
     public CreateCheckInRequestValidator(TimeProvider time)
     {
-        RuleFor(x => x.CategoryId)
-            .NotEmpty()
-            .WithMessage("Category id is required.");
-
         RuleFor(x => x.Title)
             .NotEmpty()
             .WithMessage("Title is required.")

@@ -4,11 +4,9 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.Auth.Core;
-using Xpeak.Api.Groups.Entities;
-using Xpeak.Api.Infrastructure;
-using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
 using Xpeak.Api.Users;
+using Xpeak.Api.Xp;
 
 namespace Xpeak.Api.Tests.CheckIns;
 
@@ -23,15 +21,33 @@ public sealed class CreateCheckInEndpointTests
     }
 
     [Fact]
-    public async Task Pending_path_returns_201_with_zero_xp_when_with_media_is_true()
+    public async Task Happy_path_returns_201_and_awards_xp()
     {
-        var fixture = await SeedFixtureAsync(baseXp: 15, weight: 1.40m);
-        await JoinGroupAsync(fixture);
-        var client = AuthenticatedClientFor(fixture.User);
+        var user = await SeedUserAsync();
+        var client = AuthenticatedClientFor(user);
 
         var response = await client.PostAsJsonAsync("/check_ins", new
         {
-            categoryId = fixture.Category.Id,
+            title = "leg day",
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var body = await response.Content.ReadFromJsonAsync<CreateCheckInResponseDto>();
+        body.Should().NotBeNull();
+        body!.CheckIn.XpEarned.Should().Be(XpCalculator.CheckInXp);
+        body.User.Xp.Should().Be(XpCalculator.CheckInXp);
+        body.Streak.Current.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Pending_path_returns_201_with_zero_xp_when_with_media_is_true()
+    {
+        var user = await SeedUserAsync();
+        var client = AuthenticatedClientFor(user);
+
+        var response = await client.PostAsJsonAsync("/check_ins", new
+        {
             title = "with media",
             withMedia = true,
         });
@@ -55,7 +71,6 @@ public sealed class CreateCheckInEndpointTests
 
         var response = await client.PostAsJsonAsync("/check_ins", new
         {
-            categoryId = Guid.NewGuid(),
             title = "test",
         });
 
@@ -63,87 +78,14 @@ public sealed class CreateCheckInEndpointTests
     }
 
     [Fact]
-    public async Task Happy_path_returns_201_with_check_in_user_and_streak()
+    public async Task Rejects_blank_title_with_422()
     {
-        var fixture = await SeedFixtureAsync(baseXp: 15, weight: 1.40m);
-        await JoinGroupAsync(fixture);
-        var client = AuthenticatedClientFor(fixture.User);
+        var user = await SeedUserAsync();
+        var client = AuthenticatedClientFor(user);
 
         var response = await client.PostAsJsonAsync("/check_ins", new
         {
-            categoryId = fixture.Category.Id,
-            title = "test",
-            durationMinutes = 45,
-            notes = "leg day",
-        });
-
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        var body = await response.Content.ReadFromJsonAsync<CreateCheckInResponseDto>();
-        body.Should().NotBeNull();
-
-        body!.CheckIn.CategoryId.Should().Be(fixture.Category.Id);
-        body.CheckIn.GroupId.Should().Be(fixture.Group.Id);
-        body.CheckIn.XpEarned.Should().Be(21);
-        body.CheckIn.Notes.Should().Be("leg day");
-        body.CheckIn.DurationMinutes.Should().Be(45);
-        body.CheckIn.ScoringSnapshot.BaseXp.Should().Be(15);
-        body.CheckIn.ScoringSnapshot.Total.Should().Be(21);
-        body.CheckIn.HasMedia.Should().BeFalse();
-
-        body.User.Xp.Should().Be(21);
-        body.User.Level.Should().Be(0);
-        body.User.LeveledUp.Should().BeFalse();
-
-        body.Streak.Current.Should().Be(1);
-        body.Streak.Longest.Should().Be(1);
-        body.Streak.Unit.Should().Be("day");
-    }
-
-    [Fact]
-    public async Task Rejects_with_403_when_user_is_not_a_member_of_the_group()
-    {
-        var fixture = await SeedFixtureAsync();
-        // Skip JoinGroupAsync — user is not a member.
-        var client = AuthenticatedClientFor(fixture.User);
-
-        var response = await client.PostAsJsonAsync("/check_ins", new
-        {
-            categoryId = fixture.Category.Id,
-            title = "test",
-        });
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task Rejects_with_404_when_category_id_is_unknown()
-    {
-        var fixture = await SeedFixtureAsync();
-        await JoinGroupAsync(fixture);
-        var client = AuthenticatedClientFor(fixture.User);
-
-        var response = await client.PostAsJsonAsync("/check_ins", new
-        {
-            categoryId = Guid.NewGuid(),
-            title = "test",
-        });
-
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
-    public async Task Rejects_with_422_when_notes_exceed_280_characters()
-    {
-        var fixture = await SeedFixtureAsync();
-        await JoinGroupAsync(fixture);
-        var client = AuthenticatedClientFor(fixture.User);
-
-        var response = await client.PostAsJsonAsync("/check_ins", new
-        {
-            categoryId = fixture.Category.Id,
-            title = "test",
-            notes = new string('a', 281),
+            title = "   ",
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
@@ -152,21 +94,17 @@ public sealed class CreateCheckInEndpointTests
     [Fact]
     public async Task Rejects_with_422_when_duration_minutes_is_not_positive()
     {
-        var fixture = await SeedFixtureAsync();
-        await JoinGroupAsync(fixture);
-        var client = AuthenticatedClientFor(fixture.User);
+        var user = await SeedUserAsync();
+        var client = AuthenticatedClientFor(user);
 
         var response = await client.PostAsJsonAsync("/check_ins", new
         {
-            categoryId = fixture.Category.Id,
             title = "test",
             durationMinutes = 0,
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
-
-    private sealed record SeededFixture(AppUser User, Group Group, Category Category);
 
     private sealed record CreateCheckInResponseDto(
         CheckInBody CheckIn,
@@ -175,8 +113,6 @@ public sealed class CreateCheckInEndpointTests
 
     private sealed record CheckInBody(
         Guid Id,
-        Guid CategoryId,
-        Guid GroupId,
         int XpEarned,
         ScoringSnapshotBody ScoringSnapshot,
         DateTimeOffset PerformedAt,
@@ -210,47 +146,14 @@ public sealed class CreateCheckInEndpointTests
         return client;
     }
 
-    private async Task<SeededFixture> SeedFixtureAsync(int baseXp = 10, decimal weight = 1.0m)
+    private async Task<AppUser> SeedUserAsync()
     {
         await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var suffix = Guid.NewGuid().ToString("N")[..6];
 
         var user = new AppUser { UserName = $"ep_{suffix}", Email = $"ep_{suffix}@x.com" };
         (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
-
-        var group = new Group { Id = Guid.NewGuid(), Name = $"g_{suffix}", IsRoot = false };
-        var config = new GroupConfig { GroupId = group.Id, StreakConfig = new StreakConfig(StreakMode.Daily) };
-        var rule = new XpRule { Id = Guid.NewGuid(), BaseXp = baseXp, WeightMultiplier = weight };
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"s_{suffix}",
-            Name = "T",
-        };
-
-        db.Groups.Add(group);
-        db.GroupConfigs.Add(config);
-        db.XpRules.Add(rule);
-        db.Categories.Add(category);
-        await db.SaveChangesAsync();
-
-        return new SeededFixture(user, group, category);
-    }
-
-    private async Task JoinGroupAsync(SeededFixture fixture)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        db.GroupMemberships.Add(new GroupMembership
-        {
-            UserId = fixture.User.Id,
-            GroupId = fixture.Group.Id,
-            JoinedAt = DateTimeOffset.UtcNow,
-        });
-        await db.SaveChangesAsync();
+        return user;
     }
 }

@@ -9,7 +9,6 @@ using Xpeak.Api.Auth.Password;
 using Xpeak.Api.Challenges;
 using Xpeak.Api.CheckIns;
 using Xpeak.Api.Endpoints;
-using Xpeak.Api.Groups;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Media;
 using Xpeak.Api.Progression;
@@ -31,7 +30,6 @@ builder.Services.Configure<JsonOptions>(options =>
 
 builder.Services
     .AddUsers()
-    .AddGroups()
     .AddProgression()
     .AddCheckIns()
     .AddChallenges()
@@ -80,7 +78,6 @@ app.MapHealthEndpoints();
 app.UseAuthCore();
 app.UsePasswordAuth();
 app.UseGoogleAuth();
-app.UseProgression();
 app.UseCheckIns();
 app.UseChallenges();
 app.UseMedia();

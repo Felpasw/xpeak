@@ -3,10 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
-using Xpeak.Api.Groups.Entities;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Media.Entities;
-using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
 using Xpeak.Api.Users;
 
@@ -183,29 +181,11 @@ public sealed class CheckInMediaPersistenceTests
         var user = new AppUser { UserName = $"cim_{suffix}", Email = $"cim_{suffix}@x.com" };
         (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
 
-        var group = new Group { Id = Guid.NewGuid(), Name = $"grp-{Guid.NewGuid():N}", IsRoot = false };
-        db.Groups.Add(group);
-
-        var rule = new XpRule { Id = Guid.NewGuid(), BaseXp = 15, WeightMultiplier = 1m };
-        db.XpRules.Add(rule);
-
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"cat-{Guid.NewGuid():N}",
-            Name = "cat",
-        };
-        db.Categories.Add(category);
-
         var checkIn = new CheckIn
         {
             Id = Guid.NewGuid(),
             Title = "test",
             UserId = user.Id,
-            CategoryId = category.Id,
-            GroupId = group.Id,
             XpEarned = 15,
             ScoringSnapshot = new ScoringSnapshot(15, [], 15),
             PerformedAt = DateTimeOffset.UtcNow,
@@ -213,7 +193,7 @@ public sealed class CheckInMediaPersistenceTests
         db.CheckIns.Add(checkIn);
 
         await db.SaveChangesAsync();
-        return new Fixture(user, group, category, checkIn);
+        return new Fixture(user, checkIn);
     }
 
     private static CheckInMedia NewMedia(
@@ -232,5 +212,5 @@ public sealed class CheckInMediaPersistenceTests
             Position = 0,
         };
 
-    private sealed record Fixture(AppUser User, Group Group, Category Category, CheckIn CheckIn);
+    private sealed record Fixture(AppUser User, CheckIn CheckIn);
 }

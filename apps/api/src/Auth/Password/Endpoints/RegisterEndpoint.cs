@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Identity;
 using Xpeak.Api.Auth.Core;
-using Xpeak.Api.Groups.Services;
 using Xpeak.Api.Users;
 
 namespace Xpeak.Api.Auth.Password;
@@ -17,7 +16,6 @@ public static class RegisterEndpoint
         RegisterRequest request,
         UserManager<AppUser> userManager,
         JwtTokenIssuer tokenIssuer,
-        IGroupService groups,
         HttpContext ctx,
         TimeProvider time,
         CancellationToken ct)
@@ -38,8 +36,6 @@ public static class RegisterEndpoint
                 errors = result.Errors.Select(e => new { e.Code, e.Description }),
             });
         }
-
-        await groups.AddUserToGlobalAsync(user.Id, ct);
 
         var token = tokenIssuer.Issue(user);
         ctx.Response.Headers.Authorization = $"Bearer {token.Value}";

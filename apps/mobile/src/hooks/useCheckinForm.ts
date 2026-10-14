@@ -24,7 +24,6 @@ const MAX_BACKFILL_DAYS = 7;
 export const CHECKIN_MAX_BACKFILL_DAYS = MAX_BACKFILL_DAYS;
 
 export const CHECKIN_MESSAGES = {
-    categoryRequired: 'Escolha uma categoria pra registrar um check-in.',
     titleRequired: 'Coloca um título pro treino.',
     titleTooLong: `Título deve ter no máximo ${TITLE_MAX_LENGTH} caracteres.`,
     dateInFuture: 'A data não pode ser no futuro.',
@@ -42,7 +41,6 @@ export const CHECKIN_MESSAGES = {
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const checkinSchema = z.object({
-    categoryId: z.string().min(1, CHECKIN_MESSAGES.categoryRequired),
     title: z
         .string()
         .trim()
@@ -76,7 +74,6 @@ export function useCheckinForm(): UseCheckinFormResult {
 
     const form = useForm<CheckinFormValues>({
         defaultValues: {
-            categoryId: '',
             title: '',
             performedOn: todayIso(),
             duration: '',
@@ -94,7 +91,6 @@ export function useCheckinForm(): UseCheckinFormResult {
 
         try {
             const result = await createCheckIn.mutateAsync({
-                categoryId: values.categoryId,
                 title: values.title.trim(),
                 performedAt: performedOnToIso(values.performedOn),
                 durationMinutes: parsedDuration,
