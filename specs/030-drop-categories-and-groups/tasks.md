@@ -15,7 +15,7 @@
 
 ## Section A — Pure XP core
 
-- [ ] **T-030-01 `[T][S]`** — `XpCalculator.CheckInXp` constant
+- [x] **T-030-01 `[T][S]`** ✅ commit `e773323` — `XpCalculator.CheckInXp` constant
   - Depends on nothing.
   - Failing test
     (`apps/api.Tests/Xp/XpCalculatorTests.cs`):
