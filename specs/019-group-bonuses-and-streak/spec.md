@@ -1,5 +1,11 @@
 # Phase 19 — Group Bonuses & Group Streak (SPEC)
 
+> **Historical note:** Phase 30 removed `Group` as a product
+> concept. When this phase is picked up it will be re-scoped to
+> **challenge** bonuses and **challenge** streak (same mechanics,
+> but keyed on `ChallengeMembership` instead of `GroupMembership`).
+> See `docs/adr/0030-drop-groups-and-categories.md`.
+
 ## 1. Data model
 
 ### 1.1. `check_ins` addition

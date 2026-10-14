@@ -1,5 +1,11 @@
 # Phase 7 — Streak & Category Multipliers (SPEC)
 
+> **Historical note:** Phase 30 removed Categories. The "category
+> multiplier" tier of this phase no longer applies — the composed
+> multiplier stack will be streak × challenge only. Streak itself is
+> now per user (not per group). See
+> `docs/adr/0030-drop-groups-and-categories.md`.
+
 ## 1. Summary
 
 Composed multiplier stack persisted on every check-in.

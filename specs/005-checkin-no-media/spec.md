@@ -1,5 +1,14 @@
 # Phase 5 — Check-in (No Media) (SPEC)
 
+> **Historical note:** Phase 30 removed the group scope on check-ins
+> and the category picker (see
+> `docs/adr/0030-drop-groups-and-categories.md`). Streak is now
+> derived per user; `check_ins.category_id` and `check_ins.group_id`
+> no longer exist, `group_configs` is gone and
+> `GET /groups/{groupId}/categories` returns 404. The
+> `POST /check_ins` payload is just `{ title, performedAt?,
+> durationMinutes?, notes?, withMedia? }`.
+
 > Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16 + xUnit + FsCheck.
 
 ## 1. Summary

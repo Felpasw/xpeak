@@ -160,17 +160,17 @@
 
 ## Section G — Docs & wrap-up
 
-- [ ] **T-030-12 `[P]`** — ADR `docs/adr/0030-drop-groups-and-categories.md`
+- [x] **T-030-12 `[P]`** ✅ commit `pending` — ADR `docs/adr/0030-drop-groups-and-categories.md`
   - Captures the decision, the alternatives (keep both /
     rename / collapse), the Phase 19 reinterpretation, the
     hardcoded XP constant trade-off and the migration name.
 
-- [ ] **T-030-13 `[P]`** — Patch prior specs
+- [x] **T-030-13 `[P]`** ✅ commit `pending` — Patch prior specs
   - Add the historical banners defined in
     `specs/030-drop-categories-and-groups/spec.md` §7 to Phases
     4, 5, 7, 19 and update `specs/roadmap.md` Phase 19 heading.
 
-- [ ] **T-030-14 `[S]`** — Phase close
+- [x] **T-030-14 `[S]`** ✅ commit `pending` — Phase close
   - `dotnet test apps/api.Tests` green.
   - `pnpm --filter @xpeak/mobile test` green.
   - `dotnet format --verify-no-changes` clean on `apps/api` +
