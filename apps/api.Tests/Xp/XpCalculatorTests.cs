@@ -33,6 +33,18 @@ public sealed class XpCalculatorTests
         XpCalculator.Compute(rule).Should().Be(5);
     }
 
+    [Fact]
+    public void CheckInXp_is_the_hardcoded_payout_per_check_in()
+    {
+        XpCalculator.CheckInXp.Should().Be(10);
+    }
+
+    [Fact]
+    public void Compute_parameterless_returns_the_check_in_xp_constant()
+    {
+        XpCalculator.Compute().Should().Be(XpCalculator.CheckInXp);
+    }
+
     [Property]
     public bool Compute_is_strictly_positive_for_any_valid_rule(
         PositiveInt baseXp,

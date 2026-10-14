@@ -10,6 +10,15 @@ namespace Xpeak.Api.Xp;
 /// </summary>
 public static class XpCalculator
 {
+    /// <summary>
+    /// Hardcoded XP amount awarded per check-in. Phase 30 collapsed
+    /// the per-category XP rules into this single constant; Phase 9
+    /// will pick where editable config lives.
+    /// </summary>
+    public const int CheckInXp = 10;
+
+    public static int Compute() => CheckInXp;
+
     public static int Compute(XpRule rule)
     {
         var raw = rule.BaseXp * (double)rule.WeightMultiplier;
