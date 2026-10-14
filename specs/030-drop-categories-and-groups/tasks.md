@@ -29,7 +29,7 @@
 
 ## Section B — CheckIn flow (backend)
 
-- [ ] **T-030-02 `[T][S]`** — `CheckInService` without category/group
+- [x] **T-030-02 `[T][S]`** ✅ commit `7d3aa82` — `CheckInService` without category/group
   - Depends on T-030-01.
   - Failing tests
     (`apps/api.Tests/CheckIns/CheckInServiceTests`,
@@ -45,7 +45,7 @@
   - Delete `CategoryNotFoundException`.
   - Green.
 
-- [ ] **T-030-03 `[T][S]`** — `POST /check_ins` validator + endpoint
+- [x] **T-030-03 `[T][S]`** ✅ commit `7d3aa82` — `POST /check_ins` validator + endpoint
   - Depends on T-030-02.
   - Failing tests
     (`apps/api.Tests/CheckIns/CreateCheckInEndpointTests`):
@@ -55,7 +55,7 @@
     `CreateCheckInRequestValidator`.
   - Green.
 
-- [ ] **T-030-04 `[T][S]`** — Streak per user
+- [x] **T-030-04 `[T][S]`** ✅ commit `7d3aa82` — Streak per user
   - Depends on T-030-02.
   - Failing tests
     (`apps/api.Tests/CheckIns/StreakServiceTests`): per-user
@@ -71,7 +71,7 @@
 
 ## Section C — Progression + Groups cleanup
 
-- [ ] **T-030-05 `[T][S]`** — Delete `Category` module
+- [x] **T-030-05 `[T][S]`** ✅ commit `7d3aa82` — Delete `Category` module
   - Depends on T-030-02.
   - Delete entity, repository, interface, endpoint, DTO,
     exception, module registration lines, tests
@@ -84,7 +84,7 @@
     pre-migration schema (the categories table is still there
     for one more task).
 
-- [ ] **T-030-06 `[T][S]`** — Delete `XpRule` entity + repository
+- [x] **T-030-06 `[T][S]`** ✅ commit `7d3aa82` — Delete `XpRule` entity + repository
   - Depends on T-030-05.
   - Delete `XpRule`, `IXpRuleRepository`, `XpRuleRepository`,
     `XpRulePersistenceTests`, `XpRuleRepositoryTests`.
@@ -93,7 +93,7 @@
     `ComputeXp(XpRule)`.
   - Green.
 
-- [ ] **T-030-07 `[T][S]`** — Delete `Group*` entities + services
+- [x] **T-030-07 `[T][S]`** ✅ commit `7d3aa82` — Delete `Group*` entities + services
   - Depends on T-030-04.
   - Delete `Group`, `GroupMembership`, `GroupConfig`,
     `StreakConfig`, `IGroupService`, `GroupService`,
@@ -107,7 +107,7 @@
 
 ## Section D — Schema
 
-- [ ] **T-030-08 `[T][S]`** — `DropCategoriesAndGroups` migration
+- [x] **T-030-08 `[T][S]`** ✅ commit `7d3aa82` — `DropCategoriesAndGroups` migration
   - Depends on T-030-07.
   - Failing test
     (`apps/api.Tests/Infrastructure/DropCategoriesAndGroupsMigrationTests.cs`):
@@ -124,7 +124,7 @@
 
 ## Section E — Mobile data layer
 
-- [ ] **T-030-09 `[T][S]`** — Shared types + checkin service
+- [x] **T-030-09 `[T][S]`** ✅ commit `7d3aa82` — Shared types + checkin service
   - Depends on T-030-08.
   - Drop `GLOBAL_GROUP_ID`, `Category`, `GroupListItem` and the
     `/groups`-related response types from
@@ -137,7 +137,7 @@
     (if present) to match.
   - Green.
 
-- [ ] **T-030-10 `[T][S]`** — `useCheckinForm` schema + submit
+- [x] **T-030-10 `[T][S]`** ✅ commit `7d3aa82` — `useCheckinForm` schema + submit
   - Depends on T-030-09.
   - Failing spec
     (`apps/mobile/test/components/organisms/CheckinForm.spec.tsx`):
@@ -150,7 +150,7 @@
 
 ## Section F — Mobile presentation
 
-- [ ] **T-030-11 `[T][S]`** — `CheckinForm` without the picker
+- [x] **T-030-11 `[T][S]`** ✅ commit `7d3aa82` — `CheckinForm` without the picker
   - Depends on T-030-10.
   - Delete `<ControlledCategoryPicker>` + its spec +
     `useCategories` from `useCheckIn.ts`.
