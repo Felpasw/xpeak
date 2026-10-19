@@ -1,5 +1,13 @@
 # Phase 4 — Categories & Pure XP Domain (SPEC)
 
+> **Historical note:** Categories, Groups and XpRule were removed in
+> Phase 30 (see `docs/adr/0030-drop-groups-and-categories.md` and
+> `specs/030-drop-categories-and-groups/`). Only the pure
+> `XpCalculator` / `LevelCurve` / `LevelUpService` arithmetic
+> survives — XP now comes from the single hardcoded constant
+> `XpCalculator.CheckInXp = 10`. The schema and endpoints described
+> below no longer exist.
+
 > Stack: C# 12 + ASP.NET Core 9 + EF Core 9 + Postgres 16 + xUnit + FsCheck.
 
 ## 1. Summary

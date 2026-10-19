@@ -25,7 +25,6 @@ public static class ListCheckInsEndpoint
         HttpContext ctx,
         int? limit,
         string? cursor,
-        Guid? group_id,
         CancellationToken ct)
     {
         var sub = principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
@@ -35,12 +34,11 @@ public static class ListCheckInsEndpoint
         }
 
         var effectiveLimit = Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit);
-        var page = await repository.ListAsync(userId, effectiveLimit, cursor, group_id, ct);
+        var page = await repository.ListAsync(userId, effectiveLimit, cursor, ct);
 
         var response = new ListCheckInsResponse(
             page.Items.Select(i => CheckInResponse.From(
                 i.CheckIn,
-                i.Category,
                 BuildPreview(storage, i.FirstMedia),
                 i.HasMedia)).ToList(),
             page.NextCursor);

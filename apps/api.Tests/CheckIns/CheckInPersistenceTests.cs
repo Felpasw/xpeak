@@ -3,9 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
-using Xpeak.Api.Groups.Entities;
 using Xpeak.Api.Infrastructure;
-using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
 using Xpeak.Api.Users;
 
@@ -25,7 +23,7 @@ public sealed class CheckInPersistenceTests
     [Fact]
     public async Task Happy_path_persists_check_in_with_scoring_snapshot()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -34,14 +32,9 @@ public sealed class CheckInPersistenceTests
         {
             Id = Guid.NewGuid(),
             Title = "test",
-            UserId = fixture.User.Id,
-            CategoryId = fixture.Category.Id,
-            GroupId = fixture.Group.Id,
-            XpEarned = 21,
-            ScoringSnapshot = new ScoringSnapshot(
-                15,
-                [new ScoringMultiplier("category_weight", 1.40m)],
-                21),
+            UserId = user.Id,
+            XpEarned = 10,
+            ScoringSnapshot = new ScoringSnapshot(10, [], 10),
             PerformedAt = DateTimeOffset.UtcNow,
             DurationMinutes = 45,
             Notes = "leg day",
@@ -53,24 +46,22 @@ public sealed class CheckInPersistenceTests
             .AsNoTracking()
             .SingleAsync(c => c.Id == checkIn.Id);
 
-        reloaded.XpEarned.Should().Be(21);
-        reloaded.GroupId.Should().Be(fixture.Group.Id);
+        reloaded.XpEarned.Should().Be(10);
         reloaded.Notes.Should().Be("leg day");
-        reloaded.ScoringSnapshot.BaseXp.Should().Be(15);
-        reloaded.ScoringSnapshot.Total.Should().Be(21);
-        reloaded.ScoringSnapshot.Multipliers.Should().ContainSingle()
-            .Which.Should().Be(new ScoringMultiplier("category_weight", 1.40m));
+        reloaded.ScoringSnapshot.BaseXp.Should().Be(10);
+        reloaded.ScoringSnapshot.Total.Should().Be(10);
+        reloaded.ScoringSnapshot.Multipliers.Should().BeEmpty();
     }
 
     [Fact]
     public async Task Rejects_zero_duration_minutes()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var checkIn = NewCheckIn(fixture);
+        var checkIn = NewCheckIn(user);
         checkIn.DurationMinutes = 0;
         db.CheckIns.Add(checkIn);
 
@@ -82,12 +73,12 @@ public sealed class CheckInPersistenceTests
     [Fact]
     public async Task Rejects_notes_over_280_characters()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var checkIn = NewCheckIn(fixture);
+        var checkIn = NewCheckIn(user);
         checkIn.Notes = new string('a', 281);
         db.CheckIns.Add(checkIn);
 
@@ -99,15 +90,12 @@ public sealed class CheckInPersistenceTests
     [Fact]
     public async Task Accepts_zero_xp_earned_for_pending_rows()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        // xp_earned = 0 is the "pending media upload" signal — must be
-        // accepted by the DB. Publish flips it to a positive value, or
-        // the cleanup cron deletes the row (T-006-09).
-        var checkIn = NewCheckIn(fixture);
+        var checkIn = NewCheckIn(user);
         checkIn.XpEarned = 0;
         checkIn.ScoringSnapshot = new ScoringSnapshot(0, [], 0);
 
@@ -120,12 +108,12 @@ public sealed class CheckInPersistenceTests
     [Fact]
     public async Task Rejects_unknown_user_id_fk()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var checkIn = NewCheckIn(fixture);
+        var checkIn = NewCheckIn(user);
         checkIn.UserId = Guid.NewGuid();
         db.CheckIns.Add(checkIn);
 
@@ -134,68 +122,24 @@ public sealed class CheckInPersistenceTests
         await act.Should().ThrowAsync<DbUpdateException>();
     }
 
-    [Fact]
-    public async Task Rejects_unknown_category_id_fk()
-    {
-        var fixture = await SeedFixtureAsync();
-
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        var checkIn = NewCheckIn(fixture);
-        checkIn.CategoryId = Guid.NewGuid();
-        db.CheckIns.Add(checkIn);
-
-        var act = async () => await db.SaveChangesAsync();
-
-        await act.Should().ThrowAsync<DbUpdateException>();
-    }
-
-    private sealed record SeededFixture(AppUser User, Group Group, Category Category);
-
-    private async Task<SeededFixture> SeedFixtureAsync()
+    private async Task<AppUser> SeedUserAsync()
     {
         await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var suffix = Guid.NewGuid().ToString("N")[..6];
 
         var user = new AppUser { UserName = $"ci_{suffix}", Email = $"ci_{suffix}@x.com" };
         (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
-
-        var group = new Group { Id = Guid.NewGuid(), Name = $"g_{suffix}", IsRoot = false };
-        var groupConfig = new GroupConfig { GroupId = group.Id, StreakConfig = new StreakConfig(StreakMode.Daily) };
-        var rule = new XpRule { Id = Guid.NewGuid(), BaseXp = 10, WeightMultiplier = 1.0m };
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"s_{suffix}",
-            Name = "Test",
-        };
-
-        db.Groups.Add(group);
-        db.GroupConfigs.Add(groupConfig);
-        db.XpRules.Add(rule);
-        db.Categories.Add(category);
-        await db.SaveChangesAsync();
-
-        return new SeededFixture(user, group, category);
+        return user;
     }
 
-    private static CheckIn NewCheckIn(SeededFixture fixture) => new()
+    private static CheckIn NewCheckIn(AppUser user) => new()
     {
         Id = Guid.NewGuid(),
-        UserId = fixture.User.Id,
-        CategoryId = fixture.Category.Id,
-        GroupId = fixture.Group.Id,
+        UserId = user.Id,
         Title = "test",
         XpEarned = 10,
-        ScoringSnapshot = new ScoringSnapshot(
-            10,
-            [new ScoringMultiplier("category_weight", 1.00m)],
-            10),
+        ScoringSnapshot = new ScoringSnapshot(10, [], 10),
         PerformedAt = DateTimeOffset.UtcNow,
     };
 }

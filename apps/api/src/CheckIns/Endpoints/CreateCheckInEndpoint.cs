@@ -28,49 +28,29 @@ public static class CreateCheckInEndpoint
             return Results.Unauthorized();
         }
 
-        try
-        {
-            var result = await service.CreateAsync(
-                userId,
-                new CreateCheckInInput(
-                    request.CategoryId,
-                    request.Title,
-                    request.PerformedAt,
-                    request.DurationMinutes,
-                    request.Notes,
-                    request.WithMedia),
-                ct);
+        var result = await service.CreateAsync(
+            userId,
+            new CreateCheckInInput(
+                request.Title,
+                request.PerformedAt,
+                request.DurationMinutes,
+                request.Notes,
+                request.WithMedia),
+            ct);
 
-            var categorySnapshot = new CategorySnapshot(
-                result.Category.Id,
-                result.Category.Slug,
-                result.Category.Name,
-                result.Category.IconPublicId);
+        var response = new CreateCheckInResponse(
+            CheckInResponse.From(result.CheckIn),
+            new UserProgressionResponse(
+                result.User.Id,
+                result.User.Xp,
+                result.User.Level,
+                result.LevelUp.LeveledUp,
+                result.LevelUp.LevelsGained),
+            new StreakResponse(
+                result.Streak.Current,
+                result.Streak.Longest,
+                result.Streak.Unit.ToString().ToLowerInvariant()));
 
-            var response = new CreateCheckInResponse(
-                CheckInResponse.From(result.CheckIn, categorySnapshot),
-                new UserProgressionResponse(
-                    result.User.Id,
-                    result.User.Xp,
-                    result.User.Level,
-                    result.LevelUp.LeveledUp,
-                    result.LevelUp.LevelsGained),
-                new StreakResponse(
-                    result.Streak.Current,
-                    result.Streak.Longest,
-                    result.Streak.Unit.ToString().ToLowerInvariant()));
-
-            return Results.Created($"/check_ins/{result.CheckIn.Id}", response);
-        }
-        catch (CategoryNotFoundException)
-        {
-            return Results.NotFound(new { error = "category_not_found" });
-        }
-        catch (NotAGroupMemberException)
-        {
-            return Results.Json(
-                new { error = "not_a_group_member" },
-                statusCode: StatusCodes.Status403Forbidden);
-        }
+        return Results.Created($"/check_ins/{result.CheckIn.Id}", response);
     }
 }

@@ -8,7 +8,6 @@ import type {
 import type { SelectedMedia } from '@/lib/media/types';
 
 export interface CheckinFormValues {
-    categoryId: string;
     title: string;
     performedOn: string;
     duration: string;

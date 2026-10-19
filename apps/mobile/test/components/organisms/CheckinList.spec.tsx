@@ -41,7 +41,6 @@ beforeEach(() => {
     window.localStorage.setItem('xpeak.auth.token', 'test.jwt');
 });
 
-const GLOBAL = '00000000-0000-0000-0000-000000000001';
 
 const wrap = () => {
     const client = new QueryClient({
@@ -54,8 +53,6 @@ const wrap = () => {
 
 const row = (id: string, title: string) => ({
     id,
-    categoryId: 'cat-1',
-    groupId: GLOBAL,
     title,
     xpEarned: 10,
     scoringSnapshot: { baseXp: 10, multipliers: [], total: 10 },
@@ -63,7 +60,6 @@ const row = (id: string, title: string) => ({
     durationMinutes: null,
     notes: null,
     hasMedia: false,
-    category: { id: 'cat-1', slug: 'chest', name: 'Chest', iconPublicId: null },
     mediaPreview: null,
 });
 
@@ -76,7 +72,7 @@ describe('<CheckinList />', () => {
             }),
         );
         const { CheckinList } = await import('@/components/organisms/CheckinList');
-        render(<CheckinList groupId={GLOBAL} />, { wrapper: wrap() });
+        render(<CheckinList  />, { wrapper: wrap() });
 
         expect(screen.getByTestId('checkin-list-skeleton')).toBeInTheDocument();
     });
@@ -91,7 +87,7 @@ describe('<CheckinList />', () => {
             ),
         );
         const { CheckinList } = await import('@/components/organisms/CheckinList');
-        render(<CheckinList groupId={GLOBAL} />, { wrapper: wrap() });
+        render(<CheckinList  />, { wrapper: wrap() });
 
         await waitFor(() => expect(screen.getByText('Treino A')).toBeInTheDocument());
         expect(screen.getByText('Treino B')).toBeInTheDocument();
@@ -104,7 +100,7 @@ describe('<CheckinList />', () => {
             ),
         );
         const { CheckinList } = await import('@/components/organisms/CheckinList');
-        render(<CheckinList groupId={GLOBAL} />, { wrapper: wrap() });
+        render(<CheckinList  />, { wrapper: wrap() });
 
         await waitFor(() => expect(screen.getByTestId('checkin-list-empty')).toBeInTheDocument());
     });
@@ -122,7 +118,7 @@ describe('<CheckinList />', () => {
         );
         const { CheckinList } = await import('@/components/organisms/CheckinList');
         const user = userEvent.setup();
-        render(<CheckinList groupId={GLOBAL} />, { wrapper: wrap() });
+        render(<CheckinList  />, { wrapper: wrap() });
 
         const retry = await screen.findByRole('button', { name: /tentar de novo/i });
         await user.click(retry);

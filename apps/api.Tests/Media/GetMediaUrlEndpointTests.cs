@@ -6,12 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.Auth.Core;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
-using Xpeak.Api.Groups.Entities;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Media;
 using Xpeak.Api.Media.Dto;
 using Xpeak.Api.Media.Providers.Fake;
-using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
 using Xpeak.Api.Users;
 
@@ -138,30 +136,8 @@ public sealed class GetMediaUrlEndpointTests
 
     private async Task<SeededFixture> SeedFixtureAsync()
     {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var user = await SeedUserAsync();
-        var suffix = Guid.NewGuid().ToString("N")[..6];
-
-        var group = new Group { Id = Guid.NewGuid(), Name = $"g_{suffix}", IsRoot = false };
-        var config = new GroupConfig { GroupId = group.Id, StreakConfig = new StreakConfig(StreakMode.Daily) };
-        var rule = new XpRule { Id = Guid.NewGuid(), BaseXp = 10, WeightMultiplier = 1m };
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"s_{suffix}",
-            Name = "T",
-        };
-
-        db.Groups.Add(group);
-        db.GroupConfigs.Add(config);
-        db.XpRules.Add(rule);
-        db.Categories.Add(category);
-        await db.SaveChangesAsync();
-
-        return new SeededFixture(user, group, category);
+        return new SeededFixture(user);
     }
 
     private async Task<CheckIn> SeedCheckInAsync(SeededFixture fixture)
@@ -173,8 +149,6 @@ public sealed class GetMediaUrlEndpointTests
             Id = Guid.NewGuid(),
             Title = "test",
             UserId = fixture.User.Id,
-            CategoryId = fixture.Category.Id,
-            GroupId = fixture.Group.Id,
             XpEarned = 10,
             ScoringSnapshot = new ScoringSnapshot(10, [], 10),
             PerformedAt = DateTimeOffset.UtcNow,
@@ -184,7 +158,7 @@ public sealed class GetMediaUrlEndpointTests
         return checkIn;
     }
 
-    private sealed record SeededFixture(AppUser User, Group Group, Category Category);
+    private sealed record SeededFixture(AppUser User);
 
     private sealed record PresignResponseDto(IReadOnlyList<PresignSlotDto> Presigned);
     private sealed record PresignSlotDto(string StorageKey, string Url, int ExpiresIn);

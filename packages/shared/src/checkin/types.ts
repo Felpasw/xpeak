@@ -1,18 +1,3 @@
-export const GLOBAL_GROUP_ID = '00000000-0000-0000-0000-000000000001';
-
-export interface Category {
-  id: string;
-  groupId: string;
-  slug: string;
-  name: string;
-  iconPublicId: string | null;
-  active: boolean;
-}
-
-export interface ListCategoriesResponse {
-  categories: Category[];
-}
-
 export interface ScoringMultiplier {
   source: string;
   value: number;
@@ -24,13 +9,6 @@ export interface ScoringSnapshot {
   total: number;
 }
 
-export interface CategorySnapshot {
-  id: string;
-  slug: string;
-  name: string;
-  iconPublicId: string | null;
-}
-
 export interface MediaPreview {
   kind: 'photo' | 'video';
   thumbUrl: string;
@@ -38,8 +16,6 @@ export interface MediaPreview {
 
 export interface CheckIn {
   id: string;
-  categoryId: string;
-  groupId: string;
   title: string;
   xpEarned: number;
   scoringSnapshot: ScoringSnapshot;
@@ -47,12 +23,10 @@ export interface CheckIn {
   durationMinutes: number | null;
   notes: string | null;
   hasMedia: boolean;
-  category: CategorySnapshot;
   mediaPreview: MediaPreview | null;
 }
 
 export interface CreateCheckInRequest {
-  categoryId: string;
   title: string;
   performedAt?: string | null;
   durationMinutes?: number | null;

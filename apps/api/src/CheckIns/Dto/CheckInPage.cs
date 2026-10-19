@@ -6,15 +6,13 @@ namespace Xpeak.Api.CheckIns.Dto;
 /// <summary>
 /// A single row of a cursor-paginated listing, with
 /// <see cref="HasMedia"/> projected via <c>EXISTS</c> against
-/// <c>check_in_media</c>, <see cref="Category"/> projected via
-/// a JOIN against <c>categories</c>, and <see cref="FirstMedia"/>
-/// projected as the position-ordered head of the attachments —
-/// so the endpoint can render a card without any second round-trip.
+/// <c>check_in_media</c> and <see cref="FirstMedia"/> projected as the
+/// position-ordered head of the attachments — so the endpoint can
+/// render a card without any second round-trip.
 /// </summary>
 public sealed record CheckInListItem(
     CheckIn CheckIn,
     bool HasMedia,
-    CategorySnapshot Category,
     FirstMediaSource? FirstMedia);
 
 /// <summary>

@@ -251,11 +251,12 @@ first PR.
   - Awarded at challenge end based on rank/participation.
   - Displayable on profile; emits an event on the timeline.
 
-- 📋 **Phase 19 — Group bonuses & group streak** (from `ideas.md`
-  §2)
-  - Detect co-located check-ins within a time window → group
+- 📋 **Phase 19 — Challenge bonuses & challenge streak (post Phase 30)**
+  (from `ideas.md` §2; re-scoped by Phase 30 — see
+  `docs/adr/0030-drop-groups-and-categories.md`)
+  - Detect co-located check-ins within a time window → challenge
     multiplier.
-  - Collective streak state per group.
+  - Collective streak state per challenge membership.
 
 - 📋 **Phase 20 — Trophies (customizable artwork)** (from
   `ideas.md` §4 and §6)

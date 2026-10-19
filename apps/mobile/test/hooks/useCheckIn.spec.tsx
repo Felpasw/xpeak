@@ -26,8 +26,6 @@ beforeEach(() => {
     window.localStorage.setItem('xpeak.auth.token', 'test.jwt');
 });
 
-const GLOBAL = '00000000-0000-0000-0000-000000000001';
-
 const wrap = () => {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -37,38 +35,9 @@ const wrap = () => {
     };
 };
 
-describe('useCategories', () => {
-    it('fetches categories for the given group', async () => {
-        server.use(
-            http.get(`http://localhost:5000/groups/${GLOBAL}/categories`, () =>
-                HttpResponse.json({
-                    categories: [
-                        {
-                            id: 'cat-1',
-                            groupId: GLOBAL,
-                            slug: 'chest',
-                            name: 'Chest',
-                            iconPublicId: null,
-                            active: true,
-                        },
-                    ],
-                }),
-            ),
-        );
-
-        const { useCategories } = await import('@/hooks/useCheckIn');
-        const { result } = renderHook(() => useCategories(GLOBAL), { wrapper: wrap() });
-
-        await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(result.current.data?.[0]?.slug).toBe('chest');
-    });
-});
-
 describe('useCheckInsList', () => {
     const makeItem = (id: string, performedAt: string) => ({
         id,
-        categoryId: 'cat-1',
-        groupId: GLOBAL,
         title: 'Workout',
         xpEarned: 10,
         scoringSnapshot: { baseXp: 10, multipliers: [], total: 10 },
@@ -76,26 +45,21 @@ describe('useCheckInsList', () => {
         durationMinutes: null,
         notes: null,
         hasMedia: false,
-        category: { id: 'cat-1', slug: 'chest', name: 'Chest', iconPublicId: null },
         mediaPreview: null,
     });
 
-    it('loads the first page scoped by groupId', async () => {
+    it('loads the first page', async () => {
         server.use(
-            http.get('http://localhost:5000/check_ins', ({ request }) => {
-                const url = new URL(request.url);
-                expect(url.searchParams.get('group_id')).toBe(GLOBAL);
-                return HttpResponse.json({
+            http.get('http://localhost:5000/check_ins', () =>
+                HttpResponse.json({
                     checkIns: [makeItem('a', '2026-09-25T12:00:00Z')],
                     nextCursor: null,
-                });
-            }),
+                }),
+            ),
         );
 
         const { useCheckInsList } = await import('@/hooks/useCheckIn');
-        const { result } = renderHook(() => useCheckInsList({ groupId: GLOBAL }), {
-            wrapper: wrap(),
-        });
+        const { result } = renderHook(() => useCheckInsList(), { wrapper: wrap() });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data?.pages[0]?.checkIns).toHaveLength(1);
@@ -124,9 +88,7 @@ describe('useCheckInsList', () => {
         );
 
         const { useCheckInsList } = await import('@/hooks/useCheckIn');
-        const { result } = renderHook(() => useCheckInsList({ groupId: GLOBAL }), {
-            wrapper: wrap(),
-        });
+        const { result } = renderHook(() => useCheckInsList(), { wrapper: wrap() });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.hasNextPage).toBe(true);
@@ -140,66 +102,6 @@ describe('useCheckInsList', () => {
 });
 
 describe('useCreateCheckIn', () => {
-    it('invalidates the auth me query so the profile refetches', async () => {
-        server.use(
-            http.get('http://localhost:5000/me', () =>
-                HttpResponse.json({
-                    user: {
-                        id: 'u',
-                        username: 'felipe',
-                        email: 'felipe@x.com',
-                        avatarUrl: null,
-                        level: 0,
-                        xp: 0,
-                        currentStreakDays: 0,
-                        longestStreakDays: 0,
-                        createdAt: '2026-01-01T00:00:00Z',
-                    },
-                }),
-            ),
-            http.post('http://localhost:5000/check_ins', () =>
-                HttpResponse.json(
-                    {
-                        checkIn: {
-                            id: 'ci',
-                            categoryId: 'cat-1',
-                            groupId: GLOBAL,
-                            xpEarned: 10,
-                            scoringSnapshot: { baseXp: 10, multipliers: [], total: 10 },
-                            performedAt: '2026-09-25T12:00:00Z',
-                            durationMinutes: null,
-                            notes: null,
-                        },
-                        user: { id: 'u', xp: 10, level: 0, leveledUp: false, levelsGained: 0 },
-                        streak: { current: 1, longest: 1, unit: 'day' },
-                    },
-                    { status: 201 },
-                ),
-            ),
-        );
-
-        const Wrapper = wrap();
-        const authHooksModule = await import('@/hooks/useAuth');
-        const { useCreateCheckIn } = await import('@/hooks/useCheckIn');
-
-        // Prime the me query via authHooks; assert cache invalidation after the mutation.
-        const { result: authResult } = renderHook(() => authHooksModule.default.use(), {
-            wrapper: Wrapper,
-        });
-        await waitFor(() => expect(authResult.current.me.isSuccess).toBe(true));
-        const meStateBefore = authResult.current.me.dataUpdatedAt;
-
-        const { result: mutationResult } = renderHook(() => useCreateCheckIn(), {
-            wrapper: Wrapper,
-        });
-
-        await mutationResult.current.mutateAsync({ categoryId: 'cat-1', title: 'Leg day' });
-
-        await waitFor(() =>
-            expect(authResult.current.me.dataUpdatedAt).toBeGreaterThan(meStateBefore),
-        );
-    });
-
     it('invalidates the check-in list query so new rows surface without reload', async () => {
         let listFetchCount = 0;
         server.use(
@@ -212,20 +114,13 @@ describe('useCreateCheckIn', () => {
                     {
                         checkIn: {
                             id: 'ci',
-                            categoryId: 'cat-1',
-                            groupId: GLOBAL,
+                            title: 'Leg day',
                             xpEarned: 10,
                             scoringSnapshot: { baseXp: 10, multipliers: [], total: 10 },
                             performedAt: '2026-09-25T12:00:00Z',
                             durationMinutes: null,
                             notes: null,
                             hasMedia: false,
-                            category: {
-                                id: 'cat-1',
-                                slug: 'chest',
-                                name: 'Chest',
-                                iconPublicId: null,
-                            },
                             mediaPreview: null,
                         },
                         user: { id: 'u', xp: 10, level: 0, leveledUp: false, levelsGained: 0 },
@@ -239,17 +134,16 @@ describe('useCreateCheckIn', () => {
         const Wrapper = wrap();
         const { useCheckInsList, useCreateCheckIn } = await import('@/hooks/useCheckIn');
 
-        const { result: listResult } = renderHook(
-            () => useCheckInsList({ groupId: GLOBAL }),
-            { wrapper: Wrapper },
-        );
+        const { result: listResult } = renderHook(() => useCheckInsList(), {
+            wrapper: Wrapper,
+        });
         await waitFor(() => expect(listResult.current.isSuccess).toBe(true));
         expect(listFetchCount).toBe(1);
 
         const { result: mutationResult } = renderHook(() => useCreateCheckIn(), {
             wrapper: Wrapper,
         });
-        await mutationResult.current.mutateAsync({ categoryId: 'cat-1', title: 'Leg day' });
+        await mutationResult.current.mutateAsync({ title: 'Leg day' });
 
         await waitFor(() => expect(listFetchCount).toBeGreaterThan(1));
     });

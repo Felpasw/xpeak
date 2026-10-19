@@ -5,9 +5,7 @@ using Xpeak.Api.Challenges.Entities;
 using Xpeak.Api.Challenges.Services;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
-using Xpeak.Api.Groups;
 using Xpeak.Api.Infrastructure;
-using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
 using Xpeak.Api.Users;
 using Xpeak.Api.Xp;
@@ -29,23 +27,16 @@ public sealed class ProgressCalculatorTests
     public async Task Sums_all_check_ins_in_window_for_the_membership_user()
     {
         var owner = await CreateUserAsync("pcowner");
-        var categoryId = await EnsureCategoryAsync("pc-any");
         var challengeId = await CreateChallengeAsync(owner, targetLevel: 10);
         var otherUser = await CreateUserAsync("pcother");
         var now = DateTimeOffset.UtcNow;
 
-        // Should count: owner, in window (category doesn't matter anymore).
-        await InsertCheckInAsync(owner.Id, categoryId, xp: 100, at: now.AddDays(1));
-        await InsertCheckInAsync(owner.Id, categoryId, xp: 50, at: now.AddDays(2));
+        await InsertCheckInAsync(owner.Id, xp: 100, at: now.AddDays(1));
+        await InsertCheckInAsync(owner.Id, xp: 50, at: now.AddDays(2));
 
-        // Should NOT count: before challenge window (StartsAt - 1d).
-        await InsertCheckInAsync(owner.Id, categoryId, xp: 500, at: now.AddDays(-1));
-
-        // Should NOT count: after challenge window (EndsAt + 1d).
-        await InsertCheckInAsync(owner.Id, categoryId, xp: 500, at: now.AddDays(31));
-
-        // Should NOT count: other user, in window.
-        await InsertCheckInAsync(otherUser.Id, categoryId, xp: 500, at: now.AddDays(1));
+        await InsertCheckInAsync(owner.Id, xp: 500, at: now.AddDays(-1));
+        await InsertCheckInAsync(owner.Id, xp: 500, at: now.AddDays(31));
+        await InsertCheckInAsync(otherUser.Id, xp: 500, at: now.AddDays(1));
 
         var ownerMembership = await LookupOwnerMembership(challengeId);
 
@@ -62,12 +53,10 @@ public sealed class ProgressCalculatorTests
     public async Task Flags_achieved_when_summed_xp_reaches_target_level()
     {
         var owner = await CreateUserAsync("pcach");
-        var categoryId = await EnsureCategoryAsync("pc-any-2");
         var challengeId = await CreateChallengeAsync(owner, targetLevel: 2);
         var now = DateTimeOffset.UtcNow;
 
-        // target level 2 → XpForLevel(2) = 283. Give 400 to clear it.
-        await InsertCheckInAsync(owner.Id, categoryId, xp: 400, at: now.AddDays(1));
+        await InsertCheckInAsync(owner.Id, xp: 400, at: now.AddDays(1));
 
         var ownerMembership = await LookupOwnerMembership(challengeId);
 
@@ -115,27 +104,6 @@ public sealed class ProgressCalculatorTests
         return result.Challenge.Id;
     }
 
-    private async Task<Guid> EnsureCategoryAsync(string slug)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        // SeedIds.DefaultXpRule is internal to the api assembly; the
-        // test knows the stable value from the migration seed.
-        var defaultXpRuleId = new Guid("00000000-0000-0000-0000-000000000010");
-        var fullSlug = $"{slug}-{Guid.NewGuid():N}";
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = GroupIds.Global,
-            XpRuleId = defaultXpRuleId,
-            Slug = fullSlug,
-            Name = fullSlug,
-        };
-        db.Categories.Add(category);
-        await db.SaveChangesAsync();
-        return category.Id;
-    }
-
     private async Task<ChallengeMembership> LookupOwnerMembership(Guid challengeId)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
@@ -146,7 +114,7 @@ public sealed class ProgressCalculatorTests
                 && m.Role == ChallengeMembershipRole.Owner);
     }
 
-    private async Task InsertCheckInAsync(Guid userId, Guid categoryId, int xp, DateTimeOffset at)
+    private async Task InsertCheckInAsync(Guid userId, int xp, DateTimeOffset at)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -155,8 +123,6 @@ public sealed class ProgressCalculatorTests
             Id = Guid.NewGuid(),
             Title = "t",
             UserId = userId,
-            CategoryId = categoryId,
-            GroupId = GroupIds.Global,
             XpEarned = xp,
             ScoringSnapshot = new ScoringSnapshot(xp, [], xp),
             PerformedAt = at,

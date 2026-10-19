@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Xpeak.Api.CheckIns.Dto;
-using Xpeak.Api.CheckIns.Entities;
 using Xpeak.Api.Infrastructure;
 
 namespace Xpeak.Api.CheckIns.Repositories;
@@ -13,32 +12,20 @@ public sealed class CheckInRepository(AppDbContext db) : ICheckInRepository
         Guid userId,
         int limit,
         string? cursor,
-        Guid? groupId,
         CancellationToken ct = default)
     {
         var query = db.CheckIns
             .AsNoTracking()
             .Where(c => c.UserId == userId);
 
-        if (groupId.HasValue)
-        {
-            var gid = groupId.Value;
-            query = query.Where(c => c.GroupId == gid);
-        }
-
         if (cursor is not null)
         {
             var (cursorAt, cursorId) = DecodeCursor(cursor);
-            // Composite tuple comparison: order by (performed_at DESC, id DESC),
-            // so the next page starts strictly before the cursor row.
             query = query.Where(c =>
                 c.PerformedAt < cursorAt ||
                 (c.PerformedAt == cursorAt && c.Id.CompareTo(cursorId) < 0));
         }
 
-        // Take limit+1 to detect the presence of a next page without a
-        // second round-trip. HasMedia is projected via EXISTS so a
-        // single query covers both the list and the badge flag.
         var rows = await query
             .OrderByDescending(c => c.PerformedAt)
             .ThenByDescending(c => c.Id)
@@ -46,10 +33,6 @@ public sealed class CheckInRepository(AppDbContext db) : ICheckInRepository
             .Select(c => new CheckInListItem(
                 c,
                 db.CheckInMedia.Any(m => m.CheckInId == c.Id),
-                db.Categories
-                    .Where(cat => cat.Id == c.CategoryId)
-                    .Select(cat => new CategorySnapshot(cat.Id, cat.Slug, cat.Name, cat.IconPublicId))
-                    .First(),
                 db.CheckInMedia
                     .Where(m => m.CheckInId == c.Id)
                     .OrderBy(m => m.Position)

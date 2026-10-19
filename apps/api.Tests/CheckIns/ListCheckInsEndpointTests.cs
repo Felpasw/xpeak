@@ -6,9 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.Auth.Core;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
-using Xpeak.Api.Groups.Entities;
 using Xpeak.Api.Infrastructure;
-using Xpeak.Api.Progression.Entities;
 using Xpeak.Api.Tests.Support;
 using Xpeak.Api.Users;
 
@@ -37,8 +35,8 @@ public sealed class ListCheckInsEndpointTests
     [Fact]
     public async Task Returns_only_the_callers_rows_ordered_newest_first()
     {
-        var mine = await SeedFixtureAsync();
-        var others = await SeedFixtureAsync();
+        var mine = await SeedUserAsync();
+        var others = await SeedUserAsync();
         var now = DateTimeOffset.UtcNow;
 
         await InsertAsync(mine, now.AddDays(-2));
@@ -46,7 +44,7 @@ public sealed class ListCheckInsEndpointTests
         await InsertAsync(mine, now);
         await InsertAsync(others, now);
 
-        var client = AuthenticatedClientFor(mine.User);
+        var client = AuthenticatedClientFor(mine);
 
         var response = await client.GetAsync("/check_ins?limit=10");
 
@@ -61,14 +59,14 @@ public sealed class ListCheckInsEndpointTests
     [Fact]
     public async Task Cursor_round_trips_across_pages_without_overlap()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
         var now = DateTimeOffset.UtcNow;
         for (var i = 0; i < 5; i++)
         {
-            await InsertAsync(fixture, now.AddDays(-i));
+            await InsertAsync(user, now.AddDays(-i));
         }
 
-        var client = AuthenticatedClientFor(fixture.User);
+        var client = AuthenticatedClientFor(user);
 
         var page1 = await client.GetFromJsonAsync<ListBody>("/check_ins?limit=2");
         page1!.CheckIns.Should().HaveCount(2);
@@ -90,13 +88,13 @@ public sealed class ListCheckInsEndpointTests
     [Fact]
     public async Task Response_carries_a_media_preview_when_the_row_has_media()
     {
-        var fixture = await SeedFixtureAsync();
+        var user = await SeedUserAsync();
         var now = DateTimeOffset.UtcNow;
-        var withMediaId = await InsertAsync(fixture, now);
-        await InsertAsync(fixture, now.AddDays(-1));
+        var withMediaId = await InsertAsync(user, now);
+        await InsertAsync(user, now.AddDays(-1));
         await InsertMediaAsync(withMediaId, "checkins/abc/photo-key", "photo");
 
-        var client = AuthenticatedClientFor(fixture.User);
+        var client = AuthenticatedClientFor(user);
 
         var body = await client.GetFromJsonAsync<ListBodyWithPreview>("/check_ins?limit=10");
 
@@ -113,68 +111,12 @@ public sealed class ListCheckInsEndpointTests
         withoutPreview.MediaPreview.Should().BeNull();
     }
 
-    [Fact]
-    public async Task Response_carries_a_category_snapshot_per_row()
-    {
-        var fixture = await SeedFixtureAsync();
-        await InsertAsync(fixture, DateTimeOffset.UtcNow);
-
-        var client = AuthenticatedClientFor(fixture.User);
-
-        var body = await client.GetFromJsonAsync<ListBodyWithCategory>("/check_ins?limit=10");
-
-        body.Should().NotBeNull();
-        var item = body!.CheckIns.Should().ContainSingle().Subject;
-        item.Category.Should().NotBeNull();
-        item.Category.Id.Should().Be(fixture.Category.Id);
-        item.Category.Slug.Should().Be(fixture.Category.Slug);
-        item.Category.Name.Should().Be(fixture.Category.Name);
-        item.Category.IconPublicId.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task Group_id_query_param_narrows_the_result()
-    {
-        var mine = await SeedFixtureAsync();
-        var second = await SeedSecondGroupAsync(mine);
-        var now = DateTimeOffset.UtcNow;
-
-        await InsertAsync(mine, now);
-        await InsertAsync(mine with { Group = second.Group, Category = second.Category }, now);
-
-        var client = AuthenticatedClientFor(mine.User);
-
-        var firstOnly = await client.GetFromJsonAsync<ListBody>($"/check_ins?group_id={mine.Group.Id}");
-        var secondOnly = await client.GetFromJsonAsync<ListBody>($"/check_ins?group_id={second.Group.Id}");
-
-        firstOnly!.CheckIns.Should().ContainSingle().Which.GroupId.Should().Be(mine.Group.Id);
-        secondOnly!.CheckIns.Should().ContainSingle().Which.GroupId.Should().Be(second.Group.Id);
-    }
-
-    private sealed record SeededFixture(AppUser User, Group Group, Category Category);
-
     private sealed record ListBody(IReadOnlyList<CheckInBody> CheckIns, string? NextCursor);
 
     private sealed record CheckInBody(
         Guid Id,
-        Guid CategoryId,
-        Guid GroupId,
         int XpEarned,
         DateTimeOffset PerformedAt);
-
-    private sealed record ListBodyWithCategory(
-        IReadOnlyList<CheckInBodyWithCategory> CheckIns,
-        string? NextCursor);
-
-    private sealed record CheckInBodyWithCategory(
-        Guid Id,
-        CategoryBody Category);
-
-    private sealed record CategoryBody(
-        Guid Id,
-        string Slug,
-        string Name,
-        string? IconPublicId);
 
     private sealed record ListBodyWithPreview(
         IReadOnlyList<CheckInBodyWithPreview> CheckIns,
@@ -196,65 +138,18 @@ public sealed class ListCheckInsEndpointTests
         return client;
     }
 
-    private async Task<SeededFixture> SeedFixtureAsync()
+    private async Task<AppUser> SeedUserAsync()
     {
         await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var suffix = Guid.NewGuid().ToString("N")[..6];
 
         var user = new AppUser { UserName = $"lep_{suffix}", Email = $"lep_{suffix}@x.com" };
         (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
-
-        var group = new Group { Id = Guid.NewGuid(), Name = $"g_{suffix}", IsRoot = false };
-        var config = new GroupConfig { GroupId = group.Id, StreakConfig = new StreakConfig(StreakMode.Daily) };
-        var rule = new XpRule { Id = Guid.NewGuid(), BaseXp = 10, WeightMultiplier = 1.0m };
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"s_{suffix}",
-            Name = "T",
-        };
-
-        db.Groups.Add(group);
-        db.GroupConfigs.Add(config);
-        db.XpRules.Add(rule);
-        db.Categories.Add(category);
-        await db.SaveChangesAsync();
-
-        return new SeededFixture(user, group, category);
+        return user;
     }
 
-    private async Task<SeededFixture> SeedSecondGroupAsync(SeededFixture existing)
-    {
-        await using var scope = _factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var suffix = Guid.NewGuid().ToString("N")[..6];
-
-        var group = new Group { Id = Guid.NewGuid(), Name = $"g2_{suffix}", IsRoot = false };
-        var config = new GroupConfig { GroupId = group.Id, StreakConfig = new StreakConfig(StreakMode.Daily) };
-        var rule = new XpRule { Id = Guid.NewGuid(), BaseXp = 10, WeightMultiplier = 1.0m };
-        var category = new Category
-        {
-            Id = Guid.NewGuid(),
-            GroupId = group.Id,
-            XpRuleId = rule.Id,
-            Slug = $"s2_{suffix}",
-            Name = "T2",
-        };
-
-        db.Groups.Add(group);
-        db.GroupConfigs.Add(config);
-        db.XpRules.Add(rule);
-        db.Categories.Add(category);
-        await db.SaveChangesAsync();
-
-        return new SeededFixture(existing.User, group, category);
-    }
-
-    private async Task<Guid> InsertAsync(SeededFixture fixture, DateTimeOffset at)
+    private async Task<Guid> InsertAsync(AppUser user, DateTimeOffset at)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -263,14 +158,9 @@ public sealed class ListCheckInsEndpointTests
         {
             Id = id,
             Title = "test",
-            UserId = fixture.User.Id,
-            CategoryId = fixture.Category.Id,
-            GroupId = fixture.Group.Id,
+            UserId = user.Id,
             XpEarned = 10,
-            ScoringSnapshot = new ScoringSnapshot(
-                10,
-                [new ScoringMultiplier("category_weight", 1.00m)],
-                10),
+            ScoringSnapshot = new ScoringSnapshot(10, [], 10),
             PerformedAt = at,
         });
         await db.SaveChangesAsync();

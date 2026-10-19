@@ -1,16 +1,12 @@
 import type {
     UseInfiniteQueryResult,
     UseMutationResult,
-    UseQueryResult,
 } from '@tanstack/react-query';
 import type {
-    Category,
     CreateCheckInRequest,
     CreateCheckInResponse,
     ListCheckInsResponse,
 } from '@xpeak/shared';
-
-export type CategoriesQuery = UseQueryResult<Category[]>;
 
 export type CreateCheckInMutation = UseMutationResult<
     CreateCheckInResponse,
@@ -19,7 +15,6 @@ export type CreateCheckInMutation = UseMutationResult<
 >;
 
 export interface UseCheckInsListParams {
-    groupId?: string;
     limit?: number;
 }
 

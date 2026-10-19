@@ -1,17 +1,14 @@
 'use client';
 
-import { GLOBAL_GROUP_ID } from '@xpeak/shared';
 import { Check, Loader2 } from 'lucide-react';
 
 import { AnimatedBorderFab } from '@/components/atoms/AnimatedBorderFab';
-import { ControlledCategoryPicker } from '@/components/atoms/ControlledCategoryPicker';
 import { ControlledDatePicker } from '@/components/atoms/ControlledDatePicker';
 import { ControlledInput } from '@/components/atoms/ControlledInput';
 import { ControlledMediaPicker } from '@/components/atoms/ControlledMediaPicker';
 import { ControlledTextarea } from '@/components/atoms/ControlledTextarea';
 import { LevelUpOverlay } from '@/components/atoms/LevelUpOverlay';
 import { PageHeader } from '@/components/atoms/PageHeader';
-import { useCategories } from '@/hooks/useCheckIn';
 import {
     CHECKIN_MAX_BACKFILL_DAYS,
     CHECKIN_MESSAGES,
@@ -40,7 +37,6 @@ function todayIsoString() {
 }
 
 export function CheckinForm() {
-    const categories = useCategories(GLOBAL_GROUP_ID);
     const { control, onSubmit, isPending, levelUpTo, dismissLevelUp } = useCheckinForm();
     const performedOnMin = isoDaysAgo(CHECKIN_MAX_BACKFILL_DAYS);
     const performedOnMax = todayIsoString();
@@ -56,13 +52,6 @@ export function CheckinForm() {
                     label={TITLE_LABEL}
                     placeholder={TITLE_PLACEHOLDER}
                     maxLength={TITLE_MAX_LENGTH}
-                />
-
-                <ControlledCategoryPicker
-                    control={control}
-                    name="categoryId"
-                    categories={categories.data ?? []}
-                    isLoading={categories.isPending}
                 />
 
                 <ControlledDatePicker

@@ -7,16 +7,15 @@ import { CheckinListSkeleton } from '@/components/atoms/CheckinListSkeleton';
 import { useCheckInsList } from '@/hooks/useCheckIn';
 
 interface CheckinListProps {
-    groupId?: string;
     initialLimit?: number;
 }
 
-const EMPTY_COPY = 'Ainda sem check-ins neste grupo. Bora treinar?';
+const EMPTY_COPY = 'Ainda sem check-ins. Bora treinar?';
 const ERROR_COPY = 'Falhou carregar o histórico.';
 const RETRY_LABEL = 'Tentar de novo';
 
-export function CheckinList({ groupId, initialLimit }: CheckinListProps) {
-    const query = useCheckInsList({ groupId, limit: initialLimit });
+export function CheckinList({ initialLimit }: CheckinListProps) {
+    const query = useCheckInsList({ limit: initialLimit });
     const sentinelRef = useRef<HTMLDivElement>(null);
 
     const { fetchNextPage, hasNextPage, isFetchingNextPage } = query;

@@ -12,8 +12,8 @@ using Xpeak.Api.Infrastructure;
 namespace Xpeak.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260923173236_CreateGroupsRulesAndCategories")]
-    partial class CreateGroupsRulesAndCategories
+    [Migration("20261014142956_InitialSchema")]
+    partial class InitialSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -182,7 +182,7 @@ namespace Xpeak.Api.Migrations
                     b.ToTable("revoked_tokens", (string)null);
                 });
 
-            modelBuilder.Entity("Xpeak.Api.Groups.Entities.Group", b =>
+            modelBuilder.Entity("Xpeak.Api.Challenges.Entities.Challenge", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -193,140 +193,276 @@ namespace Xpeak.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<bool>("IsRoot")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_root");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
+                    b.Property<string>("Description")
                         .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnName("description");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
+                    b.Property<DateTimeOffset>("EndsAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("groups", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            IsRoot = true,
-                            Name = "Global",
-                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
-                        });
-                });
-
-            modelBuilder.Entity("Xpeak.Api.Groups.Entities.GroupMembership", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("group_id");
-
-                    b.Property<DateTimeOffset>("JoinedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("joined_at");
-
-                    b.HasKey("UserId", "GroupId");
-
-                    b.HasIndex("GroupId");
-
-                    b.ToTable("group_memberships", (string)null);
-                });
-
-            modelBuilder.Entity("Xpeak.Api.Progression.Entities.Category", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<bool>("Active")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true)
-                        .HasColumnName("active");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("GroupId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("group_id");
+                        .HasColumnName("ends_at");
 
                     b.Property<string>("IconPublicId")
                         .HasColumnType("text")
                         .HasColumnName("icon_public_id");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                    b.Property<int?>("MemberCap")
+                        .HasColumnType("integer")
+                        .HasColumnName("member_cap");
 
-                    b.Property<string>("Slug")
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_id");
+
+                    b.Property<DateTimeOffset>("StartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at");
+
+                    b.Property<string>("State")
                         .IsRequired()
-                        .HasColumnType("citext")
-                        .HasColumnName("slug");
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("state");
+
+                    b.Property<int>("TargetLevel")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_level");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("title");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<Guid>("XpRuleId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("xp_rule_id");
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("visibility");
+
+                    b.Property<decimal>("XpMultiplier")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric(4,2)")
+                        .HasDefaultValue(1.0m)
+                        .HasColumnName("xp_multiplier");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("XpRuleId");
+                    b.HasIndex("OwnerId")
+                        .HasDatabaseName("ix_challenges_owner_id");
 
-                    b.HasIndex("GroupId", "Slug")
-                        .IsUnique();
+                    b.HasIndex("State")
+                        .HasDatabaseName("ix_challenges_state");
 
-                    b.ToTable("categories", (string)null);
+                    b.HasIndex("Visibility")
+                        .HasDatabaseName("ix_challenges_visibility");
+
+                    b.ToTable("challenges", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_challenges_member_cap_positive", "member_cap IS NULL OR member_cap > 0");
+
+                            t.HasCheckConstraint("ck_challenges_state", "state IN ('active', 'completed', 'failed')");
+
+                            t.HasCheckConstraint("ck_challenges_target_level_positive", "target_level > 0");
+
+                            t.HasCheckConstraint("ck_challenges_title_shape", "length(trim(title)) > 0 AND length(title) <= 80");
+
+                            t.HasCheckConstraint("ck_challenges_visibility", "visibility IN ('public', 'private')");
+
+                            t.HasCheckConstraint("ck_challenges_window", "starts_at < ends_at");
+
+                            t.HasCheckConstraint("ck_challenges_xp_multiplier_range", "xp_multiplier >= 0.5 AND xp_multiplier <= 1.5");
+                        });
                 });
 
-            modelBuilder.Entity("Xpeak.Api.Progression.Entities.XpRule", b =>
+            modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeMembership", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<int>("BaseXp")
-                        .HasColumnType("integer")
-                        .HasColumnName("base_xp");
+                    b.Property<Guid>("ChallengeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("challenge_id");
+
+                    b.Property<DateTimeOffset>("JoinedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at");
+
+                    b.Property<DateTimeOffset?>("LeftAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("left_at");
+
+                    b.Property<string>("Progress")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("progress");
+
+                    b.Property<string>("Result")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("result");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("role");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ChallengeId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_challenge_memberships_challenge_user");
+
+                    b.ToTable("challenge_memberships", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_challenge_memberships_result", "result IS NULL OR result IN ('completed', 'failed', 'cancelled')");
+
+                            t.HasCheckConstraint("ck_challenge_memberships_role", "role IN ('owner', 'member')");
+                        });
+                });
+
+            modelBuilder.Entity("Xpeak.Api.CheckIns.Entities.CheckIn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<int?>("DurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_minutes");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
+                    b.Property<DateTimeOffset>("PerformedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("performed_at");
+
+                    b.Property<string>("ScoringSnapshot")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("scoring_snapshot");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("title");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<decimal>("WeightMultiplier")
-                        .HasColumnType("numeric(4,2)")
-                        .HasColumnName("weight_multiplier");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("XpEarned")
+                        .HasColumnType("integer")
+                        .HasColumnName("xp_earned");
 
                     b.HasKey("Id");
 
-                    b.ToTable("xp_rules", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_xp_rules_base_xp_positive", "base_xp > 0");
+                    b.HasIndex("UserId", "PerformedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_check_ins_user_performed_desc");
 
-                            t.HasCheckConstraint("ck_xp_rules_weight_multiplier_range", "weight_multiplier >= 0.5 AND weight_multiplier <= 2.5");
+                    b.ToTable("check_ins", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_check_ins_duration_positive", "duration_minutes IS NULL OR duration_minutes > 0");
+
+                            t.HasCheckConstraint("ck_check_ins_notes_length", "notes IS NULL OR length(notes) <= 280");
+
+                            t.HasCheckConstraint("ck_check_ins_title_shape", "length(trim(title)) > 0 AND length(title) <= 60");
+                        });
+                });
+
+            modelBuilder.Entity("Xpeak.Api.Media.Entities.CheckInMedia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CheckInId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("check_in_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("DurationSeconds")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_seconds");
+
+                    b.Property<int?>("Height")
+                        .HasColumnType("integer")
+                        .HasColumnName("height");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("kind");
+
+                    b.Property<int>("Position")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("position");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("storage_key");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("Width")
+                        .HasColumnType("integer")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_check_in_media_storage_key");
+
+                    b.HasIndex("CheckInId", "Position")
+                        .HasDatabaseName("ix_check_in_media_check_in_position");
+
+                    b.ToTable("check_in_media", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_check_in_media_dimensions_non_negative", "(width IS NULL OR width > 0) AND (height IS NULL OR height > 0)");
+
+                            t.HasCheckConstraint("ck_check_in_media_duration_non_negative", "duration_seconds IS NULL OR duration_seconds > 0");
+
+                            t.HasCheckConstraint("ck_check_in_media_kind", "kind IN ('photo', 'video')");
+
+                            t.HasCheckConstraint("ck_check_in_media_position_non_negative", "position >= 0");
+
+                            t.HasCheckConstraint("ck_check_in_media_storage_key_not_blank", "length(trim(storage_key)) > 0");
                         });
                 });
 
@@ -394,6 +530,14 @@ namespace Xpeak.Api.Migrations
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("America/Sao_Paulo")
+                        .HasColumnName("time_zone");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean");
@@ -475,11 +619,20 @@ namespace Xpeak.Api.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Xpeak.Api.Groups.Entities.GroupMembership", b =>
+            modelBuilder.Entity("Xpeak.Api.Challenges.Entities.Challenge", b =>
                 {
-                    b.HasOne("Xpeak.Api.Groups.Entities.Group", null)
+                    b.HasOne("Xpeak.Api.Users.AppUser", null)
                         .WithMany()
-                        .HasForeignKey("GroupId")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeMembership", b =>
+                {
+                    b.HasOne("Xpeak.Api.Challenges.Entities.Challenge", null)
+                        .WithMany()
+                        .HasForeignKey("ChallengeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -490,18 +643,21 @@ namespace Xpeak.Api.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Xpeak.Api.Progression.Entities.Category", b =>
+            modelBuilder.Entity("Xpeak.Api.CheckIns.Entities.CheckIn", b =>
                 {
-                    b.HasOne("Xpeak.Api.Groups.Entities.Group", null)
+                    b.HasOne("Xpeak.Api.Users.AppUser", null)
                         .WithMany()
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
 
-                    b.HasOne("Xpeak.Api.Progression.Entities.XpRule", null)
+            modelBuilder.Entity("Xpeak.Api.Media.Entities.CheckInMedia", b =>
+                {
+                    b.HasOne("Xpeak.Api.CheckIns.Entities.CheckIn", null)
                         .WithMany()
-                        .HasForeignKey("XpRuleId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasForeignKey("CheckInId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

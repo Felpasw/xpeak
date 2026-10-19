@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Xpeak.Api.Groups.Services;
 using Xpeak.Api.Users;
 
 namespace Xpeak.Api.Auth.Google;
@@ -11,7 +10,6 @@ namespace Xpeak.Api.Auth.Google;
 /// </summary>
 public sealed class GoogleAccountLinker(
     UserManager<AppUser> userManager,
-    IGroupService groups,
     TimeProvider timeProvider)
 {
     public async Task<AppUser> FindOrCreateAsync(
@@ -60,8 +58,6 @@ public sealed class GoogleAccountLinker(
                 "Failed to create Google-linked user: " +
                 string.Join("; ", result.Errors.Select(e => $"{e.Code}: {e.Description}")));
         }
-
-        await groups.AddUserToGlobalAsync(user.Id, ct);
 
         return user;
     }

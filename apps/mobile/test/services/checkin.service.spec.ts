@@ -24,34 +24,7 @@ beforeEach(() => {
     window.localStorage.setItem('xpeak.auth.token', 'test.jwt');
 });
 
-const GLOBAL = '00000000-0000-0000-0000-000000000001';
-
 describe('checkInService', () => {
-    it('listCategories returns the categories array from the group endpoint', async () => {
-        server.use(
-            http.get(`http://localhost:5000/groups/${GLOBAL}/categories`, () =>
-                HttpResponse.json({
-                    categories: [
-                        {
-                            id: '11111111-1111-1111-1111-111111111111',
-                            groupId: GLOBAL,
-                            slug: 'legs',
-                            name: 'Legs',
-                            iconPublicId: 'categories/legs',
-                            active: true,
-                        },
-                    ],
-                }),
-            ),
-        );
-        const { default: service } = await import('@/services/checkin.service');
-
-        const result = await service.listCategories(GLOBAL);
-
-        expect(result).toHaveLength(1);
-        expect(result[0]?.slug).toBe('legs');
-    });
-
     it('create posts the payload and returns the full response envelope', async () => {
         let receivedBody: unknown = null;
         server.use(
@@ -61,21 +34,22 @@ describe('checkInService', () => {
                     {
                         checkIn: {
                             id: 'ci-1',
-                            categoryId: 'cat-1',
-                            groupId: GLOBAL,
-                            xpEarned: 21,
+                            title: 'Leg day',
+                            xpEarned: 10,
                             scoringSnapshot: {
-                                baseXp: 15,
-                                multipliers: [{ source: 'category_weight', value: 1.4 }],
-                                total: 21,
+                                baseXp: 10,
+                                multipliers: [],
+                                total: 10,
                             },
                             performedAt: '2026-09-25T12:00:00Z',
                             durationMinutes: 45,
                             notes: 'leg day',
+                            hasMedia: false,
+                            mediaPreview: null,
                         },
                         user: {
                             id: 'user-1',
-                            xp: 21,
+                            xp: 10,
                             level: 0,
                             leveledUp: false,
                             levelsGained: 0,
@@ -89,23 +63,21 @@ describe('checkInService', () => {
         const { default: service } = await import('@/services/checkin.service');
 
         const result = await service.create({
-            categoryId: 'cat-1',
             title: 'Leg day',
             durationMinutes: 45,
             notes: 'leg day',
         });
 
         expect(receivedBody).toEqual({
-            categoryId: 'cat-1',
             title: 'Leg day',
             durationMinutes: 45,
             notes: 'leg day',
         });
-        expect(result.checkIn.xpEarned).toBe(21);
+        expect(result.checkIn.xpEarned).toBe(10);
         expect(result.streak.unit).toBe(StreakUnit.Day);
     });
 
-    it('list forwards limit / cursor / groupId as query params', async () => {
+    it('list forwards limit and cursor as query params', async () => {
         let seenUrl = '';
         server.use(
             http.get('http://localhost:5000/check_ins', ({ request }) => {
@@ -115,10 +87,9 @@ describe('checkInService', () => {
         );
         const { default: service } = await import('@/services/checkin.service');
 
-        await service.list({ limit: 10, cursor: 'abc', groupId: GLOBAL });
+        await service.list({ limit: 10, cursor: 'abc' });
 
         expect(seenUrl).toContain('limit=10');
         expect(seenUrl).toContain('cursor=abc');
-        expect(seenUrl).toContain(`group_id=${GLOBAL}`);
     });
 });
