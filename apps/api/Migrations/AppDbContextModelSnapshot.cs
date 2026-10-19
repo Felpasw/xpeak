@@ -275,6 +275,57 @@ namespace Xpeak.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChallengeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("challenge_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("InvitedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invited_by_user_id");
+
+                    b.Property<Guid?>("InviteeUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invitee_user_id");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("state");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedByUserId");
+
+                    b.HasIndex("InviteeUserId");
+
+                    b.HasIndex("ChallengeId", "InviteeUserId")
+                        .HasDatabaseName("ix_challenge_invitations_challenge_invitee");
+
+                    b.HasIndex("ChallengeId", "State")
+                        .HasDatabaseName("ix_challenge_invitations_challenge_state");
+
+                    b.ToTable("challenge_invitations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_challenge_invitations_state", "state IN ('pending', 'accepted', 'rejected', 'expired')");
+                        });
+                });
+
             modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeMembership", b =>
                 {
                     b.Property<Guid>("Id")
@@ -623,6 +674,26 @@ namespace Xpeak.Api.Migrations
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeInvitation", b =>
+                {
+                    b.HasOne("Xpeak.Api.Challenges.Entities.Challenge", null)
+                        .WithMany()
+                        .HasForeignKey("ChallengeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Xpeak.Api.Users.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Xpeak.Api.Users.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("InviteeUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeMembership", b =>

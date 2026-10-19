@@ -29,14 +29,17 @@ scope for this cut.
 
 - [ ] **T-017-01 `[T][S]`** — `challenge_invitations` table (create)
   - Migration: new `challenge_invitations` table with `id`,
-    `challenge_id` (FK), `invited_by` (FK → users, nullable for
-    share-link rows), `invitee_id` (FK → users, nullable), `state`
-    (`pending|accepted|rejected|expired`), `code` (unique when not
-    null), `max_uses` (nullable), `uses` (default 0), `expires_at`
-    (not null), `created_at`, `updated_at`.
-  - Constraint: exactly one of `invitee_id` / `code` is populated.
-  - Indexes: `(challenge_id, invitee_id)`, `(code)` unique when not
-    null, `(challenge_id, state)`.
+    `challenge_id` (FK), `invited_by_user_id` (FK → users, not
+    null — share-link rows still have a creator), `invitee_user_id`
+    (FK → users, nullable), `state`
+    (`pending|accepted|rejected|expired`), `created_at`, `updated_at`.
+    No separate share code: the row's `id` is the public share
+    token. No `expires_at` and no per-link usage cap — the parent
+    challenge's lifecycle and its `member_cap` are the only limits.
+  - Shape distinction: `invitee_user_id IS NULL` ⇒ share-link,
+    otherwise targeted (Phase 16).
+  - Indexes: `(challenge_id, invitee_user_id)`, `(challenge_id,
+    state)`.
   - Green.
 
 - [ ] **T-017-02 `[T][S]`** — `challenges.member_count` cached column
@@ -66,9 +69,8 @@ scope for this cut.
 
 - [ ] **T-017-07 `[T][S][DEFERRED]`** — Preview endpoint (no auth)
   - Nice-to-have for the deep-link landing. Can ship after T-017-11
-    if beta needs it. Keep in mind the `?code=` preview still works
-    without this endpoint if we accept a one-tap "preview inside the
-    app after auth".
+    if beta needs it. For MVP the join flow goes straight to the
+    challenge detail after auth, no preview needed.
 
 ## Section D — Group feed `[DEFERRED]`
 
@@ -85,13 +87,11 @@ scope for this cut.
   - Failing spec: create link, copy, share via native, revoke.
   - Green.
 
-- [ ] **T-017-11 `[T][S]`** — Join by code screen + deep link
-  - Failing spec: renders a code-first join screen; on submit,
-    posts to `POST /challenges/join` and lands on the challenge
-    detail.
-  - Wire `xpeak://challenges/join?code=` deep link handler so a
-    tap on a shared link prefills the code and auto-submits (user
-    confirms on screen).
+- [ ] **T-017-11 `[T][S]`** — Join by invitation screen + deep link
+  - Failing spec: on submit, posts to `POST /challenges/join` with
+    the invitation id and lands on the challenge detail.
+  - Wire `xpeak://challenges/join?invitation=` deep link handler so
+    a tap on a shared link auto-submits (user confirms on screen).
   - Preview card from `GET /challenges/preview` is `[DEFERRED]` —
     for MVP the screen shows the challenge detail after joining.
   - Green.

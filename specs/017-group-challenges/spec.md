@@ -14,50 +14,50 @@
 ## 1. Share-link model
 
 Introduces `challenge_invitations` from scratch (Phase 16 is being
-skipped for this cut). Fields:
+skipped for this cut). Minimal shape: no separate `code` column —
+the row's `id` (UUID v4, 122 bits of entropy) is the public share
+token, carried verbatim in URLs. No `expires_at` and no per-link
+usage cap either. The only limits on who can join a share-link are
+the parent challenge's lifecycle (`state → completed|failed`) and
+its `member_cap` (if set). Share-link vs targeted is a binary
+distinction:
 
-- `invitee_id`: **nullable** (link-based invitations don't target a
-  specific user).
-- `code`: ULID string, unique, populated for share-link invitations.
-- `max_uses`: integer, nullable (unlimited).
-- `uses`: integer, not null, default 0.
-- `expires_at`: not null (default: challenge `ends_at`).
+- `invitee_user_id IS NULL` → share-link (anyone with the id joins).
+- `invitee_user_id IS NOT NULL` → targeted (Phase 16; only that user
+  joins).
 
-Add these fields via migration.
-
-Constraint: exactly one of `invitee_id` or `code` is set.
+Add the entity + the table via migration.
 
 ## 2. Context additions
 
 ```csharp
-def create_share_link(challenge, opts) do
-  # opts: max_uses, expires_at
-  # generates ULID, inserts invitation with code, invitee_id nil
+def create_share_link(challenge) do
+  # inserts invitation with invitee_user_id nil, returns the id
 end
 
-def join_with_code(user, code) do
-  # find invitation by code
-  # validate not expired, not over max_uses, not already a member
-  # increment uses in a Multi
+def join_with_invitation(user, invitation_id) do
+  # find invitation by id
+  # validate state is pending, challenge is active,
+  #   member_cap not reached, not already a member
   # insert challenge_membership
   # emit event
 end
 
-def revoke_link(challenge, code) do
+def revoke_link(challenge, invitation_id) do
   # transitions invitation to "expired"
 end
 ```
 
 ## 3. Endpoints
 
-- `POST /challenges/:id/share_links` — `{ max_uses?, expires_at? }`
-  → `{ url, code, expires_at, max_uses, uses }`.
+- `POST /challenges/:id/share_links` — `{}` → `{ url, invitation_id }`.
 - `GET /challenges/:id/share_links` — list active links (members
   only).
-- `DELETE /challenges/:id/share_links/:code` — revoke.
-- `POST /challenges/join` — `{ code }` → 200 with challenge summary.
-- `GET /challenges/preview?code=` — public preview (no auth) for the
-  landing page.
+- `DELETE /challenges/:id/share_links/:invitation_id` — revoke.
+- `POST /challenges/join` — `{ invitation_id }` → 200 with challenge
+  summary.
+- `GET /challenges/preview?invitation=` — public preview (no auth)
+  for the landing page.
 - `GET /challenges?search=&categories=&sort=popular&status=open`
   — public discovery.
 - `GET /challenges/:id/feed?cursor=` — group feed of check-ins
