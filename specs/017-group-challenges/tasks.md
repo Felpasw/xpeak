@@ -53,7 +53,7 @@ scope for this cut.
 
 ## Section B — Share-link context
 
-- [ ] **T-017-03 `[T][S]`** — Auto-create share-link on challenge
+- [x] **T-017-03 `[T][S]`** ✅ commit `a6c78d3` — Auto-create share-link on challenge
   creation
   - `ChallengeService.CreateAsync` persists a share-link invitation
     alongside the challenge + owner membership in a single

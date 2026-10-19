@@ -184,6 +184,64 @@ public sealed class ChallengesEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
+    [Fact]
+    public async Task Join_rejects_an_unknown_invitation_with_404()
+    {
+        var fixture = await SeedFixtureAsync();
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var response = await client.PostAsJsonAsync(
+            "/challenges/join",
+            new { invitationId = Guid.NewGuid() });
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Join_rejects_an_empty_invitation_id_with_422()
+    {
+        var fixture = await SeedFixtureAsync();
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var response = await client.PostAsJsonAsync(
+            "/challenges/join",
+            new { invitationId = Guid.Empty });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public async Task Join_happy_path_returns_200_with_payload()
+    {
+        var owner = await SeedFixtureAsync();
+        var joiner = await SeedFixtureAsync();
+        var invitationId = await CreateChallengeAndGetShareLinkAsync(owner, "join-me");
+
+        var client = AuthenticatedClientFor(joiner.User);
+        var response = await client.PostAsJsonAsync(
+            "/challenges/join",
+            new { invitationId });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<JoinBody>();
+        body.Should().NotBeNull();
+        body!.Membership.Role.Should().Be("member");
+    }
+
+    [Fact]
+    public async Task Join_rejects_a_double_join_with_409()
+    {
+        var owner = await SeedFixtureAsync();
+        var invitationId = await CreateChallengeAndGetShareLinkAsync(owner, "owner-rejoin");
+        var client = AuthenticatedClientFor(owner.User);
+
+        var response = await client.PostAsJsonAsync(
+            "/challenges/join",
+            new { invitationId });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
     private HttpClient AuthenticatedClientFor(AppUser user)
     {
         using var scope = _factory.Services.CreateScope();
@@ -210,6 +268,24 @@ public sealed class ChallengesEndpointTests
             EndsAt: now.AddDays(30),
             MemberCap: null));
         return result.Challenge.Id;
+    }
+
+    private async Task<Guid> CreateChallengeAndGetShareLinkAsync(SeededFixture fixture, string title)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<Xpeak.Api.Challenges.Services.IChallengeService>();
+        var now = DateTimeOffset.UtcNow;
+        var result = await service.CreateAsync(fixture.User.Id, new(
+            Title: title,
+            Description: null,
+            IconPublicId: null,
+            Visibility: ChallengeVisibility.Private,
+            TargetLevel: 5,
+            XpMultiplier: 1.0m,
+            StartsAt: now,
+            EndsAt: now.AddDays(30),
+            MemberCap: null));
+        return result.ShareLink.Id;
     }
 
     private async Task SetStateAsync(Guid challengeId, ChallengeState state)
@@ -263,4 +339,6 @@ public sealed class ChallengesEndpointTests
     private sealed record MembershipBody(string Role);
 
     private sealed record ShareLinkBody(Guid Id, Guid ChallengeId, string State);
+
+    private sealed record JoinBody(ChallengeBody Challenge, MembershipBody Membership);
 }

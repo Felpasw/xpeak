@@ -130,4 +130,64 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
         await db.SaveChangesAsync(ct);
         return true;
     }
+
+    public async Task<JoinChallengeResult> JoinWithInvitationAsync(
+        Guid invitationId,
+        Guid callerId,
+        CancellationToken ct = default)
+    {
+        var invitation = await db.ChallengeInvitations
+            .AsNoTracking()
+            .SingleOrDefaultAsync(i => i.Id == invitationId, ct)
+            ?? throw new InvitationNotFoundException(invitationId);
+
+        if (invitation.State != ChallengeInvitationState.Pending)
+        {
+            throw new InvitationNotActiveException(invitationId, invitation.State);
+        }
+
+        var challenge = await db.Challenges
+            .AsNoTracking()
+            .SingleAsync(c => c.Id == invitation.ChallengeId, ct);
+
+        if (challenge.State != ChallengeState.Active)
+        {
+            throw new ChallengeNotActiveException(challenge.Id, challenge.State);
+        }
+
+        var alreadyMember = await db.ChallengeMemberships
+            .AsNoTracking()
+            .AnyAsync(m => m.ChallengeId == challenge.Id && m.UserId == callerId, ct);
+        if (alreadyMember)
+        {
+            throw new AlreadyMemberException(challenge.Id, callerId);
+        }
+
+        if (challenge.MemberCap is int cap)
+        {
+            var count = await db.ChallengeMemberships
+                .AsNoTracking()
+                .CountAsync(m => m.ChallengeId == challenge.Id, ct);
+            if (count >= cap)
+            {
+                throw new MemberCapReachedException(challenge.Id, cap);
+            }
+        }
+
+        var now = time.GetUtcNow();
+        var membership = new ChallengeMembership
+        {
+            Id = Guid.NewGuid(),
+            ChallengeId = challenge.Id,
+            UserId = callerId,
+            Role = ChallengeMembershipRole.Member,
+            JoinedAt = now,
+            Progress = MembershipProgress.Empty(challenge.TargetLevel),
+        };
+
+        db.ChallengeMemberships.Add(membership);
+        await db.SaveChangesAsync(ct);
+
+        return new JoinChallengeResult(challenge, membership);
+    }
 }

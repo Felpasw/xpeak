@@ -103,6 +103,13 @@ public sealed record GetChallengeResponse(
     ChallengeResponse Challenge,
     MembershipResponse? Membership);
 
+/// <summary>Payload of <c>POST /challenges/join</c>. Mirrors
+/// <see cref="GetChallengeResponse"/> but membership is always
+/// non-null — the caller just joined.</summary>
+public sealed record JoinChallengeResponse(
+    ChallengeResponse Challenge,
+    MembershipResponse Membership);
+
 /// <summary>Payload of <c>GET /challenges/{id}/progress</c>.</summary>
 public sealed record ChallengeProgressResponse(
     MembershipProgressResponse Progress);
