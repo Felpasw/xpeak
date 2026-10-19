@@ -30,11 +30,15 @@ Add the entity + the table via migration.
 
 ## 2. Context additions
 
-```csharp
-def create_share_link(challenge) do
-  # inserts invitation with invitee_user_id nil, returns the id
-end
+Share-link creation is folded into `ChallengeService.CreateAsync`:
+every new challenge is persisted together with a pending share-link
+invitation in the same `SaveChangesAsync`, so the client gets the
+share token on the create response without a follow-up call. There
+is no standalone `CreateShareLink` service method in this cut; if
+the owner revokes the link and wants a new one, that's a deferred
+sub-feature.
 
+```csharp
 def join_with_invitation(user, invitation_id) do
   # find invitation by id
   # validate state is pending, challenge is active,
@@ -43,17 +47,18 @@ def join_with_invitation(user, invitation_id) do
   # emit event
 end
 
-def revoke_link(challenge, invitation_id) do
-  # transitions invitation to "expired"
+def revoke_link(caller, invitation_id) do
+  # validates caller is the owner, transitions invitation to "expired"
 end
 ```
 
 ## 3. Endpoints
 
-- `POST /challenges/:id/share_links` — `{}` → `{ url, invitation_id }`.
-- `GET /challenges/:id/share_links` — list active links (members
-  only).
-- `DELETE /challenges/:id/share_links/:invitation_id` — revoke.
+- `POST /challenges` already returns the default share-link in the
+  response body (see §2); no separate "create link" endpoint ships
+  in this cut.
+- `DELETE /challenges/:id/share_links/:invitation_id` — revoke the
+  challenge's share-link.
 - `POST /challenges/join` — `{ invitation_id }` → 200 with challenge
   summary.
 - `GET /challenges/preview?invitation=` — public preview (no auth)

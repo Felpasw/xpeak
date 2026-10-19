@@ -36,6 +36,10 @@ public sealed class ChallengeServiceTests
         result.OwnerMembership.Role.Should().Be(ChallengeMembershipRole.Owner);
         result.OwnerMembership.UserId.Should().Be(user.Id);
         result.OwnerMembership.Progress.Target.Should().Be(10);
+        result.ShareLink.ChallengeId.Should().Be(result.Challenge.Id);
+        result.ShareLink.InvitedByUserId.Should().Be(user.Id);
+        result.ShareLink.InviteeUserId.Should().BeNull();
+        result.ShareLink.State.Should().Be(ChallengeInvitationState.Pending);
 
         await using var verifyScope = _factory.Services.CreateAsyncScope();
         var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -52,6 +56,14 @@ public sealed class ChallengeServiceTests
         memberships.Should().ContainSingle();
         memberships[0].UserId.Should().Be(user.Id);
         memberships[0].Role.Should().Be(ChallengeMembershipRole.Owner);
+
+        var invitations = await db.ChallengeInvitations
+            .AsNoTracking()
+            .Where(i => i.ChallengeId == result.Challenge.Id)
+            .ToListAsync();
+        invitations.Should().ContainSingle();
+        invitations[0].Id.Should().Be(result.ShareLink.Id);
+        invitations[0].InviteeUserId.Should().BeNull();
     }
 
     private static CreateChallengeInput NewInput() => new(

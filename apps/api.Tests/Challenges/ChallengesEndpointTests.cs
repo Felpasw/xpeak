@@ -58,6 +58,9 @@ public sealed class ChallengesEndpointTests
         body!.Challenge.Title.Should().Be("30 dias");
         body.Challenge.TargetLevel.Should().Be(5);
         body.OwnerMembership.Role.Should().Be("owner");
+        body.ShareLink.Id.Should().NotBeEmpty();
+        body.ShareLink.ChallengeId.Should().Be(body.Challenge.Id);
+        body.ShareLink.State.Should().Be("pending");
     }
 
     [Fact]
@@ -241,7 +244,10 @@ public sealed class ChallengesEndpointTests
 
     private sealed record SeededFixture(AppUser User);
 
-    private sealed record CreateBody(ChallengeBody Challenge, MembershipBody OwnerMembership);
+    private sealed record CreateBody(
+        ChallengeBody Challenge,
+        MembershipBody OwnerMembership,
+        ShareLinkBody ShareLink);
 
     private sealed record ListBody(IReadOnlyList<ChallengeBody> Challenges);
 
@@ -255,4 +261,6 @@ public sealed class ChallengesEndpointTests
         string State);
 
     private sealed record MembershipBody(string Role);
+
+    private sealed record ShareLinkBody(Guid Id, Guid ChallengeId, string State);
 }

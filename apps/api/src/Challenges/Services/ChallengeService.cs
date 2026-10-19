@@ -41,11 +41,23 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
             Progress = MembershipProgress.Empty(input.TargetLevel),
         };
 
+        var shareLink = new ChallengeInvitation
+        {
+            Id = Guid.NewGuid(),
+            ChallengeId = challenge.Id,
+            InvitedByUserId = ownerId,
+            InviteeUserId = null,
+            State = ChallengeInvitationState.Pending,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
         db.Challenges.Add(challenge);
         db.ChallengeMemberships.Add(ownerMembership);
+        db.ChallengeInvitations.Add(shareLink);
         await db.SaveChangesAsync(ct);
 
-        return new CreateChallengeResult(challenge, ownerMembership);
+        return new CreateChallengeResult(challenge, ownerMembership, shareLink);
     }
 
     public async Task<IReadOnlyList<ChallengeDetail>> ListForUserAsync(

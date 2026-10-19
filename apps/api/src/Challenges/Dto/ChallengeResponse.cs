@@ -68,10 +68,29 @@ public sealed record MembershipResponse(
         MembershipProgressResponse.From(m.Progress));
 }
 
-/// <summary>Payload of <c>POST /challenges</c>.</summary>
+/// <summary>Wire representation of the share-link
+/// <see cref="ChallengeInvitation"/> that ships with every
+/// challenge creation. The caller embeds <see cref="Id"/> in a
+/// URL / deep link (<c>xpeak://challenges/join?invitation={Id}</c>)
+/// to invite others.</summary>
+public sealed record ChallengeInvitationResponse(
+    Guid Id,
+    Guid ChallengeId,
+    Guid InvitedByUserId,
+    ChallengeInvitationState State,
+    DateTimeOffset CreatedAt)
+{
+    public static ChallengeInvitationResponse From(ChallengeInvitation i) =>
+        new(i.Id, i.ChallengeId, i.InvitedByUserId, i.State, i.CreatedAt);
+}
+
+/// <summary>Payload of <c>POST /challenges</c>. Carries the default
+/// share-link so the client can show "copy link" straight after
+/// creation without a follow-up request.</summary>
 public sealed record CreateChallengeResponse(
     ChallengeResponse Challenge,
-    MembershipResponse OwnerMembership);
+    MembershipResponse OwnerMembership,
+    ChallengeInvitationResponse ShareLink);
 
 /// <summary>Payload of <c>GET /challenges</c>.</summary>
 public sealed record ListChallengesResponse(

@@ -27,7 +27,7 @@ scope for this cut.
 
 ## Section A — Schema updates
 
-- [ ] **T-017-01 `[T][S]`** — `challenge_invitations` table (create)
+- [x] **T-017-01 `[T][S]`** ✅ commit `0aabae4` — `challenge_invitations` table (create)
   - Migration: new `challenge_invitations` table with `id`,
     `challenge_id` (FK), `invited_by_user_id` (FK → users, not
     null — share-link rows still have a creator), `invitee_user_id`
@@ -42,23 +42,46 @@ scope for this cut.
     state)`.
   - Green.
 
-- [ ] **T-017-02 `[T][S]`** — `challenges.member_count` cached column
-  - Migration + trigger (or context-level increment).
-  - Failing tests: join/leave adjusts count.
-  - Green.
+- [ ] **T-017-02 `[T][S][DEFERRED]`** — `challenges.member_count`
+  cached column
+  - Original purpose was to support search ranking (sort by
+    popularity) and avoid N+1 in list rendering. Search is
+    DEFERRED (T-017-06) and the share-link MVP doesn't need the
+    cache — `COUNT(*)` on `challenge_memberships` at join time is
+    plenty for `member_cap` enforcement at beta scale (small
+    challenges). Revisit alongside T-017-06.
 
 ## Section B — Share-link context
 
-- [ ] **T-017-03 `[T][S]`** — `create_share_link/2`
-  - Failing tests: ULID uniqueness, defaults.
+- [ ] **T-017-03 `[T][S]`** — Auto-create share-link on challenge
+  creation
+  - `ChallengeService.CreateAsync` persists a share-link invitation
+    alongside the challenge + owner membership in a single
+    `SaveChangesAsync`. The row's `id` is the public share token.
+  - `CreateChallengeResult` and `CreateChallengeResponse` grow a
+    `ShareLink` field so the client renders "copy link" straight
+    after creation — no `POST /challenges/:id/share_links` call
+    needed in the MVP.
+  - Failing tests: `ChallengeService.CreateAsync` persists a
+    pending share-link row with `invitee_user_id = null` and the
+    owner as `invited_by_user_id`; `POST /challenges` response body
+    carries the share-link id.
+  - A standalone endpoint for regenerating a link post-revoke is
+    `[DEFERRED]` (see T-017-05).
   - Green.
 
-- [ ] **T-017-04 `[T][S]`** — `join_with_code/2`
-  - Failing tests: happy, over-cap, expired, already-member.
+- [ ] **T-017-04 `[T][S]`** — `join_with_invitation`
+  - Failing tests: happy, challenge not active, invitation not
+    found, invitation expired/revoked, member_cap reached,
+    already-member.
   - Green.
 
-- [ ] **T-017-05 `[T][S]`** — `revoke_link/2`
-  - Failing tests.
+- [ ] **T-017-05 `[T][S]`** — `revoke_link`
+  - Flip the invitation's `state → expired`. For the MVP a
+    revoked link means "no more joins from this URL" with no way
+    to regenerate without creating a new challenge — the
+    create-another endpoint is `[DEFERRED]`.
+  - Failing tests: happy, caller not owner, already revoked.
   - Green.
 
 ## Section C — Discovery `[DEFERRED]`
