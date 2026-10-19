@@ -1,16 +1,42 @@
 # Phase 17 — Group Challenges (TASKS)
 
+> **Scope cut (2026-10-19) — "Share-link MVP"**
+>
+> Phase 17 is being partially shipped under branch
+> `XPK-32/felpa-group-challenges-sharelink` so we can hand the app to
+> beta testers without rebuilding the full social graph. Only
+> share-link-based invitations are in scope right now. Everything
+> that depends on Phase 12 (friends), Phase 13 (activity events) or
+> on public search is marked `[DEFERRED]` and will be revisited in a
+> follow-up phase or sub-phase.
+>
+> Phase 16 (friend challenges) is being **skipped** for this cut, so
+> `challenge_invitations` is created **from scratch** in T-017-01
+> (not "extended"). The `invitee_id` column exists but stays `null`
+> everywhere in this cut — it's reserved for Phase 16.
+>
+> Post-Phase 30 reminder: `challenge_categories` no longer exists.
+> Any task or sub-section that assumed category filtering is already
+> part of the deferred bucket.
+
 ## Legend
-`[T]` TDD, `[S]` sequential, `[P]` parallel.
+`[T]` TDD, `[S]` sequential, `[P]` parallel, `[DEFERRED]` out of
+scope for this cut.
 
 ---
 
 ## Section A — Schema updates
 
-- [ ] **T-017-01 `[T][S]`** — invitations extended fields
-  - Migration: `code`, `max_uses`, `uses`, `expires_at` (nullable
-    invitee_id).
-  - Constraint: exactly one of invitee_id / code.
+- [ ] **T-017-01 `[T][S]`** — `challenge_invitations` table (create)
+  - Migration: new `challenge_invitations` table with `id`,
+    `challenge_id` (FK), `invited_by` (FK → users, nullable for
+    share-link rows), `invitee_id` (FK → users, nullable), `state`
+    (`pending|accepted|rejected|expired`), `code` (unique when not
+    null), `max_uses` (nullable), `uses` (default 0), `expires_at`
+    (not null), `created_at`, `updated_at`.
+  - Constraint: exactly one of `invitee_id` / `code` is populated.
+  - Indexes: `(challenge_id, invitee_id)`, `(code)` unique when not
+    null, `(challenge_id, state)`.
   - Green.
 
 - [ ] **T-017-02 `[T][S]`** — `challenges.member_count` cached column
@@ -32,42 +58,46 @@
   - Failing tests.
   - Green.
 
-## Section C — Discovery
+## Section C — Discovery `[DEFERRED]`
 
-- [ ] **T-017-06 `[T][S]`** — Search query + endpoint
-  - Failing tests per filter/sort combination.
-  - Green.
+- [ ] **T-017-06 `[T][S][DEFERRED]`** — Search query + endpoint
+  - Depends on public discovery UX; not required for share-link
+    MVP. Revisit when we open browseable public challenges.
 
-- [ ] **T-017-07 `[T][S]`** — Preview endpoint (no auth)
-  - Failing tests: returns minimal shape for public + valid code
-    (private).
-  - Green.
+- [ ] **T-017-07 `[T][S][DEFERRED]`** — Preview endpoint (no auth)
+  - Nice-to-have for the deep-link landing. Can ship after T-017-11
+    if beta needs it. Keep in mind the `?code=` preview still works
+    without this endpoint if we accept a one-tap "preview inside the
+    app after auth".
 
-## Section D — Group feed
+## Section D — Group feed `[DEFERRED]`
 
-- [ ] **T-017-08 `[T][S]`** — `GET /challenges/:id/feed`
-  - Failing tests: members-only, scoped to window, uses Phase 13
-    events.
-  - Green.
+- [ ] **T-017-08 `[T][S][DEFERRED]`** — `GET /challenges/:id/feed`
+  - Depends on Phase 13 (activity events) which is still 0/15.
+  - Revisit after Phase 13 lands.
 
 ## Section E — Mobile
 
-- [ ] **T-017-09 `[T][S]`** — Browse tab
-  - Failing spec: search, filters, join button.
-  - Green.
+- [ ] **T-017-09 `[T][S][DEFERRED]`** — Browse tab
+  - Blocked by T-017-06 / T-017-07.
 
 - [ ] **T-017-10 `[T][S]`** — Share link generator
   - Failing spec: create link, copy, share via native, revoke.
   - Green.
 
 - [ ] **T-017-11 `[T][S]`** — Join by code screen + deep link
-  - Failing spec: renders preview then joins on confirm.
-  - Wire `xpeak://challenges/join?code=` deep link handler.
+  - Failing spec: renders a code-first join screen; on submit,
+    posts to `POST /challenges/join` and lands on the challenge
+    detail.
+  - Wire `xpeak://challenges/join?code=` deep link handler so a
+    tap on a shared link prefills the code and auto-submits (user
+    confirms on screen).
+  - Preview card from `GET /challenges/preview` is `[DEFERRED]` —
+    for MVP the screen shows the challenge detail after joining.
   - Green.
 
-- [ ] **T-017-12 `[T][S]`** — Group feed tab on detail
-  - Failing spec: renders member events.
-  - Green.
+- [ ] **T-017-12 `[T][S][DEFERRED]`** — Group feed tab on detail
+  - Blocked by T-017-08.
 
 ## Section F — Wrap-up
 
@@ -78,9 +108,14 @@
 
 ## Bundling strategy for PRs
 
-1. `feat(challenges): share-link schema + member_count` — A
+Share-link MVP cut (`XPK-32/felpa-group-challenges-sharelink`):
+
+1. `feat(challenges): add challenge_invitations and member_count` — A
 2. `feat(challenges): share-link context (create/join/revoke)` — B
-3. `feat(challenges): discovery search + preview` — C
-4. `feat(challenges): group feed endpoint` — D
-5. `feat(mobile): browse + share-link + join-by-code + group feed` — E
-6. `docs(adr): group challenges` — F
+3. `feat(mobile): share-link generator + join-by-code screen` — E
+   (T-017-10, T-017-11 only)
+4. `docs(adr): group challenges share-link MVP` — F (T-017-13)
+5. Phase close — F (T-017-14)
+
+Deferred sections (C, D, parts of E) ship under follow-up branches
+after the beta cycle, likely bundled with Phase 12/13 work.

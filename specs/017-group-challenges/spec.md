@@ -1,8 +1,20 @@
 # Phase 17 — Group Challenges (SPEC)
 
+> **Scope cut (2026-10-19) — "Share-link MVP"**
+>
+> First slice of Phase 17 ships without Phase 16 (friend challenges)
+> and without Phase 13 (activity events). The share-link flow is
+> enough to open the app for beta testing. Public search / preview
+> endpoint / group feed / browse tab are tracked as `[DEFERRED]` in
+> `tasks.md` and revisited after Phase 12 and Phase 13 land.
+>
+> Phase 30 fallout: `challenge_categories` no longer exists, so any
+> search filter by category is out of scope here as well.
+
 ## 1. Share-link model
 
-Reuses `challenge_invitations` from Phase 16 with these fields:
+Introduces `challenge_invitations` from scratch (Phase 16 is being
+skipped for this cut). Fields:
 
 - `invitee_id`: **nullable** (link-based invitations don't target a
   specific user).
