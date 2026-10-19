@@ -38,6 +38,19 @@ public interface IChallengeService
         Guid callerId,
         CancellationToken ct = default);
 
+    /// <summary>Owner-only: flips the challenge to
+    /// <see cref="ChallengeState.Completed"/> and deletes all its
+    /// invitations in a single transaction so no new joins can
+    /// land. Returns true on success, false if the caller is not
+    /// the owner or the challenge does not exist.</summary>
+    /// <exception cref="ChallengeAlreadyEndedException">The
+    /// challenge is no longer <see cref="ChallengeState.Active"/>.
+    /// </exception>
+    Task<bool> EndAsync(
+        Guid id,
+        Guid callerId,
+        CancellationToken ct = default);
+
     /// <summary>Joins the caller into a challenge via a share-link
     /// <see cref="ChallengeInvitation"/>. Returns the challenge
     /// and the newly-inserted membership.</summary>

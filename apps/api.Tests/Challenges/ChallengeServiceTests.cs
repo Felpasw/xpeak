@@ -180,6 +180,77 @@ public sealed class ChallengeServiceTests
         ex.Which.Cap.Should().Be(2);
     }
 
+    [Fact]
+    public async Task End_happy_path_flips_state_and_deletes_invitations()
+    {
+        var owner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var ok = await service.EndAsync(created.Challenge.Id, owner.Id);
+
+        ok.Should().BeTrue();
+
+        await using var verifyScope = _factory.Services.CreateAsyncScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var reloaded = await db.Challenges.AsNoTracking().SingleAsync(c => c.Id == created.Challenge.Id);
+        reloaded.State.Should().Be(ChallengeState.Completed);
+
+        var invitations = await db.ChallengeInvitations
+            .AsNoTracking()
+            .Where(i => i.ChallengeId == created.Challenge.Id)
+            .CountAsync();
+        invitations.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task End_returns_false_for_a_non_owner_caller()
+    {
+        var owner = await CreateUserAsync();
+        var stranger = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var ok = await service.EndAsync(created.Challenge.Id, stranger.Id);
+
+        ok.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task End_returns_false_for_an_unknown_challenge()
+    {
+        var owner = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var ok = await service.EndAsync(Guid.NewGuid(), owner.Id);
+
+        ok.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task End_rejects_an_already_ended_challenge()
+    {
+        var owner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+        await using (var mutateScope = _factory.Services.CreateAsyncScope())
+        {
+            var db = mutateScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var tracked = await db.Challenges.SingleAsync(c => c.Id == created.Challenge.Id);
+            tracked.State = ChallengeState.Completed;
+            await db.SaveChangesAsync();
+        }
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var act = async () => await service.EndAsync(created.Challenge.Id, owner.Id);
+
+        await act.Should().ThrowAsync<ChallengeAlreadyEndedException>();
+    }
+
     private async Task<CreateChallengeResult> CreateChallengeAsync(AppUser owner, int? memberCap = null)
     {
         await using var scope = _factory.Services.CreateAsyncScope();

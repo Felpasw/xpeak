@@ -131,6 +131,35 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
         return true;
     }
 
+    public async Task<bool> EndAsync(
+        Guid id,
+        Guid callerId,
+        CancellationToken ct = default)
+    {
+        var challenge = await db.Challenges
+            .SingleOrDefaultAsync(c => c.Id == id, ct);
+        if (challenge is null || challenge.OwnerId != callerId)
+        {
+            return false;
+        }
+
+        if (challenge.State != ChallengeState.Active)
+        {
+            throw new ChallengeAlreadyEndedException(id, challenge.State);
+        }
+
+        var now = time.GetUtcNow();
+        challenge.State = ChallengeState.Completed;
+        challenge.UpdatedAt = now;
+
+        await db.ChallengeInvitations
+            .Where(i => i.ChallengeId == id)
+            .ExecuteDeleteAsync(ct);
+        await db.SaveChangesAsync(ct);
+
+        return true;
+    }
+
     public async Task<JoinChallengeResult> JoinWithInvitationAsync(
         Guid invitationId,
         Guid callerId,

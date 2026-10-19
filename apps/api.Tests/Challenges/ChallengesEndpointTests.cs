@@ -242,6 +242,44 @@ public sealed class ChallengesEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
+    [Fact]
+    public async Task End_happy_path_returns_204()
+    {
+        var owner = await SeedFixtureAsync();
+        var challenge = await CreateChallengeDirectAsync(owner, "to-end");
+        var client = AuthenticatedClientFor(owner.User);
+
+        var response = await client.PostAsync($"/challenges/{challenge}/end", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task End_hides_the_challenge_from_non_owners_with_404()
+    {
+        var owner = await SeedFixtureAsync();
+        var outsider = await SeedFixtureAsync();
+        var challenge = await CreateChallengeDirectAsync(owner, "not-yours-end");
+        var client = AuthenticatedClientFor(outsider.User);
+
+        var response = await client.PostAsync($"/challenges/{challenge}/end", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task End_rejects_an_already_ended_challenge_with_409()
+    {
+        var owner = await SeedFixtureAsync();
+        var challenge = await CreateChallengeDirectAsync(owner, "already-ended");
+        await SetStateAsync(challenge, ChallengeState.Completed);
+        var client = AuthenticatedClientFor(owner.User);
+
+        var response = await client.PostAsync($"/challenges/{challenge}/end", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
     private HttpClient AuthenticatedClientFor(AppUser user)
     {
         using var scope = _factory.Services.CreateScope();

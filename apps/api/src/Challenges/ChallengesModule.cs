@@ -22,6 +22,7 @@ public static class ChallengesModule
         DeleteChallengeEndpoint.Map(app);
         GetChallengeProgressEndpoint.Map(app);
         JoinChallengeEndpoint.Map(app);
+        EndChallengeEndpoint.Map(app);
         return app;
     }
 }

@@ -47,8 +47,10 @@ def join_with_invitation(user, invitation_id) do
   # emit event
 end
 
-def revoke_link(caller, invitation_id) do
-  # validates caller is the owner, transitions invitation to "expired"
+def end_challenge(caller, challenge_id) do
+  # validates caller is the owner and challenge is Active,
+  # flips State -> Completed and deletes every invitation for the
+  # challenge in the same transaction (no "revoke" state)
 end
 ```
 
@@ -57,10 +59,11 @@ end
 - `POST /challenges` already returns the default share-link in the
   response body (see §2); no separate "create link" endpoint ships
   in this cut.
-- `DELETE /challenges/:id/share_links/:invitation_id` — revoke the
-  challenge's share-link.
 - `POST /challenges/join` — `{ invitation_id }` → 200 with challenge
   summary.
+- `POST /challenges/:id/end` — owner-only early close. Flips the
+  challenge to `Completed` and deletes every invitation for it in
+  one transaction. No per-invitation revoke endpoint.
 - `GET /challenges/preview?invitation=` — public preview (no auth)
   for the landing page.
 - `GET /challenges?search=&categories=&sort=popular&status=open`

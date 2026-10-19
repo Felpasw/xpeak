@@ -37,6 +37,16 @@ public sealed class AlreadyMemberException(Guid challengeId, Guid userId)
     public Guid UserId { get; } = userId;
 }
 
+/// <summary>Thrown when a caller tries to end a challenge that is
+/// no longer <see cref="Entities.ChallengeState.Active"/>. Endpoint
+/// layer maps to HTTP 409.</summary>
+public sealed class ChallengeAlreadyEndedException(Guid challengeId, Entities.ChallengeState state)
+    : Exception($"Challenge '{challengeId}' is already ended (state: {state}).")
+{
+    public Guid ChallengeId { get; } = challengeId;
+    public Entities.ChallengeState State { get; } = state;
+}
+
 /// <summary>Thrown when an invitation operation targets a challenge
 /// that does not exist. Endpoint layer maps to HTTP 404.</summary>
 public sealed class ChallengeNotFoundException(Guid challengeId)

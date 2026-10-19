@@ -70,18 +70,33 @@ scope for this cut.
     `[DEFERRED]` (see T-017-05).
   - Green.
 
-- [ ] **T-017-04 `[T][S]`** — `join_with_invitation`
+- [x] **T-017-04 `[T][S]`** ✅ commit `e1524bf` — `join_with_invitation`
   - Failing tests: happy, challenge not active, invitation not
     found, invitation expired/revoked, member_cap reached,
     already-member.
   - Green.
 
-- [ ] **T-017-05 `[T][S]`** — `revoke_link`
-  - Flip the invitation's `state → expired`. For the MVP a
-    revoked link means "no more joins from this URL" with no way
-    to regenerate without creating a new challenge — the
-    create-another endpoint is `[DEFERRED]`.
-  - Failing tests: happy, caller not owner, already revoked.
+- [ ] **T-017-05 `[T][S]`** — Owner-only early end of a challenge
+  - Reinterpreted from "revoke share-link". Beta UX decision: no
+    revoke of individual invitations; the owner either lets the
+    challenge run to `ends_at` (future lifecycle job, T-015-07
+    `[DEFERRED]`) or closes it manually before the deadline.
+  - Service: `ChallengeService.EndAsync(id, callerId)` returns
+    `false` when the challenge is missing or caller is not the
+    owner (endpoint 404), throws `ChallengeAlreadyEndedException`
+    when state is not `Active` (endpoint 409), otherwise flips
+    `State → Completed`, deletes every row from
+    `challenge_invitations` for that challenge in the same
+    transaction, and returns `true`.
+  - Endpoint: `POST /challenges/:id/end` → 204 on success.
+  - Reuses existing `Completed` state — no new enum value or
+    migration needed. Semantic is "challenge is closed"; if we
+    later want to distinguish "finished early by owner" from
+    "target reached", introduce a dedicated state then.
+  - Failing tests: service happy path flips state + deletes
+    invitations; non-owner caller returns false; unknown
+    challenge returns false; already-ended throws. Endpoint:
+    204 happy, 404 non-owner, 409 already-ended.
   - Green.
 
 ## Section C — Discovery `[DEFERRED]`
