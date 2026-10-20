@@ -51,7 +51,8 @@ public static class CreateChallengeEndpoint
         var response = new CreateChallengeResponse(
             ChallengeResponse.From(result.Challenge),
             MembershipResponse.From(result.OwnerMembership),
-            ChallengeInvitationResponse.From(result.ShareLink));
+            ChallengeInvitationResponse.From(result.ShareLink),
+            result.Tiers.Select(ChallengeTierResponse.From).ToList());
 
         return Results.Created($"/challenges/{result.Challenge.Id}", response);
     }

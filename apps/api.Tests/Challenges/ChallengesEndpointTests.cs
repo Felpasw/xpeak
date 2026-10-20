@@ -61,6 +61,115 @@ public sealed class ChallengesEndpointTests
         body.ShareLink.Id.Should().NotBeEmpty();
         body.ShareLink.ChallengeId.Should().Be(body.Challenge.Id);
         body.ShareLink.State.Should().Be("pending");
+        body.Tiers.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Create_with_tiers_returns_201_and_echoes_them_sorted()
+    {
+        var fixture = await SeedFixtureAsync();
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var now = DateTimeOffset.UtcNow;
+        var response = await client.PostAsJsonAsync("/challenges", new
+        {
+            title = "100 dias",
+            visibility = "private",
+            targetLevel = 60,
+            xpMultiplier = 1.0m,
+            startsAt = now,
+            endsAt = now.AddDays(100),
+            memberCap = (int?)null,
+            tiers = new[]
+            {
+                new { minLevel = 60, title = "ArchMago" },
+                new { minLevel = 10, title = " Aprendiz " },
+                new { minLevel = 30, title = "Mago" },
+            },
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.Content.ReadFromJsonAsync<CreateBody>();
+        body!.Tiers.Should().HaveCount(3);
+        body.Tiers.Select(t => t.MinLevel).Should().ContainInOrder(10, 30, 60);
+        body.Tiers.Select(t => t.Title).Should().ContainInOrder("Aprendiz", "Mago", "ArchMago");
+    }
+
+    [Fact]
+    public async Task Create_rejects_eleven_tiers_with_422()
+    {
+        var fixture = await SeedFixtureAsync();
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var now = DateTimeOffset.UtcNow;
+        var tiers = Enumerable.Range(1, 11)
+            .Select(i => new { minLevel = i, title = $"Tier {i}" })
+            .ToArray();
+
+        var response = await client.PostAsJsonAsync("/challenges", new
+        {
+            title = "overflow",
+            visibility = "private",
+            targetLevel = 20,
+            xpMultiplier = 1.0m,
+            startsAt = now,
+            endsAt = now.AddDays(30),
+            memberCap = (int?)null,
+            tiers,
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public async Task Create_rejects_duplicate_min_level_with_422()
+    {
+        var fixture = await SeedFixtureAsync();
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var now = DateTimeOffset.UtcNow;
+        var response = await client.PostAsJsonAsync("/challenges", new
+        {
+            title = "dup",
+            visibility = "private",
+            targetLevel = 20,
+            xpMultiplier = 1.0m,
+            startsAt = now,
+            endsAt = now.AddDays(30),
+            memberCap = (int?)null,
+            tiers = new[]
+            {
+                new { minLevel = 10, title = "Aprendiz" },
+                new { minLevel = 10, title = "Outro" },
+            },
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public async Task Create_rejects_blank_tier_title_with_422()
+    {
+        var fixture = await SeedFixtureAsync();
+        var client = AuthenticatedClientFor(fixture.User);
+
+        var now = DateTimeOffset.UtcNow;
+        var response = await client.PostAsJsonAsync("/challenges", new
+        {
+            title = "blank-tier",
+            visibility = "private",
+            targetLevel = 20,
+            xpMultiplier = 1.0m,
+            startsAt = now,
+            endsAt = now.AddDays(30),
+            memberCap = (int?)null,
+            tiers = new[]
+            {
+                new { minLevel = 10, title = "   " },
+            },
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
     [Fact]
@@ -130,6 +239,31 @@ public sealed class ChallengesEndpointTests
         body.Membership.Should().NotBeNull();
         body.ShareLink.Should().NotBeNull();
         body.ShareLink!.ChallengeId.Should().Be(challenge);
+        body.Tiers.Should().BeEmpty();
+        body.CurrentTier.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Get_detail_returns_tiers_and_current_tier_for_a_member_with_progress()
+    {
+        var fixture = await SeedFixtureAsync();
+        var challengeId = await CreateChallengeWithTiersAsync(fixture, "with-tiers",
+        [
+            new(10, "Aprendiz"),
+            new(30, "Mago"),
+            new(60, "ArchMago"),
+        ]);
+        await SetProgressAsync(challengeId, fixture.User.Id, value: 30);
+
+        var client = AuthenticatedClientFor(fixture.User);
+        var response = await client.GetAsync($"/challenges/{challengeId}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<DetailBody>();
+        body!.Tiers.Select(t => t.MinLevel).Should().ContainInOrder(10, 30, 60);
+        body.CurrentTier.Should().NotBeNull();
+        body.CurrentTier!.MinLevel.Should().Be(30);
+        body.CurrentTier.Title.Should().Be("Mago");
     }
 
     [Fact]
@@ -160,6 +294,8 @@ public sealed class ChallengesEndpointTests
         var body = await response.Content.ReadFromJsonAsync<DetailBody>();
         body!.Membership.Should().BeNull();
         body.ShareLink.Should().BeNull();
+        body.Tiers.Should().BeEmpty();
+        body.CurrentTier.Should().BeNull();
     }
 
     [Fact]
@@ -347,6 +483,42 @@ public sealed class ChallengesEndpointTests
         await db.SaveChangesAsync();
     }
 
+    private async Task<Guid> CreateChallengeWithTiersAsync(
+        SeededFixture fixture,
+        string title,
+        IReadOnlyList<Xpeak.Api.Challenges.Dto.CreateChallengeTierInput> tiers)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<Xpeak.Api.Challenges.Services.IChallengeService>();
+        var now = DateTimeOffset.UtcNow;
+        var result = await service.CreateAsync(fixture.User.Id, new(
+            Title: title,
+            Description: null,
+            IconPublicId: null,
+            Visibility: ChallengeVisibility.Private,
+            TargetLevel: 100,
+            XpMultiplier: 1.0m,
+            StartsAt: now,
+            EndsAt: now.AddDays(100),
+            MemberCap: null,
+            Tiers: tiers));
+        return result.Challenge.Id;
+    }
+
+    private async Task SetProgressAsync(Guid challengeId, Guid userId, int value)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var membership = await db.ChallengeMemberships
+            .SingleAsync(m => m.ChallengeId == challengeId && m.UserId == userId);
+        var challenge = await db.Challenges.AsNoTracking().SingleAsync(c => c.Id == challengeId);
+        membership.Progress = new Xpeak.Api.Challenges.Entities.MembershipProgress(
+            Value: value,
+            Target: challenge.TargetLevel,
+            AchievedAt: null);
+        await db.SaveChangesAsync();
+    }
+
     private async Task<SeededFixture> SeedFixtureAsync()
     {
         await using var scope = _factory.Services.CreateAsyncScope();
@@ -364,14 +536,17 @@ public sealed class ChallengesEndpointTests
     private sealed record CreateBody(
         ChallengeBody Challenge,
         MembershipBody OwnerMembership,
-        ShareLinkBody ShareLink);
+        ShareLinkBody ShareLink,
+        IReadOnlyList<TierBody> Tiers);
 
     private sealed record ListBody(IReadOnlyList<ChallengeBody> Challenges);
 
     private sealed record DetailBody(
         ChallengeBody Challenge,
         MembershipBody? Membership,
-        ShareLinkBody? ShareLink);
+        ShareLinkBody? ShareLink,
+        IReadOnlyList<TierBody> Tiers,
+        TierBody? CurrentTier);
 
     private sealed record ChallengeBody(
         Guid Id,
@@ -383,6 +558,8 @@ public sealed class ChallengesEndpointTests
     private sealed record MembershipBody(string Role);
 
     private sealed record ShareLinkBody(Guid Id, Guid ChallengeId, string State);
+
+    private sealed record TierBody(Guid Id, int MinLevel, string Title);
 
     private sealed record JoinBody(ChallengeBody Challenge, MembershipBody Membership);
 }

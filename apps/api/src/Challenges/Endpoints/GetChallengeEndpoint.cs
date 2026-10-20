@@ -34,10 +34,16 @@ public static class GetChallengeEndpoint
             return Results.NotFound();
         }
 
+        var tiers = (detail.Tiers ?? [])
+            .Select(ChallengeTierResponse.From)
+            .ToList();
+
         var response = new GetChallengeResponse(
             ChallengeResponse.From(detail.Challenge),
             detail.Membership is null ? null : MembershipResponse.From(detail.Membership),
-            detail.ShareLink is null ? null : ChallengeInvitationResponse.From(detail.ShareLink));
+            detail.ShareLink is null ? null : ChallengeInvitationResponse.From(detail.ShareLink),
+            tiers,
+            detail.CurrentTier is null ? null : ChallengeTierResponse.From(detail.CurrentTier));
 
         return Results.Ok(response);
     }
