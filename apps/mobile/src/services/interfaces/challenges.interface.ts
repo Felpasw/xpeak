@@ -4,6 +4,8 @@ import type {
     CreateChallengeRequest,
     CreateChallengeResponse,
     GetChallengeResponse,
+    JoinChallengeRequest,
+    JoinChallengeResponse,
     ListChallengesResponse,
 } from '@xpeak/shared';
 
@@ -17,4 +19,6 @@ export interface IChallengesService {
     progress(id: string): Promise<ChallengeProgressResponse>;
     create(payload: CreateChallengeRequest): Promise<CreateChallengeResponse>;
     delete(id: string): Promise<void>;
+    join(payload: JoinChallengeRequest): Promise<JoinChallengeResponse>;
+    end(id: string): Promise<void>;
 }

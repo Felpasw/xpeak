@@ -1,7 +1,7 @@
 'use client';
 
 import { ProgressBar } from '@/components/atoms/ProgressBar';
-import { useChallengeProgress } from '@/hooks/useChallenges';
+import challengesHooks from '@/hooks/useChallenges';
 
 interface ChallengeDetailProgressProps {
     challengeId: string;
@@ -11,7 +11,7 @@ const SECTION_LABEL = 'Progresso';
 const ERROR_COPY = 'Falhou carregar o progresso.';
 
 export function ChallengeDetailProgress({ challengeId }: ChallengeDetailProgressProps) {
-    const query = useChallengeProgress(challengeId);
+    const query = challengesHooks.useProgress(challengeId);
 
     return (
         <section className="flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">

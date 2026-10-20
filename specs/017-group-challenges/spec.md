@@ -1,51 +1,71 @@
 # Phase 17 — Group Challenges (SPEC)
 
+> **Scope cut (2026-10-19) — "Share-link MVP"**
+>
+> First slice of Phase 17 ships without Phase 16 (friend challenges)
+> and without Phase 13 (activity events). The share-link flow is
+> enough to open the app for beta testing. Public search / preview
+> endpoint / group feed / browse tab are tracked as `[DEFERRED]` in
+> `tasks.md` and revisited after Phase 12 and Phase 13 land.
+>
+> Phase 30 fallout: `challenge_categories` no longer exists, so any
+> search filter by category is out of scope here as well.
+
 ## 1. Share-link model
 
-Reuses `challenge_invitations` from Phase 16 with these fields:
+Introduces `challenge_invitations` from scratch (Phase 16 is being
+skipped for this cut). Minimal shape: no separate `code` column —
+the row's `id` (UUID v4, 122 bits of entropy) is the public share
+token, carried verbatim in URLs. No `expires_at` and no per-link
+usage cap either. The only limits on who can join a share-link are
+the parent challenge's lifecycle (`state → completed|failed`) and
+its `member_cap` (if set). Share-link vs targeted is a binary
+distinction:
 
-- `invitee_id`: **nullable** (link-based invitations don't target a
-  specific user).
-- `code`: ULID string, unique, populated for share-link invitations.
-- `max_uses`: integer, nullable (unlimited).
-- `uses`: integer, not null, default 0.
-- `expires_at`: not null (default: challenge `ends_at`).
+- `invitee_user_id IS NULL` → share-link (anyone with the id joins).
+- `invitee_user_id IS NOT NULL` → targeted (Phase 16; only that user
+  joins).
 
-Add these fields via migration.
-
-Constraint: exactly one of `invitee_id` or `code` is set.
+Add the entity + the table via migration.
 
 ## 2. Context additions
 
-```csharp
-def create_share_link(challenge, opts) do
-  # opts: max_uses, expires_at
-  # generates ULID, inserts invitation with code, invitee_id nil
-end
+Share-link creation is folded into `ChallengeService.CreateAsync`:
+every new challenge is persisted together with a pending share-link
+invitation in the same `SaveChangesAsync`, so the client gets the
+share token on the create response without a follow-up call. There
+is no standalone `CreateShareLink` service method in this cut; if
+the owner revokes the link and wants a new one, that's a deferred
+sub-feature.
 
-def join_with_code(user, code) do
-  # find invitation by code
-  # validate not expired, not over max_uses, not already a member
-  # increment uses in a Multi
+```csharp
+def join_with_invitation(user, invitation_id) do
+  # find invitation by id
+  # validate state is pending, challenge is active,
+  #   member_cap not reached, not already a member
   # insert challenge_membership
   # emit event
 end
 
-def revoke_link(challenge, code) do
-  # transitions invitation to "expired"
+def end_challenge(caller, challenge_id) do
+  # validates caller is the owner and challenge is Active,
+  # flips State -> Completed and deletes every invitation for the
+  # challenge in the same transaction (no "revoke" state)
 end
 ```
 
 ## 3. Endpoints
 
-- `POST /challenges/:id/share_links` — `{ max_uses?, expires_at? }`
-  → `{ url, code, expires_at, max_uses, uses }`.
-- `GET /challenges/:id/share_links` — list active links (members
-  only).
-- `DELETE /challenges/:id/share_links/:code` — revoke.
-- `POST /challenges/join` — `{ code }` → 200 with challenge summary.
-- `GET /challenges/preview?code=` — public preview (no auth) for the
-  landing page.
+- `POST /challenges` already returns the default share-link in the
+  response body (see §2); no separate "create link" endpoint ships
+  in this cut.
+- `POST /challenges/join` — `{ invitation_id }` → 200 with challenge
+  summary.
+- `POST /challenges/:id/end` — owner-only early close. Flips the
+  challenge to `Completed` and deletes every invitation for it in
+  one transaction. No per-invitation revoke endpoint.
+- `GET /challenges/preview?invitation=` — public preview (no auth)
+  for the landing page.
 - `GET /challenges?search=&categories=&sort=popular&status=open`
   — public discovery.
 - `GET /challenges/:id/feed?cursor=` — group feed of check-ins

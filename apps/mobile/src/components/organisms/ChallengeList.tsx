@@ -4,7 +4,7 @@ import type { ChallengeState } from '@xpeak/shared';
 
 import { ChallengeCard } from '@/components/atoms/ChallengeCard';
 import { CheckinListSkeleton } from '@/components/atoms/CheckinListSkeleton';
-import { useChallengesList } from '@/hooks/useChallenges';
+import challengesHooks from '@/hooks/useChallenges';
 
 interface ChallengeListProps {
     state?: ChallengeState;
@@ -15,7 +15,7 @@ const ERROR_COPY = 'Falhou carregar os challenges.';
 const RETRY_LABEL = 'Tentar de novo';
 
 export function ChallengeList({ state }: ChallengeListProps) {
-    const query = useChallengesList({ state });
+    const query = challengesHooks.useList({ state });
 
     if (query.isPending) {
         return <CheckinListSkeleton />;

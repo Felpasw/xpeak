@@ -37,4 +37,37 @@ public interface IChallengeService
         Guid id,
         Guid callerId,
         CancellationToken ct = default);
+
+    /// <summary>Owner-only: flips the challenge to
+    /// <see cref="ChallengeState.Completed"/> and deletes all its
+    /// invitations in a single transaction so no new joins can
+    /// land. Returns true on success, false if the caller is not
+    /// the owner or the challenge does not exist.</summary>
+    /// <exception cref="ChallengeAlreadyEndedException">The
+    /// challenge is no longer <see cref="ChallengeState.Active"/>.
+    /// </exception>
+    Task<bool> EndAsync(
+        Guid id,
+        Guid callerId,
+        CancellationToken ct = default);
+
+    /// <summary>Joins the caller into a challenge via a share-link
+    /// <see cref="ChallengeInvitation"/>. Returns the challenge
+    /// and the newly-inserted membership.</summary>
+    /// <exception cref="InvitationNotFoundException">The invitation
+    /// row does not exist.</exception>
+    /// <exception cref="InvitationNotActiveException">The invitation
+    /// is not in <see cref="ChallengeInvitationState.Pending"/>
+    /// state.</exception>
+    /// <exception cref="ChallengeNotActiveException">The target
+    /// challenge is no longer <see cref="ChallengeState.Active"/>.
+    /// </exception>
+    /// <exception cref="AlreadyMemberException">The caller already
+    /// belongs to the challenge.</exception>
+    /// <exception cref="MemberCapReachedException">Adding the
+    /// caller would exceed the challenge's member cap.</exception>
+    Task<JoinChallengeResult> JoinWithInvitationAsync(
+        Guid invitationId,
+        Guid callerId,
+        CancellationToken ct = default);
 }

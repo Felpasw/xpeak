@@ -6,6 +6,8 @@ import type {
     CreateChallengeRequest,
     CreateChallengeResponse,
     GetChallengeResponse,
+    JoinChallengeRequest,
+    JoinChallengeResponse,
 } from '@xpeak/shared';
 
 export interface UseChallengesListParams {
@@ -25,3 +27,21 @@ export type CreateChallengeMutation = UseMutationResult<
 >;
 
 export type DeleteChallengeMutation = UseMutationResult<void, unknown, string>;
+
+export type JoinChallengeMutation = UseMutationResult<
+    JoinChallengeResponse,
+    unknown,
+    JoinChallengeRequest
+>;
+
+export type EndChallengeMutation = UseMutationResult<void, unknown, string>;
+
+export interface IChallengesHooks {
+    useList(params?: UseChallengesListParams): ChallengesListQuery;
+    useDetail(id: string): ChallengeDetailQuery;
+    useProgress(id: string): ChallengeProgressQuery;
+    useCreate(): CreateChallengeMutation;
+    useDelete(): DeleteChallengeMutation;
+    useJoin(): JoinChallengeMutation;
+    useEnd(): EndChallengeMutation;
+}

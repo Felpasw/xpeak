@@ -37,3 +37,16 @@ public enum ChallengeMembershipResult
     Completed,
     Failed,
 }
+
+/// <summary>Lifecycle of a <c>challenge_invitations</c> row. A
+/// share-link stays Pending while usable, flips to Expired when
+/// revoked, when <c>ExpiresAt</c> passes or when <c>Uses</c> hits
+/// <c>MaxUses</c>. Targeted invitations (Phase 16) use Accepted or
+/// Rejected depending on invitee's choice.</summary>
+public enum ChallengeInvitationState
+{
+    Pending,
+    Accepted,
+    Rejected,
+    Expired,
+}

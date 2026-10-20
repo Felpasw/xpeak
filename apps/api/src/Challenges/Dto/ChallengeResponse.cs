@@ -68,10 +68,29 @@ public sealed record MembershipResponse(
         MembershipProgressResponse.From(m.Progress));
 }
 
-/// <summary>Payload of <c>POST /challenges</c>.</summary>
+/// <summary>Wire representation of the share-link
+/// <see cref="ChallengeInvitation"/> that ships with every
+/// challenge creation. The caller embeds <see cref="Id"/> in a
+/// URL / deep link (<c>xpeak://challenges/join?invitation={Id}</c>)
+/// to invite others.</summary>
+public sealed record ChallengeInvitationResponse(
+    Guid Id,
+    Guid ChallengeId,
+    Guid InvitedByUserId,
+    ChallengeInvitationState State,
+    DateTimeOffset CreatedAt)
+{
+    public static ChallengeInvitationResponse From(ChallengeInvitation i) =>
+        new(i.Id, i.ChallengeId, i.InvitedByUserId, i.State, i.CreatedAt);
+}
+
+/// <summary>Payload of <c>POST /challenges</c>. Carries the default
+/// share-link so the client can show "copy link" straight after
+/// creation without a follow-up request.</summary>
 public sealed record CreateChallengeResponse(
     ChallengeResponse Challenge,
-    MembershipResponse OwnerMembership);
+    MembershipResponse OwnerMembership,
+    ChallengeInvitationResponse ShareLink);
 
 /// <summary>Payload of <c>GET /challenges</c>.</summary>
 public sealed record ListChallengesResponse(
@@ -79,10 +98,20 @@ public sealed record ListChallengesResponse(
 
 /// <summary>Payload of <c>GET /challenges/{id}</c>. Membership is
 /// null when the caller views a public challenge they do not
-/// belong to.</summary>
+/// belong to. ShareLink is non-null only when the caller is the
+/// owner — so the UI can render "copy share link" without a
+/// second request.</summary>
 public sealed record GetChallengeResponse(
     ChallengeResponse Challenge,
-    MembershipResponse? Membership);
+    MembershipResponse? Membership,
+    ChallengeInvitationResponse? ShareLink);
+
+/// <summary>Payload of <c>POST /challenges/join</c>. Mirrors
+/// <see cref="GetChallengeResponse"/> but membership is always
+/// non-null — the caller just joined.</summary>
+public sealed record JoinChallengeResponse(
+    ChallengeResponse Challenge,
+    MembershipResponse Membership);
 
 /// <summary>Payload of <c>GET /challenges/{id}/progress</c>.</summary>
 public sealed record ChallengeProgressResponse(

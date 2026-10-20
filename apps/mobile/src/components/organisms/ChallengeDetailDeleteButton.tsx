@@ -4,7 +4,7 @@ import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-import { useDeleteChallenge } from '@/hooks/useChallenges';
+import challengesHooks from '@/hooks/useChallenges';
 
 interface ChallengeDetailDeleteButtonProps {
     challengeId: string;
@@ -18,7 +18,7 @@ const DELETE_ERROR = 'Deu ruim deletando. Tenta de novo.';
 
 export function ChallengeDetailDeleteButton({ challengeId }: ChallengeDetailDeleteButtonProps) {
     const router = useRouter();
-    const mutation = useDeleteChallenge();
+    const mutation = challengesHooks.useDelete();
 
     const onDelete = async () => {
         if (!window.confirm(DELETE_CONFIRM)) {

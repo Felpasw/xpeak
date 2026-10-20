@@ -41,11 +41,23 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
             Progress = MembershipProgress.Empty(input.TargetLevel),
         };
 
+        var shareLink = new ChallengeInvitation
+        {
+            Id = Guid.NewGuid(),
+            ChallengeId = challenge.Id,
+            InvitedByUserId = ownerId,
+            InviteeUserId = null,
+            State = ChallengeInvitationState.Pending,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
         db.Challenges.Add(challenge);
         db.ChallengeMemberships.Add(ownerMembership);
+        db.ChallengeInvitations.Add(shareLink);
         await db.SaveChangesAsync(ct);
 
-        return new CreateChallengeResult(challenge, ownerMembership);
+        return new CreateChallengeResult(challenge, ownerMembership, shareLink);
     }
 
     public async Task<IReadOnlyList<ChallengeDetail>> ListForUserAsync(
@@ -99,7 +111,14 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
             return null;
         }
 
-        return new ChallengeDetail(challenge, membership);
+        var shareLink = challenge.OwnerId == userId
+            ? await db.ChallengeInvitations
+                .AsNoTracking()
+                .Where(i => i.ChallengeId == id && i.InviteeUserId == null)
+                .SingleOrDefaultAsync(ct)
+            : null;
+
+        return new ChallengeDetail(challenge, membership, shareLink);
     }
 
     public async Task<bool> DeleteAsync(
@@ -117,5 +136,94 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
         db.Challenges.Remove(challenge);
         await db.SaveChangesAsync(ct);
         return true;
+    }
+
+    public async Task<bool> EndAsync(
+        Guid id,
+        Guid callerId,
+        CancellationToken ct = default)
+    {
+        var challenge = await db.Challenges
+            .SingleOrDefaultAsync(c => c.Id == id, ct);
+        if (challenge is null || challenge.OwnerId != callerId)
+        {
+            return false;
+        }
+
+        if (challenge.State != ChallengeState.Active)
+        {
+            throw new ChallengeAlreadyEndedException(id, challenge.State);
+        }
+
+        var now = time.GetUtcNow();
+        challenge.State = ChallengeState.Completed;
+        challenge.UpdatedAt = now;
+
+        await db.ChallengeInvitations
+            .Where(i => i.ChallengeId == id)
+            .ExecuteDeleteAsync(ct);
+        await db.SaveChangesAsync(ct);
+
+        return true;
+    }
+
+    public async Task<JoinChallengeResult> JoinWithInvitationAsync(
+        Guid invitationId,
+        Guid callerId,
+        CancellationToken ct = default)
+    {
+        var invitation = await db.ChallengeInvitations
+            .AsNoTracking()
+            .SingleOrDefaultAsync(i => i.Id == invitationId, ct)
+            ?? throw new InvitationNotFoundException(invitationId);
+
+        if (invitation.State != ChallengeInvitationState.Pending)
+        {
+            throw new InvitationNotActiveException(invitationId, invitation.State);
+        }
+
+        var challenge = await db.Challenges
+            .AsNoTracking()
+            .SingleAsync(c => c.Id == invitation.ChallengeId, ct);
+
+        if (challenge.State != ChallengeState.Active)
+        {
+            throw new ChallengeNotActiveException(challenge.Id, challenge.State);
+        }
+
+        var alreadyMember = await db.ChallengeMemberships
+            .AsNoTracking()
+            .AnyAsync(m => m.ChallengeId == challenge.Id && m.UserId == callerId, ct);
+        if (alreadyMember)
+        {
+            throw new AlreadyMemberException(challenge.Id, callerId);
+        }
+
+        if (challenge.MemberCap is int cap)
+        {
+            var count = await db.ChallengeMemberships
+                .AsNoTracking()
+                .CountAsync(m => m.ChallengeId == challenge.Id, ct);
+            if (count >= cap)
+            {
+                throw new MemberCapReachedException(challenge.Id, cap);
+            }
+        }
+
+        var now = time.GetUtcNow();
+        var membership = new ChallengeMembership
+        {
+            Id = Guid.NewGuid(),
+            ChallengeId = challenge.Id,
+            UserId = callerId,
+            Role = ChallengeMembershipRole.Member,
+            JoinedAt = now,
+            Progress = MembershipProgress.Empty(challenge.TargetLevel),
+        };
+
+        db.ChallengeMemberships.Add(membership);
+        await db.SaveChangesAsync(ct);
+
+        return new JoinChallengeResult(challenge, membership);
     }
 }

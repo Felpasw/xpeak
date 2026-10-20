@@ -36,6 +36,10 @@ public sealed class ChallengeServiceTests
         result.OwnerMembership.Role.Should().Be(ChallengeMembershipRole.Owner);
         result.OwnerMembership.UserId.Should().Be(user.Id);
         result.OwnerMembership.Progress.Target.Should().Be(10);
+        result.ShareLink.ChallengeId.Should().Be(result.Challenge.Id);
+        result.ShareLink.InvitedByUserId.Should().Be(user.Id);
+        result.ShareLink.InviteeUserId.Should().BeNull();
+        result.ShareLink.State.Should().Be(ChallengeInvitationState.Pending);
 
         await using var verifyScope = _factory.Services.CreateAsyncScope();
         var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -52,9 +56,209 @@ public sealed class ChallengeServiceTests
         memberships.Should().ContainSingle();
         memberships[0].UserId.Should().Be(user.Id);
         memberships[0].Role.Should().Be(ChallengeMembershipRole.Owner);
+
+        var invitations = await db.ChallengeInvitations
+            .AsNoTracking()
+            .Where(i => i.ChallengeId == result.Challenge.Id)
+            .ToListAsync();
+        invitations.Should().ContainSingle();
+        invitations[0].Id.Should().Be(result.ShareLink.Id);
+        invitations[0].InviteeUserId.Should().BeNull();
     }
 
-    private static CreateChallengeInput NewInput() => new(
+    [Fact]
+    public async Task Join_happy_path_inserts_a_member_membership()
+    {
+        var owner = await CreateUserAsync();
+        var joiner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var join = await service.JoinWithInvitationAsync(created.ShareLink.Id, joiner.Id);
+
+        join.Challenge.Id.Should().Be(created.Challenge.Id);
+        join.Membership.UserId.Should().Be(joiner.Id);
+        join.Membership.Role.Should().Be(ChallengeMembershipRole.Member);
+        join.Membership.Progress.Target.Should().Be(created.Challenge.TargetLevel);
+
+        await using var verifyScope = _factory.Services.CreateAsyncScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var memberships = await db.ChallengeMemberships
+            .AsNoTracking()
+            .Where(m => m.ChallengeId == created.Challenge.Id)
+            .ToListAsync();
+        memberships.Should().HaveCount(2);
+        memberships.Should().Contain(m => m.UserId == joiner.Id && m.Role == ChallengeMembershipRole.Member);
+    }
+
+    [Fact]
+    public async Task Join_rejects_an_unknown_invitation_id()
+    {
+        var joiner = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var act = async () => await service.JoinWithInvitationAsync(Guid.NewGuid(), joiner.Id);
+
+        await act.Should().ThrowAsync<InvitationNotFoundException>();
+    }
+
+    [Fact]
+    public async Task Join_rejects_an_invitation_whose_state_is_not_pending()
+    {
+        var owner = await CreateUserAsync();
+        var joiner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+        await using (var mutateScope = _factory.Services.CreateAsyncScope())
+        {
+            var db = mutateScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var tracked = await db.ChallengeInvitations.SingleAsync(i => i.Id == created.ShareLink.Id);
+            tracked.State = ChallengeInvitationState.Expired;
+            await db.SaveChangesAsync();
+        }
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var act = async () => await service.JoinWithInvitationAsync(created.ShareLink.Id, joiner.Id);
+
+        var ex = await act.Should().ThrowAsync<InvitationNotActiveException>();
+        ex.Which.State.Should().Be(ChallengeInvitationState.Expired);
+    }
+
+    [Fact]
+    public async Task Join_rejects_a_challenge_that_is_not_active()
+    {
+        var owner = await CreateUserAsync();
+        var joiner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+        await using (var mutateScope = _factory.Services.CreateAsyncScope())
+        {
+            var db = mutateScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var tracked = await db.Challenges.SingleAsync(c => c.Id == created.Challenge.Id);
+            tracked.State = ChallengeState.Completed;
+            await db.SaveChangesAsync();
+        }
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var act = async () => await service.JoinWithInvitationAsync(created.ShareLink.Id, joiner.Id);
+
+        await act.Should().ThrowAsync<ChallengeNotActiveException>();
+    }
+
+    [Fact]
+    public async Task Join_rejects_the_owner_who_is_already_a_member()
+    {
+        var owner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var act = async () => await service.JoinWithInvitationAsync(created.ShareLink.Id, owner.Id);
+
+        await act.Should().ThrowAsync<AlreadyMemberException>();
+    }
+
+    [Fact]
+    public async Task Join_rejects_once_member_cap_is_reached()
+    {
+        var owner = await CreateUserAsync();
+        var joiner = await CreateUserAsync();
+        var late = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner, memberCap: 2);
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        await service.JoinWithInvitationAsync(created.ShareLink.Id, joiner.Id);
+
+        var act = async () => await service.JoinWithInvitationAsync(created.ShareLink.Id, late.Id);
+
+        var ex = await act.Should().ThrowAsync<MemberCapReachedException>();
+        ex.Which.Cap.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task End_happy_path_flips_state_and_deletes_invitations()
+    {
+        var owner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var ok = await service.EndAsync(created.Challenge.Id, owner.Id);
+
+        ok.Should().BeTrue();
+
+        await using var verifyScope = _factory.Services.CreateAsyncScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var reloaded = await db.Challenges.AsNoTracking().SingleAsync(c => c.Id == created.Challenge.Id);
+        reloaded.State.Should().Be(ChallengeState.Completed);
+
+        var invitations = await db.ChallengeInvitations
+            .AsNoTracking()
+            .Where(i => i.ChallengeId == created.Challenge.Id)
+            .CountAsync();
+        invitations.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task End_returns_false_for_a_non_owner_caller()
+    {
+        var owner = await CreateUserAsync();
+        var stranger = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var ok = await service.EndAsync(created.Challenge.Id, stranger.Id);
+
+        ok.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task End_returns_false_for_an_unknown_challenge()
+    {
+        var owner = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var ok = await service.EndAsync(Guid.NewGuid(), owner.Id);
+
+        ok.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task End_rejects_an_already_ended_challenge()
+    {
+        var owner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+        await using (var mutateScope = _factory.Services.CreateAsyncScope())
+        {
+            var db = mutateScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var tracked = await db.Challenges.SingleAsync(c => c.Id == created.Challenge.Id);
+            tracked.State = ChallengeState.Completed;
+            await db.SaveChangesAsync();
+        }
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var act = async () => await service.EndAsync(created.Challenge.Id, owner.Id);
+
+        await act.Should().ThrowAsync<ChallengeAlreadyEndedException>();
+    }
+
+    private async Task<CreateChallengeResult> CreateChallengeAsync(AppUser owner, int? memberCap = null)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+        return await service.CreateAsync(owner.Id, NewInput(memberCap));
+    }
+
+    private static CreateChallengeInput NewInput(int? memberCap = null) => new(
         Title: "30 dias de treino",
         Description: "Levantar peso toda semana por 30 dias.",
         IconPublicId: "challenges/sample-icon",
@@ -63,7 +267,7 @@ public sealed class ChallengeServiceTests
         XpMultiplier: 1.0m,
         StartsAt: DateTimeOffset.UtcNow,
         EndsAt: DateTimeOffset.UtcNow.AddDays(30),
-        MemberCap: null);
+        MemberCap: memberCap);
 
     private async Task<AppUser> CreateUserAsync()
     {

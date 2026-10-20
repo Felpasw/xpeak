@@ -65,7 +65,7 @@ const challenge = () => ({
 });
 
 describe('ChallengeDetailPage', () => {
-    it('renders header, state badge and progress bar for an owner', async () => {
+    it('renders header, state badge, progress bar and share button for an owner', async () => {
         server.use(
             http.get('http://localhost:5000/challenges/ch-1', () =>
                 HttpResponse.json({
@@ -79,6 +79,13 @@ describe('ChallengeDetailPage', () => {
                         leftAt: null,
                         result: null,
                         progress: { value: 420, target: 3162, achievedAt: null },
+                    },
+                    shareLink: {
+                        id: 'inv-1',
+                        challengeId: 'ch-1',
+                        invitedByUserId: 'u-1',
+                        state: 'pending',
+                        createdAt: '2026-10-07T00:00:00Z',
                     },
                 }),
             ),
@@ -100,6 +107,7 @@ describe('ChallengeDetailPage', () => {
         expect(bar.getAttribute('aria-valuemax')).toBe('3162');
 
         expect(screen.getByRole('button', { name: /deletar/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /copiar link/i })).toBeInTheDocument();
     });
 
     it('shows the not-found fallback when the id is missing from the url', async () => {
@@ -124,7 +132,7 @@ describe('ChallengeDetailPage', () => {
         );
     });
 
-    it('hides the delete button for non-owner members', async () => {
+    it('hides the delete and share buttons for non-owner members', async () => {
         server.use(
             http.get('http://localhost:5000/challenges/ch-1', () =>
                 HttpResponse.json({
@@ -139,6 +147,7 @@ describe('ChallengeDetailPage', () => {
                         result: null,
                         progress: { value: 0, target: 3162, achievedAt: null },
                     },
+                    shareLink: null,
                 }),
             ),
             http.get('http://localhost:5000/challenges/ch-1/progress', () =>
@@ -153,5 +162,6 @@ describe('ChallengeDetailPage', () => {
 
         await waitFor(() => expect(screen.getByText('Rumo ao level 10')).toBeInTheDocument());
         expect(screen.queryByRole('button', { name: /deletar/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /copiar link/i })).not.toBeInTheDocument();
     });
 });

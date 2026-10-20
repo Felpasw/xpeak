@@ -34,6 +34,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ChallengeMembership> ChallengeMemberships => Set<ChallengeMembership>();
 
+    public DbSet<ChallengeInvitation> ChallengeInvitations => Set<ChallengeInvitation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -281,6 +283,48 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             b.HasIndex(m => new { m.ChallengeId, m.UserId })
                 .IsUnique()
                 .HasDatabaseName("ux_challenge_memberships_challenge_user");
+        });
+
+        modelBuilder.Entity<ChallengeInvitation>(b =>
+        {
+            b.ToTable("challenge_invitations", t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_challenge_invitations_state",
+                    "state IN ('pending', 'accepted', 'rejected', 'expired')");
+            });
+
+            b.HasKey(i => i.Id);
+            b.Property(i => i.Id).HasColumnName("id");
+            b.Property(i => i.ChallengeId).HasColumnName("challenge_id");
+            b.Property(i => i.InvitedByUserId).HasColumnName("invited_by_user_id");
+            b.Property(i => i.InviteeUserId).HasColumnName("invitee_user_id");
+            b.Property(i => i.State)
+                .HasColumnName("state")
+                .HasMaxLength(16)
+                .HasConversion(
+                    v => v.ToString().ToLowerInvariant(),
+                    v => Enum.Parse<ChallengeInvitationState>(v, true));
+            b.Property(i => i.CreatedAt).HasColumnName("created_at");
+            b.Property(i => i.UpdatedAt).HasColumnName("updated_at");
+
+            b.HasOne<Challenge>()
+                .WithMany()
+                .HasForeignKey(i => i.ChallengeId)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasOne<AppUser>()
+                .WithMany()
+                .HasForeignKey(i => i.InvitedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            b.HasOne<AppUser>()
+                .WithMany()
+                .HasForeignKey(i => i.InviteeUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(i => new { i.ChallengeId, i.InviteeUserId })
+                .HasDatabaseName("ix_challenge_invitations_challenge_invitee");
+            b.HasIndex(i => new { i.ChallengeId, i.State })
+                .HasDatabaseName("ix_challenge_invitations_challenge_state");
         });
     }
 }
