@@ -28,15 +28,17 @@ rebase conflict.
 
 - [ ] **T-031-01 `[T][S]`** — `challenge_tiers` table
   - Failing test (`apps/api.Tests/Challenges/ChallengeTierPersistenceTests.cs`):
-    round-trip insert reloads title, min_level, position; rejects
+    round-trip insert reloads title + min_level; rejects
     `min_level <= 0`; rejects blank/61+ title; rejects duplicate
-    `(challenge_id, min_level)`; cascades on challenge delete.
+    `(challenge_id, min_level)`; allows the same min_level on
+    different challenges; cascades on challenge delete.
   - New entity `ChallengeTier` in
-    `apps/api/src/Challenges/Entities/ChallengeTier.cs`.
+    `apps/api/src/Challenges/Entities/ChallengeTier.cs` (no
+    `Position` field — order comes from `MinLevel` ascending).
   - `AppDbContext.ChallengeTiers` DbSet + model config:
     - 2 check constraints: `min_level > 0`, title shape.
-    - 2 indexes: unique `(challenge_id, min_level)`, non-unique
-      `(challenge_id, position)`.
+    - 1 unique index: `(challenge_id, min_level)` — doubles as
+      the ordered-read index.
     - FK to `challenges` with cascade delete.
   - Migration `AddChallengeTiers` generated via `dotnet ef
     migrations add`.
@@ -73,7 +75,8 @@ rebase conflict.
 - [ ] **T-031-04 `[T][S]`** — `ChallengeService.CreateAsync` persists tiers
   - Depends on T-031-01, T-031-03.
   - Failing tests (`apps/api.Tests/Challenges/ChallengeServiceTests.cs`):
-    - Create with 3 tiers persists them in position order.
+    - Create with 3 tiers persists them (read back sorted by
+      `min_level` ascending).
     - Create with empty list persists no rows and returns empty
       `Tiers` on the result.
     - Create with 11 tiers throws `TooManyTiersException`.
@@ -135,7 +138,7 @@ rebase conflict.
     - 422 on 11 tiers / duplicate / blank title (match validator
       output).
     - GET detail returns `tiers[]` (ordered) and `currentTier`.
-  - Add `ChallengeTierResponse(id, minLevel, title, position)`
+  - Add `ChallengeTierResponse(id, minLevel, title)`
     with a `From(ChallengeTier)` factory to
     `apps/api/src/Challenges/Dto/ChallengeResponse.cs`.
   - Extend `CreateChallengeResponse` with

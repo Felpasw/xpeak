@@ -16,7 +16,6 @@
 | `challenge_id` | uuid              | FK → `challenges`, cascade on delete            |
 | `min_level`    | integer           | not null, `> 0`                                 |
 | `title`        | varchar(60)       | not null, `length(trim(title)) BETWEEN 1 AND 60`|
-| `position`     | integer           | not null (0-based, matches sort by `min_level`) |
 | `created_at`   | timestamptz       | not null                                        |
 | `updated_at`   | timestamptz       | not null                                        |
 
@@ -27,9 +26,12 @@ Constraints:
   `length(trim(title)) BETWEEN 1 AND 60`.
 - Unique index `ux_challenge_tiers_challenge_min_level`:
   `(challenge_id, min_level)` — no two tiers in the same
-  challenge share a floor.
-- Non-unique index `ix_challenge_tiers_challenge_position`:
-  `(challenge_id, position)` — cheap ordered read.
+  challenge share a floor, and serves ordered reads cheaply.
+
+There is no separate `position` column: tier order is always
+derived from `min_level ASC`. The service and HTTP response
+return the list already sorted; the client renders by array
+index.
 
 Hard cap enforced at the service layer (not the DB):
 **max 10 tiers per challenge**. Rejects extra rows with a
@@ -52,13 +54,13 @@ public sealed class ChallengeTier
     public Guid ChallengeId { get; set; }
     public int MinLevel { get; set; }
     public string Title { get; set; } = string.Empty;
-    public int Position { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 ```
 
-No enum. No value object. The row is the whole story.
+No enum. No value object. No position column. The row is the
+whole story.
 
 ### 2.2. Resolver
 
@@ -113,10 +115,9 @@ Behaviour:
 - Non-empty list ⇒ validate count ≤ 10, each `min_level > 0`,
   each title non-blank 1..60 chars, no duplicate `min_level`
   within the input. Normalise titles with `Trim()`.
-- Sort by `min_level` ascending and assign `position` 0..N-1
-  before insert.
 - All inserts land in the same `SaveChangesAsync` as the
-  challenge, owner membership and share-link invitation.
+  challenge, owner membership and share-link invitation. Order
+  is implicit via `min_level`.
 
 `ChallengeService.GetForUserAsync` grows two outputs:
 - `IReadOnlyList<ChallengeTier> Tiers` — always populated
@@ -191,9 +192,9 @@ Grows `tiers`:
   "ownerMembership": { ... },
   "shareLink": { ... },
   "tiers": [
-    { "id": "uuid", "minLevel": 10, "title": "Aprendiz", "position": 0 },
-    { "id": "uuid", "minLevel": 30, "title": "Mago", "position": 1 },
-    { "id": "uuid", "minLevel": 60, "title": "ArchMago", "position": 2 }
+    { "id": "uuid", "minLevel": 10, "title": "Aprendiz" },
+    { "id": "uuid", "minLevel": 30, "title": "Mago" },
+    { "id": "uuid", "minLevel": 60, "title": "ArchMago" }
   ]
 }
 ```
@@ -210,11 +211,11 @@ Grows `tiers` and `currentTier`:
   "membership": { ... },
   "shareLink": { ... } | null,
   "tiers": [
-    { "id": "uuid", "minLevel": 10, "title": "Aprendiz", "position": 0 },
-    { "id": "uuid", "minLevel": 30, "title": "Mago", "position": 1 },
-    { "id": "uuid", "minLevel": 60, "title": "ArchMago", "position": 2 }
+    { "id": "uuid", "minLevel": 10, "title": "Aprendiz" },
+    { "id": "uuid", "minLevel": 30, "title": "Mago" },
+    { "id": "uuid", "minLevel": 60, "title": "ArchMago" }
   ],
-  "currentTier": { "id": "uuid", "minLevel": 30, "title": "Mago", "position": 1 }
+  "currentTier": { "id": "uuid", "minLevel": 30, "title": "Mago" }
 }
 ```
 
@@ -239,7 +240,6 @@ export interface ChallengeTier {
     id: string;
     minLevel: number;
     title: string;
-    position: number;
 }
 
 export interface CreateChallengeTierInput {
@@ -279,13 +279,14 @@ export interface GetChallengeResponse {
 ### 5.2. Detail organism `<ChallengeDetailTiers>`
 
 - Rendered only when `tiers.length > 0`.
+- The index into `tiers` matches `currentTier` by id to pick the
+  "current" row — there is no numeric position field.
 - Ladder layout:
-  - Tiers below `currentTier.position` ⇒ muted, labeled
+  - Tiers before the current one in `tiers` ⇒ muted, labeled
     "Alcançado".
   - `currentTier` ⇒ highlighted ring + "Atual" badge.
-  - Tiers above `currentTier.position` ⇒ default, labeled
-    "Próximo" for `position = currentTier.position + 1`, else
-    "Em breve".
+  - Tiers after the current one ⇒ default; the immediate next
+    one is labeled "Próximo", the rest "Em breve".
 - When `currentTier == null`:
   - If `tiers.length > 0` ⇒ first tier shown as "Próximo", the
     rest as "Em breve".
@@ -309,7 +310,8 @@ expanded types.
   for a progress between two tiers, returns null below the
   first, returns the last when progress exceeds every tier.
 - `ChallengeServiceTests` (new cases):
-  - CreateAsync persists tiers in position order.
+  - CreateAsync persists tiers and GetForUserAsync returns them
+    sorted by min_level ascending.
   - CreateAsync with 11 tiers throws `TooManyTiersException`.
   - CreateAsync with duplicate `min_level` throws
     `DuplicateTierException`.

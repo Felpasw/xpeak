@@ -65,14 +65,14 @@ challenge_tiers (
   challenge_id   uuid FK -> challenges (cascade),
   min_level      integer not null,
   title          varchar(60) not null,
-  position       integer not null,
   created_at     timestamptz not null,
   updated_at     timestamptz not null
 )
 ```
 
-Indexes: `(challenge_id, position)`, `(challenge_id, min_level)`
-unique.
+Index: `(challenge_id, min_level)` unique — doubles as the
+ordered-read index. No `position` column; order is derived from
+`min_level ASC`.
 
 Constraints:
 - `min_level > 0`
@@ -113,11 +113,11 @@ Constraints:
   "membership": { ... },
   "shareLink": { ... },
   "tiers": [
-    { "id": "...", "minLevel": 10, "title": "Aprendiz", "position": 0 },
-    { "id": "...", "minLevel": 30, "title": "Mago", "position": 1 },
-    { "id": "...", "minLevel": 60, "title": "ArchMago", "position": 2 }
+    { "id": "...", "minLevel": 10, "title": "Aprendiz" },
+    { "id": "...", "minLevel": 30, "title": "Mago" },
+    { "id": "...", "minLevel": 60, "title": "ArchMago" }
   ],
-  "currentTier": { "id": "...", "minLevel": 30, "title": "Mago", "position": 1 }
+  "currentTier": { "id": "...", "minLevel": 30, "title": "Mago" }
 }
 ```
 

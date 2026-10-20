@@ -36,6 +36,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ChallengeInvitation> ChallengeInvitations => Set<ChallengeInvitation>();
 
+    public DbSet<ChallengeTier> ChallengeTiers => Set<ChallengeTier>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -325,6 +327,36 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
                 .HasDatabaseName("ix_challenge_invitations_challenge_invitee");
             b.HasIndex(i => new { i.ChallengeId, i.State })
                 .HasDatabaseName("ix_challenge_invitations_challenge_state");
+        });
+
+        modelBuilder.Entity<ChallengeTier>(b =>
+        {
+            b.ToTable("challenge_tiers", t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_challenge_tiers_min_level_positive",
+                    "min_level > 0");
+                t.HasCheckConstraint(
+                    "ck_challenge_tiers_title_shape",
+                    "length(trim(title)) BETWEEN 1 AND 60");
+            });
+
+            b.HasKey(t => t.Id);
+            b.Property(t => t.Id).HasColumnName("id");
+            b.Property(t => t.ChallengeId).HasColumnName("challenge_id");
+            b.Property(t => t.MinLevel).HasColumnName("min_level");
+            b.Property(t => t.Title).HasColumnName("title").HasMaxLength(60).IsRequired();
+            b.Property(t => t.CreatedAt).HasColumnName("created_at");
+            b.Property(t => t.UpdatedAt).HasColumnName("updated_at");
+
+            b.HasOne<Challenge>()
+                .WithMany()
+                .HasForeignKey(t => t.ChallengeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(t => new { t.ChallengeId, t.MinLevel })
+                .IsUnique()
+                .HasDatabaseName("ux_challenge_tiers_challenge_min_level");
         });
     }
 }

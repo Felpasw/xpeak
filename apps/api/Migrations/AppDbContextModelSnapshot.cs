@@ -381,6 +381,49 @@ namespace Xpeak.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeTier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChallengeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("challenge_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("MinLevel")
+                        .HasColumnType("integer")
+                        .HasColumnName("min_level");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChallengeId", "MinLevel")
+                        .IsUnique()
+                        .HasDatabaseName("ux_challenge_tiers_challenge_min_level");
+
+                    b.ToTable("challenge_tiers", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_challenge_tiers_min_level_positive", "min_level > 0");
+
+                            t.HasCheckConstraint("ck_challenge_tiers_title_shape", "length(trim(title)) BETWEEN 1 AND 60");
+                        });
+                });
+
             modelBuilder.Entity("Xpeak.Api.CheckIns.Entities.CheckIn", b =>
                 {
                     b.Property<Guid>("Id")
@@ -707,6 +750,15 @@ namespace Xpeak.Api.Migrations
                     b.HasOne("Xpeak.Api.Users.AppUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Xpeak.Api.Challenges.Entities.ChallengeTier", b =>
+                {
+                    b.HasOne("Xpeak.Api.Challenges.Entities.Challenge", null)
+                        .WithMany()
+                        .HasForeignKey("ChallengeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
