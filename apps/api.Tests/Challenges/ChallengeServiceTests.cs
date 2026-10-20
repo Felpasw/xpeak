@@ -251,6 +251,94 @@ public sealed class ChallengeServiceTests
         await act.Should().ThrowAsync<ChallengeAlreadyEndedException>();
     }
 
+    [Fact]
+    public async Task Create_persists_tiers_sorted_by_min_level()
+    {
+        var user = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var result = await service.CreateAsync(user.Id, NewInput() with
+        {
+            Tiers = new List<CreateChallengeTierInput>
+            {
+                new(MinLevel: 60, Title: "ArchMago"),
+                new(MinLevel: 10, Title: " Aprendiz "),
+                new(MinLevel: 30, Title: "Mago"),
+            },
+        });
+
+        result.Tiers.Should().HaveCount(3);
+        result.Tiers.Select(t => t.MinLevel).Should().ContainInOrder(10, 30, 60);
+        result.Tiers.Select(t => t.Title).Should().ContainInOrder("Aprendiz", "Mago", "ArchMago");
+
+        await using var verifyScope = _factory.Services.CreateAsyncScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var reloaded = await db.ChallengeTiers
+            .AsNoTracking()
+            .Where(t => t.ChallengeId == result.Challenge.Id)
+            .OrderBy(t => t.MinLevel)
+            .ToListAsync();
+        reloaded.Should().HaveCount(3);
+        reloaded.Select(t => t.MinLevel).Should().ContainInOrder(10, 30, 60);
+    }
+
+    [Fact]
+    public async Task Create_without_tiers_persists_an_empty_tier_list()
+    {
+        var user = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var result = await service.CreateAsync(user.Id, NewInput());
+
+        result.Tiers.Should().BeEmpty();
+
+        await using var verifyScope = _factory.Services.CreateAsyncScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var count = await db.ChallengeTiers
+            .AsNoTracking()
+            .CountAsync(t => t.ChallengeId == result.Challenge.Id);
+        count.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Create_with_eleven_tiers_throws_TooManyTiers()
+    {
+        var user = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var tiers = Enumerable.Range(1, 11)
+            .Select(i => new CreateChallengeTierInput(MinLevel: i, Title: $"Tier {i}"))
+            .ToList();
+
+        var act = async () => await service.CreateAsync(user.Id, NewInput() with { Tiers = tiers });
+
+        var ex = await act.Should().ThrowAsync<TooManyTiersException>();
+        ex.Which.Count.Should().Be(11);
+        ex.Which.Max.Should().Be(ChallengeService.MaxTiersPerChallenge);
+    }
+
+    [Fact]
+    public async Task Create_with_duplicate_min_level_throws_DuplicateTier()
+    {
+        var user = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var tiers = new List<CreateChallengeTierInput>
+        {
+            new(MinLevel: 10, Title: "Aprendiz"),
+            new(MinLevel: 10, Title: "Outro Aprendiz"),
+        };
+
+        var act = async () => await service.CreateAsync(user.Id, NewInput() with { Tiers = tiers });
+
+        var ex = await act.Should().ThrowAsync<DuplicateTierException>();
+        ex.Which.MinLevel.Should().Be(10);
+    }
+
     private async Task<CreateChallengeResult> CreateChallengeAsync(AppUser owner, int? memberCap = null)
     {
         await using var scope = _factory.Services.CreateAsyncScope();

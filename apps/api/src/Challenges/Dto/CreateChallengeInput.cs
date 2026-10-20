@@ -6,7 +6,9 @@ namespace Xpeak.Api.Challenges.Dto;
 /// id comes from the authenticated principal, never from the body.
 /// A challenge has no category whitelist — every check-in a member
 /// posts inside <c>[starts_at, ends_at]</c> contributes to the
-/// progress tally.</summary>
+/// progress tally. <see cref="Tiers"/> is the optional ladder of
+/// progression tiers the owner declares at creation (null or empty
+/// ⇒ no tiers).</summary>
 public sealed record CreateChallengeInput(
     string Title,
     string? Description,
@@ -16,4 +18,11 @@ public sealed record CreateChallengeInput(
     decimal XpMultiplier,
     DateTimeOffset StartsAt,
     DateTimeOffset EndsAt,
-    int? MemberCap);
+    int? MemberCap,
+    IReadOnlyList<CreateChallengeTierInput>? Tiers = null);
+
+/// <summary>Single tier inside <see cref="CreateChallengeInput.Tiers"/>.
+/// Title is service-normalised with <c>Trim()</c> before insert.</summary>
+public sealed record CreateChallengeTierInput(
+    int MinLevel,
+    string Title);

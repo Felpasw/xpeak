@@ -7,6 +7,8 @@ namespace Xpeak.Api.Challenges.Services;
 
 public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChallengeService
 {
+    public const int MaxTiersPerChallenge = 10;
+
     public async Task<CreateChallengeResult> CreateAsync(
         Guid ownerId,
         CreateChallengeInput input,
@@ -52,12 +54,56 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
             UpdatedAt = now,
         };
 
+        var tiers = BuildTiers(challenge.Id, input.Tiers, now);
+
         db.Challenges.Add(challenge);
         db.ChallengeMemberships.Add(ownerMembership);
         db.ChallengeInvitations.Add(shareLink);
+        if (tiers.Count > 0)
+        {
+            db.ChallengeTiers.AddRange(tiers);
+        }
         await db.SaveChangesAsync(ct);
 
-        return new CreateChallengeResult(challenge, ownerMembership, shareLink);
+        return new CreateChallengeResult(challenge, ownerMembership, shareLink, tiers);
+    }
+
+    private static IReadOnlyList<ChallengeTier> BuildTiers(
+        Guid challengeId,
+        IReadOnlyList<CreateChallengeTierInput>? inputs,
+        DateTimeOffset now)
+    {
+        if (inputs is null || inputs.Count == 0)
+        {
+            return [];
+        }
+
+        if (inputs.Count > MaxTiersPerChallenge)
+        {
+            throw new TooManyTiersException(challengeId, inputs.Count, MaxTiersPerChallenge);
+        }
+
+        var seen = new HashSet<int>(inputs.Count);
+        foreach (var row in inputs)
+        {
+            if (!seen.Add(row.MinLevel))
+            {
+                throw new DuplicateTierException(challengeId, row.MinLevel);
+            }
+        }
+
+        return inputs
+            .OrderBy(t => t.MinLevel)
+            .Select(t => new ChallengeTier
+            {
+                Id = Guid.NewGuid(),
+                ChallengeId = challengeId,
+                MinLevel = t.MinLevel,
+                Title = t.Title.Trim(),
+                CreatedAt = now,
+                UpdatedAt = now,
+            })
+            .ToList();
     }
 
     public async Task<IReadOnlyList<ChallengeDetail>> ListForUserAsync(
