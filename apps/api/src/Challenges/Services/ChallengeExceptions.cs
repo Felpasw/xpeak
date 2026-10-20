@@ -75,3 +75,24 @@ public sealed class ChallengeNotActiveException(Guid challengeId, Entities.Chall
     public Guid ChallengeId { get; } = challengeId;
     public Entities.ChallengeState State { get; } = state;
 }
+
+/// <summary>Thrown when a <c>POST /challenges</c> payload carries
+/// more challenge tiers than the service-side hard cap allows.
+/// Endpoint layer maps to HTTP 422.</summary>
+public sealed class TooManyTiersException(Guid challengeId, int count, int max)
+    : Exception($"Challenge '{challengeId}' received {count} tiers; the maximum is {max}.")
+{
+    public Guid ChallengeId { get; } = challengeId;
+    public int Count { get; } = count;
+    public int Max { get; } = max;
+}
+
+/// <summary>Thrown when a <c>POST /challenges</c> payload lists
+/// two tiers that share the same <c>min_level</c>. Endpoint layer
+/// maps to HTTP 422.</summary>
+public sealed class DuplicateTierException(Guid challengeId, int minLevel)
+    : Exception($"Challenge '{challengeId}' has a duplicate tier at min_level {minLevel}.")
+{
+    public Guid ChallengeId { get; } = challengeId;
+    public int MinLevel { get; } = minLevel;
+}
