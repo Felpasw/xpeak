@@ -102,6 +102,71 @@ describe('<CreateChallengeForm />', () => {
         expect(posted!['visibility']).toBe('private');
         expect(posted!['targetLevel']).toBe(5);
         expect(posted!['xpMultiplier']).toBe(1);
+        expect(posted!).not.toHaveProperty('tiers');
         await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/challenges'));
+    });
+
+    it('submits the tiers array when the owner adds a row', async () => {
+        let posted: Record<string, unknown> | null = null;
+        server.use(
+            http.post('http://localhost:5000/challenges', async ({ request }) => {
+                posted = (await request.json()) as Record<string, unknown>;
+                return HttpResponse.json({}, { status: 201 });
+            }),
+        );
+
+        const { CreateChallengeForm } = await import(
+            '@/components/organisms/CreateChallengeForm'
+        );
+        const user = userEvent.setup();
+        render(<CreateChallengeForm />, { wrapper: wrap() });
+
+        await user.type(screen.getByLabelText('Título'), 'Com Fases');
+        await user.click(screen.getByRole('button', { name: /adicionar fase/i }));
+
+        await user.clear(screen.getByLabelText('Nível mínimo'));
+        await user.type(screen.getByLabelText('Nível mínimo'), '30');
+        await user.type(screen.getByLabelText('Título da fase'), 'Mago');
+
+        await user.click(screen.getByRole('button', { name: /criar challenge/i }));
+
+        await waitFor(() => expect(posted).not.toBeNull());
+        const tiers = posted!['tiers'] as Array<Record<string, unknown>>;
+        expect(tiers).toHaveLength(1);
+        expect(tiers[0]).toEqual({ minLevel: 30, title: 'Mago' });
+    });
+
+    it('disables the add button at the ten-row cap', async () => {
+        const { CreateChallengeForm } = await import(
+            '@/components/organisms/CreateChallengeForm'
+        );
+        const user = userEvent.setup();
+        render(<CreateChallengeForm />, { wrapper: wrap() });
+
+        const addButton = screen.getByRole('button', { name: /adicionar fase/i });
+        for (let i = 0; i < 10; i += 1) {
+            await user.click(addButton);
+        }
+
+        expect(addButton).toBeDisabled();
+        expect(screen.getAllByTestId(/^tier-row-/)).toHaveLength(10);
+    });
+
+    it('removes a tier row when the trash button is clicked', async () => {
+        const { CreateChallengeForm } = await import(
+            '@/components/organisms/CreateChallengeForm'
+        );
+        const user = userEvent.setup();
+        render(<CreateChallengeForm />, { wrapper: wrap() });
+
+        const addButton = screen.getByRole('button', { name: /adicionar fase/i });
+        await user.click(addButton);
+        await user.click(addButton);
+        expect(screen.getAllByTestId(/^tier-row-/)).toHaveLength(2);
+
+        const removeButtons = screen.getAllByRole('button', { name: /remover fase/i });
+        await user.click(removeButtons[0]!);
+
+        expect(screen.getAllByTestId(/^tier-row-/)).toHaveLength(1);
     });
 });
