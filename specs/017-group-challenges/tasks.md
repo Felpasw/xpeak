@@ -139,8 +139,15 @@ scope for this cut.
 
 ## Section F — Wrap-up
 
-- [ ] **T-017-13 `[P]`** — ADR `docs/adr/0017-group-challenges-share-link.md`.
-- [ ] **T-017-14 `[S]`** — Phase close.
+- [x] **T-017-13 `[P]`** ✅ commit `546b249` — ADR `docs/adr/0017-group-challenges-share-link.md`.
+- [x] **T-017-14 `[S]`** — Phase close.
+  - Backend: `dotnet test apps/api.Tests` → 224/224 passing.
+  - Backend: `dotnet format --verify-no-changes` → clean on
+    `apps/api` and `apps/api.Tests`.
+  - Mobile: `pnpm --filter @xpeak/mobile lint` → clean.
+  - Mobile: `pnpm --filter @xpeak/mobile test` → 77/77 passing.
+  - Mobile: `pnpm --filter @xpeak/mobile build` → static export
+    succeeded; `/challenges/join` listed in the route table.
 
 ---
 
