@@ -29,6 +29,10 @@ public static class CreateChallengeEndpoint
             return Results.Unauthorized();
         }
 
+        var tiers = request.Tiers?
+            .Select(t => new CreateChallengeTierInput(t.MinLevel, t.Title))
+            .ToList();
+
         var result = await service.CreateAsync(
             userId,
             new CreateChallengeInput(
@@ -40,7 +44,8 @@ public static class CreateChallengeEndpoint
                 request.XpMultiplier,
                 request.StartsAt,
                 request.EndsAt,
-                request.MemberCap),
+                request.MemberCap,
+                tiers),
             ct);
 
         var response = new CreateChallengeResponse(

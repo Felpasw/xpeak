@@ -10,6 +10,8 @@ public sealed class CreateChallengeRequestValidator : AbstractValidator<CreateCh
     public const decimal XpMultiplierCeiling = 1.5m;
     public const int TargetLevelMin = 1;
     public const int TargetLevelMax = 999;
+    public const int TierTitleMaxLength = 60;
+    public const int MaxTiers = 10;
 
     public CreateChallengeRequestValidator()
     {
@@ -45,5 +47,33 @@ public sealed class CreateChallengeRequestValidator : AbstractValidator<CreateCh
             .When(x => x.MemberCap.HasValue)
             .WithMessage("memberCap must be positive when provided.")
             .OverridePropertyName(nameof(CreateChallengeRequest.MemberCap));
+
+        RuleFor(x => x.Tiers!)
+            .Must(ts => ts.Count <= MaxTiers)
+            .When(x => x.Tiers is not null)
+            .WithMessage($"tiers must be {MaxTiers} entries or fewer.")
+            .OverridePropertyName(nameof(CreateChallengeRequest.Tiers));
+
+        RuleFor(x => x.Tiers!)
+            .Must(ts => ts.Select(t => t.MinLevel).Distinct().Count() == ts.Count)
+            .When(x => x.Tiers is not null && x.Tiers.Count > 0)
+            .WithMessage("tiers must not share a minLevel.")
+            .OverridePropertyName(nameof(CreateChallengeRequest.Tiers));
+
+        RuleForEach(x => x.Tiers)
+            .ChildRules(tier =>
+            {
+                tier.RuleFor(t => t.MinLevel)
+                    .InclusiveBetween(TargetLevelMin, TargetLevelMax)
+                    .WithMessage($"minLevel must be between {TargetLevelMin} and {TargetLevelMax}.");
+                tier.RuleFor(t => t.Title)
+                    .NotEmpty()
+                    .WithMessage("tier title is required.")
+                    .Must(t => !string.IsNullOrWhiteSpace(t))
+                    .WithMessage("tier title must not be blank.")
+                    .Must(t => t.Trim().Length <= TierTitleMaxLength)
+                    .WithMessage($"tier title must be {TierTitleMaxLength} characters or fewer.");
+            })
+            .When(x => x.Tiers is not null);
     }
 }
