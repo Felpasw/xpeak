@@ -164,7 +164,17 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
                 .SingleOrDefaultAsync(ct)
             : null;
 
-        return new ChallengeDetail(challenge, membership, shareLink);
+        var tiers = await db.ChallengeTiers
+            .AsNoTracking()
+            .Where(t => t.ChallengeId == id)
+            .OrderBy(t => t.MinLevel)
+            .ToListAsync(ct);
+
+        var currentTier = membership is null
+            ? null
+            : ChallengeTierResolver.ResolveCurrent(tiers, membership.Progress.Value);
+
+        return new ChallengeDetail(challenge, membership, shareLink, tiers, currentTier);
     }
 
     public async Task<bool> DeleteAsync(
