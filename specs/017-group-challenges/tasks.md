@@ -121,11 +121,11 @@ scope for this cut.
 - [ ] **T-017-09 `[T][S][DEFERRED]`** — Browse tab
   - Blocked by T-017-06 / T-017-07.
 
-- [ ] **T-017-10 `[T][S]`** — Share link generator
+- [x] **T-017-10 `[T][S]`** ✅ commit `21156a9` — Share link generator
   - Failing spec: create link, copy, share via native, revoke.
   - Green.
 
-- [ ] **T-017-11 `[T][S]`** — Join by invitation screen + deep link
+- [x] **T-017-11 `[T][S]`** ✅ commit `21156a9` — Join by invitation screen + deep link
   - Failing spec: on submit, posts to `POST /challenges/join` with
     the invitation id and lands on the challenge detail.
   - Wire `xpeak://challenges/join?invitation=` deep link handler so
@@ -139,7 +139,7 @@ scope for this cut.
 
 ## Section F — Wrap-up
 
-- [ ] **T-017-13 `[P]`** — ADR `0017-group-challenges.md`.
+- [ ] **T-017-13 `[P]`** — ADR `docs/adr/0017-group-challenges-share-link.md`.
 - [ ] **T-017-14 `[S]`** — Phase close.
 
 ---
