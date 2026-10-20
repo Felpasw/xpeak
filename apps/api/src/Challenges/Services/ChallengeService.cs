@@ -111,7 +111,14 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
             return null;
         }
 
-        return new ChallengeDetail(challenge, membership);
+        var shareLink = challenge.OwnerId == userId
+            ? await db.ChallengeInvitations
+                .AsNoTracking()
+                .Where(i => i.ChallengeId == id && i.InviteeUserId == null)
+                .SingleOrDefaultAsync(ct)
+            : null;
+
+        return new ChallengeDetail(challenge, membership, shareLink);
     }
 
     public async Task<bool> DeleteAsync(

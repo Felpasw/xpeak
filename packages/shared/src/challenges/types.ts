@@ -19,6 +19,13 @@ export enum ChallengeMembershipResult {
     Failed = 'failed',
 }
 
+export enum ChallengeInvitationState {
+    Pending = 'pending',
+    Accepted = 'accepted',
+    Rejected = 'rejected',
+    Expired = 'expired',
+}
+
 export interface MembershipProgress {
   value: number;
   target: number;
@@ -52,6 +59,14 @@ export interface ChallengeMembership {
   progress: MembershipProgress;
 }
 
+export interface ChallengeInvitation {
+  id: string;
+  challengeId: string;
+  invitedByUserId: string;
+  state: ChallengeInvitationState;
+  createdAt: string;
+}
+
 export interface CreateChallengeRequest {
   title: string;
   description?: string | null;
@@ -67,6 +82,7 @@ export interface CreateChallengeRequest {
 export interface CreateChallengeResponse {
   challenge: Challenge;
   ownerMembership: ChallengeMembership;
+  shareLink: ChallengeInvitation;
 }
 
 export interface ListChallengesResponse {
@@ -76,8 +92,18 @@ export interface ListChallengesResponse {
 export interface GetChallengeResponse {
   challenge: Challenge;
   membership: ChallengeMembership | null;
+  shareLink: ChallengeInvitation | null;
 }
 
 export interface ChallengeProgressResponse {
   progress: MembershipProgress;
+}
+
+export interface JoinChallengeRequest {
+  invitationId: string;
+}
+
+export interface JoinChallengeResponse {
+  challenge: Challenge;
+  membership: ChallengeMembership;
 }

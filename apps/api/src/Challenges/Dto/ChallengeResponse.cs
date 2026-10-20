@@ -98,10 +98,13 @@ public sealed record ListChallengesResponse(
 
 /// <summary>Payload of <c>GET /challenges/{id}</c>. Membership is
 /// null when the caller views a public challenge they do not
-/// belong to.</summary>
+/// belong to. ShareLink is non-null only when the caller is the
+/// owner — so the UI can render "copy share link" without a
+/// second request.</summary>
 public sealed record GetChallengeResponse(
     ChallengeResponse Challenge,
-    MembershipResponse? Membership);
+    MembershipResponse? Membership,
+    ChallengeInvitationResponse? ShareLink);
 
 /// <summary>Payload of <c>POST /challenges/join</c>. Mirrors
 /// <see cref="GetChallengeResponse"/> but membership is always

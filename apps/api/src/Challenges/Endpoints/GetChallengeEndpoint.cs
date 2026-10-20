@@ -36,7 +36,8 @@ public static class GetChallengeEndpoint
 
         var response = new GetChallengeResponse(
             ChallengeResponse.From(detail.Challenge),
-            detail.Membership is null ? null : MembershipResponse.From(detail.Membership));
+            detail.Membership is null ? null : MembershipResponse.From(detail.Membership),
+            detail.ShareLink is null ? null : ChallengeInvitationResponse.From(detail.ShareLink));
 
         return Results.Ok(response);
     }

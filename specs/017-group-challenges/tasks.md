@@ -76,7 +76,7 @@ scope for this cut.
     already-member.
   - Green.
 
-- [ ] **T-017-05 `[T][S]`** — Owner-only early end of a challenge
+- [x] **T-017-05 `[T][S]`** ✅ commit `89f7122` — Owner-only early end of a challenge
   - Reinterpreted from "revoke share-link". Beta UX decision: no
     revoke of individual invitations; the owner either lets the
     challenge run to `ends_at` (future lifecycle job, T-015-07

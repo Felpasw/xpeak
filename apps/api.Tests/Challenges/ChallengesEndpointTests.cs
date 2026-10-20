@@ -128,6 +128,8 @@ public sealed class ChallengesEndpointTests
         var body = await response.Content.ReadFromJsonAsync<DetailBody>();
         body!.Challenge.Id.Should().Be(challenge);
         body.Membership.Should().NotBeNull();
+        body.ShareLink.Should().NotBeNull();
+        body.ShareLink!.ChallengeId.Should().Be(challenge);
     }
 
     [Fact]
@@ -157,6 +159,7 @@ public sealed class ChallengesEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<DetailBody>();
         body!.Membership.Should().BeNull();
+        body.ShareLink.Should().BeNull();
     }
 
     [Fact]
@@ -365,7 +368,10 @@ public sealed class ChallengesEndpointTests
 
     private sealed record ListBody(IReadOnlyList<ChallengeBody> Challenges);
 
-    private sealed record DetailBody(ChallengeBody Challenge, MembershipBody? Membership);
+    private sealed record DetailBody(
+        ChallengeBody Challenge,
+        MembershipBody? Membership,
+        ShareLinkBody? ShareLink);
 
     private sealed record ChallengeBody(
         Guid Id,

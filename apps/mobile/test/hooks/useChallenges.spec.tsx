@@ -53,7 +53,7 @@ const challenge = (overrides: Partial<Record<string, unknown>> = {}) => ({
     ...overrides,
 });
 
-describe('useChallengesList', () => {
+describe('challengesHooks.useList', () => {
     it('fetches challenges and unwraps the array', async () => {
         server.use(
             http.get('http://localhost:5000/challenges', ({ request }) => {
@@ -62,8 +62,8 @@ describe('useChallengesList', () => {
             }),
         );
 
-        const { useChallengesList } = await import('@/hooks/useChallenges');
-        const { result } = renderHook(() => useChallengesList(), { wrapper: wrap() });
+        const { default: challengesHooks } = await import('@/hooks/useChallenges');
+        const { result } = renderHook(() => challengesHooks.useList(), { wrapper: wrap() });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data).toHaveLength(1);
@@ -79,36 +79,38 @@ describe('useChallengesList', () => {
             }),
         );
 
-        const { useChallengesList } = await import('@/hooks/useChallenges');
-        const { result } = renderHook(() => useChallengesList({ state: ChallengeState.Completed }), {
-            wrapper: wrap(),
-        });
+        const { default: challengesHooks } = await import('@/hooks/useChallenges');
+        const { result } = renderHook(
+            () => challengesHooks.useList({ state: ChallengeState.Completed }),
+            { wrapper: wrap() },
+        );
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(seen).toBe('completed');
     });
 });
 
-describe('useChallenge', () => {
+describe('challengesHooks.useDetail', () => {
     it('fetches a challenge detail by id', async () => {
         server.use(
             http.get('http://localhost:5000/challenges/ch-9', () =>
                 HttpResponse.json({
                     challenge: challenge({ id: 'ch-9', title: 'Detail View' }),
                     membership: null,
+                    shareLink: null,
                 }),
             ),
         );
 
-        const { useChallenge } = await import('@/hooks/useChallenges');
-        const { result } = renderHook(() => useChallenge('ch-9'), { wrapper: wrap() });
+        const { default: challengesHooks } = await import('@/hooks/useChallenges');
+        const { result } = renderHook(() => challengesHooks.useDetail('ch-9'), { wrapper: wrap() });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data?.challenge.title).toBe('Detail View');
     });
 });
 
-describe('useChallengeProgress', () => {
+describe('challengesHooks.useProgress', () => {
     it('fetches progress for a challenge', async () => {
         server.use(
             http.get('http://localhost:5000/challenges/ch-9/progress', () =>
@@ -118,15 +120,17 @@ describe('useChallengeProgress', () => {
             ),
         );
 
-        const { useChallengeProgress } = await import('@/hooks/useChallenges');
-        const { result } = renderHook(() => useChallengeProgress('ch-9'), { wrapper: wrap() });
+        const { default: challengesHooks } = await import('@/hooks/useChallenges');
+        const { result } = renderHook(() => challengesHooks.useProgress('ch-9'), {
+            wrapper: wrap(),
+        });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data?.progress.value).toBe(420);
     });
 });
 
-describe('useCreateChallenge', () => {
+describe('challengesHooks.useCreate', () => {
     it('posts the payload and invalidates the list prefix', async () => {
         let listFetchCount = 0;
         server.use(
@@ -148,6 +152,13 @@ describe('useCreateChallenge', () => {
                             result: null,
                             progress: { value: 0, target: 3162, achievedAt: null },
                         },
+                        shareLink: {
+                            id: 'inv-1',
+                            challengeId: 'created',
+                            invitedByUserId: 'u-1',
+                            state: 'pending',
+                            createdAt: '2026-10-07T00:00:00Z',
+                        },
                     },
                     { status: 201 },
                 ),
@@ -155,13 +166,17 @@ describe('useCreateChallenge', () => {
         );
 
         const Wrapper = wrap();
-        const { useChallengesList, useCreateChallenge } = await import('@/hooks/useChallenges');
+        const { default: challengesHooks } = await import('@/hooks/useChallenges');
 
-        const { result: listResult } = renderHook(() => useChallengesList(), { wrapper: Wrapper });
+        const { result: listResult } = renderHook(() => challengesHooks.useList(), {
+            wrapper: Wrapper,
+        });
         await waitFor(() => expect(listResult.current.isSuccess).toBe(true));
         expect(listFetchCount).toBe(1);
 
-        const { result: mutation } = renderHook(() => useCreateChallenge(), { wrapper: Wrapper });
+        const { result: mutation } = renderHook(() => challengesHooks.useCreate(), {
+            wrapper: Wrapper,
+        });
         await mutation.current.mutateAsync({
             title: 'New',
             visibility: ChallengeVisibility.Private,
@@ -175,7 +190,7 @@ describe('useCreateChallenge', () => {
     });
 });
 
-describe('useDeleteChallenge', () => {
+describe('challengesHooks.useDelete', () => {
     it('deletes and invalidates the list prefix', async () => {
         let listFetchCount = 0;
         server.use(
@@ -187,13 +202,17 @@ describe('useDeleteChallenge', () => {
         );
 
         const Wrapper = wrap();
-        const { useChallengesList, useDeleteChallenge } = await import('@/hooks/useChallenges');
+        const { default: challengesHooks } = await import('@/hooks/useChallenges');
 
-        const { result: listResult } = renderHook(() => useChallengesList(), { wrapper: Wrapper });
+        const { result: listResult } = renderHook(() => challengesHooks.useList(), {
+            wrapper: Wrapper,
+        });
         await waitFor(() => expect(listResult.current.isSuccess).toBe(true));
         expect(listFetchCount).toBe(1);
 
-        const { result: mutation } = renderHook(() => useDeleteChallenge(), { wrapper: Wrapper });
+        const { result: mutation } = renderHook(() => challengesHooks.useDelete(), {
+            wrapper: Wrapper,
+        });
         await mutation.current.mutateAsync('ch-x');
 
         await waitFor(() => expect(listFetchCount).toBeGreaterThan(1));

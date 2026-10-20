@@ -3,6 +3,8 @@ import type {
     CreateChallengeRequest,
     CreateChallengeResponse,
     GetChallengeResponse,
+    JoinChallengeRequest,
+    JoinChallengeResponse,
     ListChallengesResponse,
 } from '@xpeak/shared';
 
@@ -35,6 +37,15 @@ class ChallengesService implements IChallengesService {
 
     async delete(id: string) {
         await api.delete(`/challenges/${id}`);
+    }
+
+    async join(payload: JoinChallengeRequest) {
+        const response = await api.post<JoinChallengeResponse>('/challenges/join', payload);
+        return response.data;
+    }
+
+    async end(id: string) {
+        await api.post(`/challenges/${id}/end`);
     }
 }
 

@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 import { Button } from '@/components/atoms/Button';
 import { ControlledInput } from '@/components/atoms/ControlledInput';
-import { useCreateChallenge } from '@/hooks/useChallenges';
+import challengesHooks from '@/hooks/useChallenges';
 
 const TITLE_MAX = 80;
 const TARGET_LEVEL_MIN = 1;
@@ -49,7 +49,7 @@ type FormValues = z.infer<typeof schema>;
 
 export function CreateChallengeForm() {
     const router = useRouter();
-    const createChallenge = useCreateChallenge();
+    const createChallenge = challengesHooks.useCreate();
 
     const form = useForm<FormValues>({
         resolver: standardSchemaResolver(schema),
