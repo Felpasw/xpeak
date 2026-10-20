@@ -265,6 +265,18 @@ first PR.
   - Challenge owner can upload custom trophy asset (image/GIF).
   - Curated catalog available as middle ground.
 
+- ✅ **Phase 31 — Challenge tiers** `specs/031-challenge-tiers/`
+  - Owner-defined progression tiers inside a single challenge
+    (e.g. "level 30 ⇒ Mago, level 60 ⇒ ArchMago"). Distinct from
+    Phase 8 themed titles (which name the user's global level).
+  - Tiers are declared at challenge creation only, hard-capped
+    at 10 per challenge, derived by a pure resolver from the
+    membership's `progress.value`.
+  - No artwork, no insignia issuance, no edit-after-create — all
+    deferred to Phase 18 / Phase 22 extensions or a follow-up
+    phase.
+  - Blocked by XPK-32 (share-link MVP) merging to main first.
+
 ### Block G — Personal metrics & retrospectives
 
 - 📋 **Phase 21 — Metrics dashboard & yearly recap** (from
