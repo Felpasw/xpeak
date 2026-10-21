@@ -211,7 +211,7 @@ rebase conflict.
 
 ## Section G — Wrap-up
 
-- [ ] **T-031-12 `[P]`** — ADR
+- [x] **T-031-12 `[P]`** ✅ commit `ba457ac` — ADR
   `docs/adr/0031-challenge-tiers.md`
   - Captures the decision to make tiers owner-defined per
     challenge (not reusing Phase 8), the 10-row hard cap, the
@@ -223,7 +223,14 @@ rebase conflict.
     implementation time. Confirmed with `ls DOCS` returning
     "arquivo ou diretório inexistente". No subflow doc to update.
 
-- [ ] **T-031-14 `[S]`** — Phase close
+- [x] **T-031-14 `[S]`** — Phase close
+  - Backend: `dotnet test apps/api.Tests` → 263/263 passing.
+  - Backend: `dotnet format --verify-no-changes` → clean on
+    `apps/api` and `apps/api.Tests`.
+  - Mobile: `pnpm --filter @xpeak/mobile lint` → clean.
+  - Mobile: `pnpm --filter @xpeak/mobile test` → 88/88 passing.
+  - Mobile: `pnpm --filter @xpeak/mobile build` → static export
+    succeeded, every `/challenges/*` route in the table.
   - `dotnet test apps/api.Tests` green.
   - `pnpm --filter @xpeak/mobile test` green.
   - `dotnet format --verify-no-changes` clean on `apps/api` +
