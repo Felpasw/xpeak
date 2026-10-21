@@ -26,7 +26,7 @@ rebase conflict.
 
 ## Section A — Schema
 
-- [ ] **T-031-01 `[T][S]`** — `challenge_tiers` table
+- [x] **T-031-01 `[T][S]`** ✅ commit `ea0e18c` — `challenge_tiers` table
   - Failing test (`apps/api.Tests/Challenges/ChallengeTierPersistenceTests.cs`):
     round-trip insert reloads title + min_level; rejects
     `min_level <= 0`; rejects blank/61+ title; rejects duplicate
@@ -46,7 +46,7 @@ rebase conflict.
 
 ## Section B — Domain
 
-- [ ] **T-031-02 `[T][P]`** — tier resolver (pure function)
+- [x] **T-031-02 `[T][P]`** ✅ commit `4a4e166` — tier resolver (pure function)
   - Depends on T-031-01 for the type only.
   - Failing test (`apps/api.Tests/Challenges/ChallengeTierResolverTests.cs`):
     `ResolveCurrent([], 42) == null`; `ResolveCurrent([{10}, {30}, {60}], 5) == null`;
@@ -59,7 +59,7 @@ rebase conflict.
     inside `apps/api/src/Challenges/Services/`.
   - Green.
 
-- [ ] **T-031-03 `[T][S]`** — tier exceptions
+- [x] **T-031-03 `[T][S]`** ✅ commit `bbaba6b` — tier exceptions
   - Depends on T-031-01.
   - Failing tests (per exception: constructor sets properties,
     message includes the id).
@@ -72,7 +72,7 @@ rebase conflict.
 
 ## Section C — Service
 
-- [ ] **T-031-04 `[T][S]`** — `ChallengeService.CreateAsync` persists tiers
+- [x] **T-031-04 `[T][S]`** ✅ commit `11accd5` — `ChallengeService.CreateAsync` persists tiers
   - Depends on T-031-01, T-031-03.
   - Failing tests (`apps/api.Tests/Challenges/ChallengeServiceTests.cs`):
     - Create with 3 tiers persists them (read back sorted by
@@ -90,7 +90,7 @@ rebase conflict.
   - Add insert of tier rows to the same `SaveChangesAsync` call.
   - Green.
 
-- [ ] **T-031-05 `[T][S]`** — `ChallengeService.GetForUserAsync` returns tiers + currentTier
+- [x] **T-031-05 `[T][S]`** ✅ commit `d4f964c` — `ChallengeService.GetForUserAsync` returns tiers + currentTier
   - Depends on T-031-02, T-031-04.
   - Failing tests:
     - GET for a member with `progress.value = 30` and tiers at
@@ -110,7 +110,7 @@ rebase conflict.
 
 ## Section D — HTTP
 
-- [ ] **T-031-06 `[T][S]`** — request DTO + validator
+- [x] **T-031-06 `[T][S]`** ✅ commit `312e66f` — request DTO + validator
   - Depends on T-031-04.
   - Failing tests
     (`apps/api.Tests/Challenges/CreateChallengeRequestValidatorTests.cs`
@@ -129,7 +129,7 @@ rebase conflict.
     `CreateChallengeRequestValidator`.
   - Green.
 
-- [ ] **T-031-07 `[T][S]`** — response DTOs
+- [x] **T-031-07 `[T][S]`** ✅ commit `8431272` — response DTOs
   - Depends on T-031-04, T-031-05.
   - Failing tests (`apps/api.Tests/Challenges/ChallengesEndpointTests.cs`
     new cases):
@@ -152,7 +152,7 @@ rebase conflict.
 
 ## Section E — Shared types
 
-- [ ] **T-031-08 `[S]`** — shared types + mobile service
+- [x] **T-031-08 `[S]`** ✅ commit `524a89c` — shared types + mobile service
   - Depends on T-031-07.
   - Add `ChallengeTier`, `CreateChallengeTierInput` to
     `packages/shared/src/challenges/types.ts`.
@@ -165,7 +165,7 @@ rebase conflict.
 
 ## Section F — Mobile
 
-- [ ] **T-031-09 `[T][S]`** — `<CreateChallengeForm />` grows the tiers
+- [x] **T-031-09 `[T][S]`** ✅ commit `e21c348` — `<CreateChallengeForm />` grows the tiers
   section
   - Depends on T-031-08.
   - Failing spec
@@ -182,7 +182,7 @@ rebase conflict.
   - Submit payload omits `tiers` entirely when zero rows.
   - Green.
 
-- [ ] **T-031-10 `[T][S]`** — `<ChallengeDetailTiers />` organism
+- [x] **T-031-10 `[T][S]`** ✅ commit `d48c9ac` — `<ChallengeDetailTiers />` organism
   - Depends on T-031-08.
   - Failing spec
     (`apps/mobile/test/components/organisms/ChallengeDetailTiers.spec.tsx`
@@ -197,7 +197,7 @@ rebase conflict.
   - Props: `{ tiers: ChallengeTier[], currentTier: ChallengeTier | null }`.
   - Green.
 
-- [ ] **T-031-11 `[T][S]`** — wire the ladder into the detail page
+- [x] **T-031-11 `[T][S]`** ✅ commit `16f75f1` — wire the ladder into the detail page
   - Depends on T-031-10.
   - Failing spec
     (`apps/mobile/test/app/(app)/challenges/view/page.spec.tsx`
@@ -218,9 +218,10 @@ rebase conflict.
     "no edit after creation" scope cut, and the resolver pattern
     (pure function on an ordered list).
 
-- [ ] **T-031-13 `[P]`** — DOCS update
-  - If `DOCS/back-end/Challenges/` exists at implementation time,
-    add a "Challenge Tiers" subflow doc; otherwise skip.
+- [x] **T-031-13 `[P]`** — DOCS update
+  - **Skipped:** `DOCS/` directory does not exist in this repo at
+    implementation time. Confirmed with `ls DOCS` returning
+    "arquivo ou diretório inexistente". No subflow doc to update.
 
 - [ ] **T-031-14 `[S]`** — Phase close
   - `dotnet test apps/api.Tests` green.
