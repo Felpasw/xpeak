@@ -9,6 +9,7 @@ import { ChallengeDetailDeleteButton } from '@/components/organisms/ChallengeDet
 import { ChallengeDetailHeader } from '@/components/organisms/ChallengeDetailHeader';
 import { ChallengeDetailProgress } from '@/components/organisms/ChallengeDetailProgress';
 import { ChallengeDetailShareButton } from '@/components/organisms/ChallengeDetailShareButton';
+import { ChallengeDetailTiers } from '@/components/organisms/ChallengeDetailTiers';
 import challengesHooks from '@/hooks/useChallenges';
 
 function ChallengeDetailBody() {
@@ -35,13 +36,14 @@ function ChallengeDetailBody() {
         return <ChallengeDetailNotFound />;
     }
 
-    const { challenge, membership, shareLink } = detail.data;
+    const { challenge, membership, shareLink, tiers, currentTier } = detail.data;
     const isOwner = membership?.role === ChallengeMembershipRole.Owner;
 
     return (
         <main className="flex flex-1 flex-col gap-6 px-6 pt-10 pb-48">
             <ChallengeDetailHeader challenge={challenge} />
             <ChallengeDetailProgress challengeId={challenge.id} />
+            <ChallengeDetailTiers tiers={tiers} currentTier={currentTier} />
             {isOwner && shareLink && (
                 <ChallengeDetailShareButton invitationId={shareLink.id} />
             )}
