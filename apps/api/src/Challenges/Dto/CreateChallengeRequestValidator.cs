@@ -11,6 +11,7 @@ public sealed class CreateChallengeRequestValidator : AbstractValidator<CreateCh
     public const int TargetLevelMin = 1;
     public const int TargetLevelMax = 999;
     public const int TierTitleMaxLength = 60;
+    public const int TierImageStorageKeyMaxLength = 256;
     public const int MaxTiers = 10;
 
     public CreateChallengeRequestValidator()
@@ -73,6 +74,10 @@ public sealed class CreateChallengeRequestValidator : AbstractValidator<CreateCh
                     .WithMessage("tier title must not be blank.")
                     .Must(t => t.Trim().Length <= TierTitleMaxLength)
                     .WithMessage($"tier title must be {TierTitleMaxLength} characters or fewer.");
+                tier.RuleFor(t => t.ImageStorageKey!)
+                    .MaximumLength(TierImageStorageKeyMaxLength)
+                    .When(t => !string.IsNullOrEmpty(t.ImageStorageKey))
+                    .WithMessage($"tier imageStorageKey must be {TierImageStorageKeyMaxLength} characters or fewer.");
             })
             .When(x => x.Tiers is not null);
     }

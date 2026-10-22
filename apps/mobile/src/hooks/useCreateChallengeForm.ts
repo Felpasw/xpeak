@@ -9,6 +9,7 @@ import { ChallengeVisibility } from '@xpeak/shared';
 import { z } from 'zod';
 
 import challengesHooks from '@/hooks/useChallenges';
+import { uploadTierImage } from '@/lib/media/tierImageUploader';
 
 import type {
     CreateChallengeFormValues,
@@ -40,6 +41,7 @@ export const CREATE_CHALLENGE_MESSAGES = {
     tiersTooMany: `No máximo ${TIER_MAX_COUNT} fases por challenge.`,
     successToast: 'Challenge criado!',
     genericError: 'Deu ruim criando o challenge. Tenta de novo.',
+    imageUploadError: 'Falhou subir a imagem da fase. Tenta de novo.',
 } as const;
 
 const schema = z.object({
@@ -70,6 +72,9 @@ const schema = z.object({
                 .trim()
                 .min(1, CREATE_CHALLENGE_MESSAGES.tierTitleRequired)
                 .max(TIER_TITLE_MAX_LENGTH, CREATE_CHALLENGE_MESSAGES.tierTitleTooLong),
+            imageStorageKey: z.string().nullable(),
+            imagePreviewUrl: z.string().nullable(),
+            imageUploading: z.boolean(),
         }))
         .max(TIER_MAX_COUNT, CREATE_CHALLENGE_MESSAGES.tiersTooMany),
 });
@@ -101,6 +106,7 @@ export function useCreateChallengeForm(): UseCreateChallengeFormResult {
         const tiers: CreateChallengeTierInput[] = values.tiers.map((t) => ({
             minLevel: t.minLevel,
             title: t.title.trim(),
+            ...(t.imageStorageKey ? { imageStorageKey: t.imageStorageKey } : {}),
         }));
         const payload: CreateChallengeRequest = {
             title: values.title.trim(),
@@ -121,13 +127,53 @@ export function useCreateChallengeForm(): UseCreateChallengeFormResult {
         }
     });
 
+    const uploadImageAt = async (index: number, file: File) => {
+        const previewUrl = URL.createObjectURL(file);
+        // Dispose of any previous blob URL for this row so we don't leak.
+        const existingPreview = form.getValues(`tiers.${index}.imagePreviewUrl`);
+        if (existingPreview && existingPreview.startsWith('blob:')) {
+            URL.revokeObjectURL(existingPreview);
+        }
+        form.setValue(`tiers.${index}.imagePreviewUrl`, previewUrl);
+        form.setValue(`tiers.${index}.imageUploading`, true);
+        form.setValue(`tiers.${index}.imageStorageKey`, null);
+
+        try {
+            const { storageKey } = await uploadTierImage(file);
+            form.setValue(`tiers.${index}.imageStorageKey`, storageKey);
+        } catch {
+            toast.error(CREATE_CHALLENGE_MESSAGES.imageUploadError);
+            form.setValue(`tiers.${index}.imagePreviewUrl`, null);
+            URL.revokeObjectURL(previewUrl);
+        } finally {
+            form.setValue(`tiers.${index}.imageUploading`, false);
+        }
+    };
+
+    const clearImageAt = (index: number) => {
+        const preview = form.getValues(`tiers.${index}.imagePreviewUrl`);
+        if (preview && preview.startsWith('blob:')) {
+            URL.revokeObjectURL(preview);
+        }
+        form.setValue(`tiers.${index}.imagePreviewUrl`, null);
+        form.setValue(`tiers.${index}.imageStorageKey`, null);
+    };
+
     return {
         form,
         tierFields,
         canAddTier,
         isSubmitting: createChallenge.isPending,
         onSubmit,
-        addTier: () => tierFields.append({ minLevel: 1, title: '' }),
+        addTier: () => tierFields.append({
+            minLevel: 1,
+            title: '',
+            imageStorageKey: null,
+            imagePreviewUrl: null,
+            imageUploading: false,
+        }),
         removeTier: (index) => tierFields.remove(index),
+        uploadTierImage: uploadImageAt,
+        clearTierImage: clearImageAt,
     };
 }

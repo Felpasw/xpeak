@@ -91,10 +91,22 @@ export function ChallengeDetailTiers({ tiers, currentTier }: ChallengeDetailTier
                                 styles.row,
                             )}
                         >
-                            <span
-                                aria-hidden="true"
-                                className={clsx('h-2.5 w-2.5 rounded-full', styles.dot)}
-                            />
+                            {tier.imageUrl ? (
+                                // Cloudinary signed URL built server-side; cannot
+                                // enumerate every challenge owner's cloud name in
+                                // images.remotePatterns ahead of time.
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={tier.imageUrl}
+                                    alt=""
+                                    className="h-8 w-8 rounded-md border border-zinc-800 object-cover"
+                                />
+                            ) : (
+                                <span
+                                    aria-hidden="true"
+                                    className={clsx('h-2.5 w-2.5 rounded-full', styles.dot)}
+                                />
+                            )}
                             <span className="w-16 font-mono text-xs text-zinc-500">
                                 Lv {tier.minLevel}
                             </span>

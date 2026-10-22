@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Xpeak.Api.Challenges.Dto;
 using Xpeak.Api.Challenges.Services;
 using Xpeak.Api.Infrastructure.Validation;
+using Xpeak.Api.Media;
 
 namespace Xpeak.Api.Challenges.Endpoints;
 
@@ -21,6 +22,7 @@ public static class CreateChallengeEndpoint
         CreateChallengeRequest request,
         ClaimsPrincipal principal,
         IChallengeService service,
+        IMediaStorage storage,
         CancellationToken ct)
     {
         var sub = principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
@@ -30,7 +32,7 @@ public static class CreateChallengeEndpoint
         }
 
         var tiers = request.Tiers?
-            .Select(t => new CreateChallengeTierInput(t.MinLevel, t.Title))
+            .Select(t => new CreateChallengeTierInput(t.MinLevel, t.Title, t.ImageStorageKey))
             .ToList();
 
         var result = await service.CreateAsync(
@@ -52,7 +54,7 @@ public static class CreateChallengeEndpoint
             ChallengeResponse.From(result.Challenge),
             MembershipResponse.From(result.OwnerMembership),
             ChallengeInvitationResponse.From(result.ShareLink),
-            result.Tiers.Select(ChallengeTierResponse.From).ToList());
+            result.Tiers.Select(t => ChallengeTierResponse.From(t, storage)).ToList());
 
         return Results.Created($"/challenges/{result.Challenge.Id}", response);
     }

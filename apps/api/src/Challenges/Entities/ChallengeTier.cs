@@ -21,6 +21,13 @@ public sealed class ChallengeTier
 
     public string Title { get; set; } = string.Empty;
 
+    /// <summary>Cloudinary public_id (storage key) of the tier
+    /// artwork. Null = no image, UI falls back to a dot. Written
+    /// by the create flow after the mobile presigns + uploads the
+    /// bytes to Cloudinary; the public URL is derived at read time
+    /// via <see cref="Media.IMediaStorage.BuildThumbUrl"/>.</summary>
+    public string? ImageStorageKey { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;

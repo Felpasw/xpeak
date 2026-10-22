@@ -71,11 +71,19 @@ export interface ChallengeTier {
   id: string;
   minLevel: number;
   title: string;
+  imageUrl: string | null;
 }
 
 export interface CreateChallengeTierInput {
   minLevel: number;
   title: string;
+  imageStorageKey?: string | null;
+}
+
+export interface PresignTierImageResponse {
+  storageKey: string;
+  uploadUrl: string;
+  expiresInSeconds: number;
 }
 
 export interface CreateChallengeRequest {

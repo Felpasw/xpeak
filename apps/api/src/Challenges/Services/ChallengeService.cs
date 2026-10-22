@@ -100,6 +100,7 @@ public sealed class ChallengeService(AppDbContext db, TimeProvider time) : IChal
                 ChallengeId = challengeId,
                 MinLevel = t.MinLevel,
                 Title = t.Title.Trim(),
+                ImageStorageKey = string.IsNullOrWhiteSpace(t.ImageStorageKey) ? null : t.ImageStorageKey,
                 CreatedAt = now,
                 UpdatedAt = now,
             })

@@ -346,6 +346,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             b.Property(t => t.ChallengeId).HasColumnName("challenge_id");
             b.Property(t => t.MinLevel).HasColumnName("min_level");
             b.Property(t => t.Title).HasColumnName("title").HasMaxLength(60).IsRequired();
+            b.Property(t => t.ImageStorageKey).HasColumnName("image_storage_key").HasMaxLength(256);
             b.Property(t => t.CreatedAt).HasColumnName("created_at");
             b.Property(t => t.UpdatedAt).HasColumnName("updated_at");
 

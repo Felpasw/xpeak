@@ -1,4 +1,6 @@
 using Xpeak.Api.Challenges.Entities;
+using Xpeak.Api.Media;
+using Xpeak.Api.Media.Entities;
 
 namespace Xpeak.Api.Challenges.Dto;
 
@@ -91,10 +93,16 @@ public sealed record ChallengeInvitationResponse(
 public sealed record ChallengeTierResponse(
     Guid Id,
     int MinLevel,
-    string Title)
+    string Title,
+    string? ImageUrl)
 {
-    public static ChallengeTierResponse From(ChallengeTier t) =>
-        new(t.Id, t.MinLevel, t.Title);
+    public static ChallengeTierResponse From(ChallengeTier t, IMediaStorage storage)
+    {
+        var imageUrl = string.IsNullOrEmpty(t.ImageStorageKey)
+            ? null
+            : storage.BuildThumbUrl(t.ImageStorageKey, MediaKind.Photo);
+        return new(t.Id, t.MinLevel, t.Title, imageUrl);
+    }
 }
 
 /// <summary>Payload of <c>POST /challenges</c>. Carries the default

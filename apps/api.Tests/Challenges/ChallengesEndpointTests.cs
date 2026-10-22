@@ -559,7 +559,7 @@ public sealed class ChallengesEndpointTests
 
     private sealed record ShareLinkBody(Guid Id, Guid ChallengeId, string State);
 
-    private sealed record TierBody(Guid Id, int MinLevel, string Title);
+    private sealed record TierBody(Guid Id, int MinLevel, string Title, string? ImageUrl);
 
     private sealed record JoinBody(ChallengeBody Challenge, MembershipBody Membership);
 }

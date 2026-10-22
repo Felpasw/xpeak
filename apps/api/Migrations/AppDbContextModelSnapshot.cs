@@ -396,6 +396,11 @@ namespace Xpeak.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("ImageStorageKey")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("image_storage_key");
+
                     b.Property<int>("MinLevel")
                         .HasColumnType("integer")
                         .HasColumnName("min_level");

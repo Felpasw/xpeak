@@ -20,7 +20,10 @@ public sealed record CreateChallengeRequest(
 
 /// <summary>Single tier inside <see cref="CreateChallengeRequest.Tiers"/>.
 /// The service normalises <see cref="Title"/> with
-/// <c>Trim()</c> before insert.</summary>
+/// <c>Trim()</c> before insert. <see cref="ImageStorageKey"/> is
+/// the Cloudinary public_id returned by the presign endpoint;
+/// omit or leave null when the tier has no image.</summary>
 public sealed record CreateChallengeTierRequest(
     int MinLevel,
-    string Title);
+    string Title,
+    string? ImageStorageKey = null);

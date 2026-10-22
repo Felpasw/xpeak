@@ -8,6 +8,7 @@ const tier = (overrides: Partial<ChallengeTier>): ChallengeTier => ({
     id: overrides.id ?? crypto.randomUUID(),
     minLevel: overrides.minLevel ?? 0,
     title: overrides.title ?? 'Tier',
+    imageUrl: overrides.imageUrl ?? null,
 });
 
 const APRENDIZ = tier({ id: 't-1', minLevel: 10, title: 'Aprendiz' });

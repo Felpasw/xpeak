@@ -4,6 +4,9 @@ import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 export interface CreateChallengeTierFormValues {
     minLevel: number;
     title: string;
+    imageStorageKey: string | null;
+    imagePreviewUrl: string | null;
+    imageUploading: boolean;
 }
 
 export interface CreateChallengeFormValues {
@@ -21,4 +24,6 @@ export interface UseCreateChallengeFormResult {
     onSubmit: FormEventHandler<HTMLFormElement>;
     addTier: () => void;
     removeTier: (index: number) => void;
+    uploadTierImage: (index: number, file: File) => Promise<void>;
+    clearTierImage: (index: number) => void;
 }

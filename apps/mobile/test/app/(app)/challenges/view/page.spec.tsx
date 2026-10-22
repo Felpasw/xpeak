@@ -157,11 +157,11 @@ describe('ChallengeDetailPage', () => {
                         createdAt: '2026-10-07T00:00:00Z',
                     },
                     tiers: [
-                        { id: 't-1', minLevel: 10, title: 'Aprendiz' },
-                        { id: 't-2', minLevel: 30, title: 'Mago' },
-                        { id: 't-3', minLevel: 60, title: 'ArchMago' },
+                        { id: 't-1', minLevel: 10, title: 'Aprendiz', imageUrl: null },
+                        { id: 't-2', minLevel: 30, title: 'Mago', imageUrl: null },
+                        { id: 't-3', minLevel: 60, title: 'ArchMago', imageUrl: null },
                     ],
-                    currentTier: { id: 't-2', minLevel: 30, title: 'Mago' },
+                    currentTier: { id: 't-2', minLevel: 30, title: 'Mago', imageUrl: null },
                 }),
             ),
             http.get('http://localhost:5000/challenges/ch-1/progress', () =>
@@ -197,8 +197,8 @@ describe('ChallengeDetailPage', () => {
                     },
                     shareLink: null,
                     tiers: [
-                        { id: 't-1', minLevel: 10, title: 'Aprendiz' },
-                        { id: 't-2', minLevel: 30, title: 'Mago' },
+                        { id: 't-1', minLevel: 10, title: 'Aprendiz', imageUrl: null },
+                        { id: 't-2', minLevel: 30, title: 'Mago', imageUrl: null },
                     ],
                     currentTier: null,
                 }),

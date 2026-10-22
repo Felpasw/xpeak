@@ -22,7 +22,11 @@ public sealed record CreateChallengeInput(
     IReadOnlyList<CreateChallengeTierInput>? Tiers = null);
 
 /// <summary>Single tier inside <see cref="CreateChallengeInput.Tiers"/>.
-/// Title is service-normalised with <c>Trim()</c> before insert.</summary>
+/// Title is service-normalised with <c>Trim()</c> before insert.
+/// <see cref="ImageStorageKey"/> is the Cloudinary public_id
+/// returned by <c>POST /challenges/tier-images/presign</c> after
+/// the mobile uploaded the file; null means "no artwork".</summary>
 public sealed record CreateChallengeTierInput(
     int MinLevel,
-    string Title);
+    string Title,
+    string? ImageStorageKey = null);

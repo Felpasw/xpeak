@@ -6,6 +6,7 @@ import type {
     JoinChallengeRequest,
     JoinChallengeResponse,
     ListChallengesResponse,
+    PresignTierImageResponse,
 } from '@xpeak/shared';
 
 import api from '@/api';
@@ -46,6 +47,11 @@ class ChallengesService implements IChallengesService {
 
     async end(id: string) {
         await api.post(`/challenges/${id}/end`);
+    }
+
+    async presignTierImage() {
+        const response = await api.post<PresignTierImageResponse>('/challenges/tier-images/presign');
+        return response.data;
     }
 }
 
