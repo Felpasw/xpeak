@@ -7,6 +7,7 @@ import type {
     JoinChallengeRequest,
     JoinChallengeResponse,
     ListChallengesResponse,
+    PresignTierImageResponse,
 } from '@xpeak/shared';
 
 export interface ListChallengesParams {
@@ -21,4 +22,5 @@ export interface IChallengesService {
     delete(id: string): Promise<void>;
     join(payload: JoinChallengeRequest): Promise<JoinChallengeResponse>;
     end(id: string): Promise<void>;
+    presignTierImage(): Promise<PresignTierImageResponse>;
 }

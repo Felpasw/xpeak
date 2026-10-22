@@ -23,6 +23,7 @@ public static class ChallengesModule
         GetChallengeProgressEndpoint.Map(app);
         JoinChallengeEndpoint.Map(app);
         EndChallengeEndpoint.Map(app);
+        PresignTierImageEndpoint.Map(app);
         return app;
     }
 }

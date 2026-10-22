@@ -3,7 +3,9 @@ using Xpeak.Api.Challenges.Entities;
 namespace Xpeak.Api.Challenges.Dto;
 
 /// <summary>HTTP body of <c>POST /challenges</c>. The owner id
-/// comes from the authenticated principal, never from the body.</summary>
+/// comes from the authenticated principal, never from the body.
+/// <see cref="Tiers"/> is the optional progression ladder; null,
+/// missing or an empty array all mean "no tiers".</summary>
 public sealed record CreateChallengeRequest(
     string Title,
     string? Description,
@@ -13,4 +15,15 @@ public sealed record CreateChallengeRequest(
     decimal XpMultiplier,
     DateTimeOffset StartsAt,
     DateTimeOffset EndsAt,
-    int? MemberCap);
+    int? MemberCap,
+    IReadOnlyList<CreateChallengeTierRequest>? Tiers = null);
+
+/// <summary>Single tier inside <see cref="CreateChallengeRequest.Tiers"/>.
+/// The service normalises <see cref="Title"/> with
+/// <c>Trim()</c> before insert. <see cref="ImageStorageKey"/> is
+/// the Cloudinary public_id returned by the presign endpoint;
+/// omit or leave null when the tier has no image.</summary>
+public sealed record CreateChallengeTierRequest(
+    int MinLevel,
+    string Title,
+    string? ImageStorageKey = null);

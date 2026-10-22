@@ -87,6 +87,8 @@ describe('ChallengeDetailPage', () => {
                         state: 'pending',
                         createdAt: '2026-10-07T00:00:00Z',
                     },
+                    tiers: [],
+                    currentTier: null,
                 }),
             ),
             http.get('http://localhost:5000/challenges/ch-1/progress', () =>
@@ -132,6 +134,131 @@ describe('ChallengeDetailPage', () => {
         );
     });
 
+    it('renders the tier ladder for an owner with tiers and highlights the current one', async () => {
+        server.use(
+            http.get('http://localhost:5000/challenges/ch-1', () =>
+                HttpResponse.json({
+                    challenge: challenge(),
+                    membership: {
+                        id: 'mem-1',
+                        challengeId: 'ch-1',
+                        userId: 'u-1',
+                        role: 'owner',
+                        joinedAt: '2026-10-07T00:00:00Z',
+                        leftAt: null,
+                        result: null,
+                        progress: { value: 30, target: 3162, achievedAt: null },
+                    },
+                    shareLink: {
+                        id: 'inv-1',
+                        challengeId: 'ch-1',
+                        invitedByUserId: 'u-1',
+                        state: 'pending',
+                        createdAt: '2026-10-07T00:00:00Z',
+                    },
+                    tiers: [
+                        { id: 't-1', minLevel: 10, title: 'Aprendiz', imageUrl: null },
+                        { id: 't-2', minLevel: 30, title: 'Mago', imageUrl: null },
+                        { id: 't-3', minLevel: 60, title: 'ArchMago', imageUrl: null },
+                    ],
+                    currentTier: { id: 't-2', minLevel: 30, title: 'Mago', imageUrl: null },
+                }),
+            ),
+            http.get('http://localhost:5000/challenges/ch-1/progress', () =>
+                HttpResponse.json({
+                    progress: { value: 30, target: 3162, achievedAt: null },
+                }),
+            ),
+        );
+
+        const { default: Page } = await import('@/app/(app)/challenges/view/page');
+        render(<Page />, { wrapper: wrap() });
+
+        await waitFor(() => expect(screen.getByTestId('challenge-detail-tiers')).toBeInTheDocument());
+        expect(screen.getByTestId('challenge-tier-0')).toHaveAttribute('data-status', 'reached');
+        expect(screen.getByTestId('challenge-tier-1')).toHaveAttribute('data-status', 'current');
+        expect(screen.getByTestId('challenge-tier-2')).toHaveAttribute('data-status', 'next');
+    });
+
+    it('renders the ladder for a member below the first tier with the first row as "Próximo"', async () => {
+        server.use(
+            http.get('http://localhost:5000/challenges/ch-1', () =>
+                HttpResponse.json({
+                    challenge: challenge(),
+                    membership: {
+                        id: 'mem-2',
+                        challengeId: 'ch-1',
+                        userId: 'u-2',
+                        role: 'member',
+                        joinedAt: '2026-10-07T00:00:00Z',
+                        leftAt: null,
+                        result: null,
+                        progress: { value: 5, target: 3162, achievedAt: null },
+                    },
+                    shareLink: null,
+                    tiers: [
+                        { id: 't-1', minLevel: 10, title: 'Aprendiz', imageUrl: null },
+                        { id: 't-2', minLevel: 30, title: 'Mago', imageUrl: null },
+                    ],
+                    currentTier: null,
+                }),
+            ),
+            http.get('http://localhost:5000/challenges/ch-1/progress', () =>
+                HttpResponse.json({
+                    progress: { value: 5, target: 3162, achievedAt: null },
+                }),
+            ),
+        );
+
+        const { default: Page } = await import('@/app/(app)/challenges/view/page');
+        render(<Page />, { wrapper: wrap() });
+
+        await waitFor(() => expect(screen.getByTestId('challenge-detail-tiers')).toBeInTheDocument());
+        expect(screen.getByTestId('challenge-tier-0')).toHaveAttribute('data-status', 'next');
+        expect(screen.getByTestId('challenge-tier-1')).toHaveAttribute('data-status', 'upcoming');
+        expect(screen.queryByText('Atual')).not.toBeInTheDocument();
+    });
+
+    it('does not render the tiers section when the challenge has no tiers', async () => {
+        server.use(
+            http.get('http://localhost:5000/challenges/ch-1', () =>
+                HttpResponse.json({
+                    challenge: challenge(),
+                    membership: {
+                        id: 'mem-1',
+                        challengeId: 'ch-1',
+                        userId: 'u-1',
+                        role: 'owner',
+                        joinedAt: '2026-10-07T00:00:00Z',
+                        leftAt: null,
+                        result: null,
+                        progress: { value: 0, target: 3162, achievedAt: null },
+                    },
+                    shareLink: {
+                        id: 'inv-1',
+                        challengeId: 'ch-1',
+                        invitedByUserId: 'u-1',
+                        state: 'pending',
+                        createdAt: '2026-10-07T00:00:00Z',
+                    },
+                    tiers: [],
+                    currentTier: null,
+                }),
+            ),
+            http.get('http://localhost:5000/challenges/ch-1/progress', () =>
+                HttpResponse.json({
+                    progress: { value: 0, target: 3162, achievedAt: null },
+                }),
+            ),
+        );
+
+        const { default: Page } = await import('@/app/(app)/challenges/view/page');
+        render(<Page />, { wrapper: wrap() });
+
+        await waitFor(() => expect(screen.getByText('Rumo ao level 10')).toBeInTheDocument());
+        expect(screen.queryByTestId('challenge-detail-tiers')).not.toBeInTheDocument();
+    });
+
     it('hides the delete and share buttons for non-owner members', async () => {
         server.use(
             http.get('http://localhost:5000/challenges/ch-1', () =>
@@ -148,6 +275,8 @@ describe('ChallengeDetailPage', () => {
                         progress: { value: 0, target: 3162, achievedAt: null },
                     },
                     shareLink: null,
+                    tiers: [],
+                    currentTier: null,
                 }),
             ),
             http.get('http://localhost:5000/challenges/ch-1/progress', () =>

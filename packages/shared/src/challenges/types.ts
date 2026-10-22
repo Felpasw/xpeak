@@ -67,6 +67,25 @@ export interface ChallengeInvitation {
   createdAt: string;
 }
 
+export interface ChallengeTier {
+  id: string;
+  minLevel: number;
+  title: string;
+  imageUrl: string | null;
+}
+
+export interface CreateChallengeTierInput {
+  minLevel: number;
+  title: string;
+  imageStorageKey?: string | null;
+}
+
+export interface PresignTierImageResponse {
+  storageKey: string;
+  uploadUrl: string;
+  expiresInSeconds: number;
+}
+
 export interface CreateChallengeRequest {
   title: string;
   description?: string | null;
@@ -77,12 +96,14 @@ export interface CreateChallengeRequest {
   startsAt: string;
   endsAt: string;
   memberCap?: number | null;
+  tiers?: CreateChallengeTierInput[];
 }
 
 export interface CreateChallengeResponse {
   challenge: Challenge;
   ownerMembership: ChallengeMembership;
   shareLink: ChallengeInvitation;
+  tiers: ChallengeTier[];
 }
 
 export interface ListChallengesResponse {
@@ -93,6 +114,8 @@ export interface GetChallengeResponse {
   challenge: Challenge;
   membership: ChallengeMembership | null;
   shareLink: ChallengeInvitation | null;
+  tiers: ChallengeTier[];
+  currentTier: ChallengeTier | null;
 }
 
 export interface ChallengeProgressResponse {

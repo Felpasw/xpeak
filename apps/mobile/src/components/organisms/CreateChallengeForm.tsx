@@ -1,85 +1,47 @@
 'use client';
 
-import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { CreateChallengeRequest } from '@xpeak/shared';
-import { ChallengeVisibility } from '@xpeak/shared';
-import { z } from 'zod';
+import { ImagePlus, Loader2, Plus, Trash2, X } from 'lucide-react';
+import type { ChangeEvent } from 'react';
 
 import { Button } from '@/components/atoms/Button';
 import { ControlledInput } from '@/components/atoms/ControlledInput';
-import challengesHooks from '@/hooks/useChallenges';
+import {
+    CREATE_CHALLENGE_LIMITS,
+    useCreateChallengeForm,
+} from '@/hooks/useCreateChallengeForm';
 
-const TITLE_MAX = 80;
-const TARGET_LEVEL_MIN = 1;
-const TARGET_LEVEL_MAX = 999;
-const DURATION_MIN_DAYS = 1;
-const DURATION_MAX_DAYS = 365;
-
-const MESSAGES = {
-    titleRequired: 'Coloca um título pro challenge.',
-    titleTooLong: `Título deve ter no máximo ${TITLE_MAX} caracteres.`,
-    targetLevelRange: `Target level entre ${TARGET_LEVEL_MIN} e ${TARGET_LEVEL_MAX}.`,
-    durationRange: `Duração entre ${DURATION_MIN_DAYS} e ${DURATION_MAX_DAYS} dias.`,
-    successToast: 'Challenge criado!',
-    genericError: 'Deu ruim criando o challenge. Tenta de novo.',
-} as const;
-
-const schema = z.object({
-    title: z
-        .string()
-        .trim()
-        .min(1, MESSAGES.titleRequired)
-        .max(TITLE_MAX, MESSAGES.titleTooLong),
-    targetLevel: z
-        .coerce.number()
-        .int()
-        .min(TARGET_LEVEL_MIN, MESSAGES.targetLevelRange)
-        .max(TARGET_LEVEL_MAX, MESSAGES.targetLevelRange),
-    durationDays: z
-        .coerce.number()
-        .int()
-        .min(DURATION_MIN_DAYS, MESSAGES.durationRange)
-        .max(DURATION_MAX_DAYS, MESSAGES.durationRange),
-});
-
-type FormValues = z.infer<typeof schema>;
+const SUBMIT_LABEL = 'Criar challenge';
+const SUBMITTING_LABEL = 'Criando...';
+const ADD_TIER_LABEL = 'Adicionar fase';
+const TIERS_SECTION_TITLE = 'Fases (opcional)';
+const TIERS_SECTION_HELP = 'Defina marcos de progresso. Ex: nível 30 ⇒ Mago.';
+const TIER_MIN_LEVEL_LABEL = 'Nível mínimo';
+const TIER_TITLE_LABEL = 'Título da fase';
+const REMOVE_TIER_LABEL = 'Remover fase';
+const UPLOAD_TIER_IMAGE_LABEL = 'Escolher imagem';
+const UPLOADING_TIER_IMAGE_LABEL = 'Enviando...';
+const CLEAR_TIER_IMAGE_LABEL = 'Remover imagem';
 
 export function CreateChallengeForm() {
-    const router = useRouter();
-    const createChallenge = challengesHooks.useCreate();
+    const {
+        form,
+        tierFields,
+        canAddTier,
+        isSubmitting,
+        onSubmit,
+        addTier,
+        removeTier,
+        uploadTierImage,
+        clearTierImage,
+    } = useCreateChallengeForm();
 
-    const form = useForm<FormValues>({
-        resolver: standardSchemaResolver(schema),
-        defaultValues: {
-            title: '',
-            targetLevel: 5,
-            durationDays: 30,
-        },
-    });
-
-    const onSubmit = form.handleSubmit(async (values) => {
-        const now = new Date();
-        const endsAt = new Date(now.getTime() + values.durationDays * 86_400_000);
-        const payload: CreateChallengeRequest = {
-            title: values.title.trim(),
-            visibility: ChallengeVisibility.Private,
-            targetLevel: values.targetLevel,
-            xpMultiplier: 1.0,
-            startsAt: now.toISOString(),
-            endsAt: endsAt.toISOString(),
-        };
-
-        try {
-            await createChallenge.mutateAsync(payload);
-            toast.success(MESSAGES.successToast);
-            router.replace('/challenges');
-        } catch {
-            toast.error(MESSAGES.genericError);
+    const onFileChange = (index: number) => (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (file) {
+            void uploadTierImage(index, file);
         }
-    });
+    };
 
     return (
         <form onSubmit={onSubmit} className="flex flex-col gap-6">
@@ -87,7 +49,7 @@ export function CreateChallengeForm() {
                 name="title"
                 control={form.control}
                 label="Título"
-                maxLength={TITLE_MAX}
+                maxLength={CREATE_CHALLENGE_LIMITS.titleMaxLength}
             />
 
             <ControlledInput
@@ -106,8 +68,115 @@ export function CreateChallengeForm() {
                 inputMode="numeric"
             />
 
-            <Button type="submit" disabled={createChallenge.isPending}>
-                {createChallenge.isPending ? 'Criando...' : 'Criar challenge'}
+            <section
+                data-testid="create-challenge-tiers"
+                className="flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4"
+            >
+                <header className="flex flex-col gap-1">
+                    <h3 className="font-mono text-xs uppercase tracking-[0.25em] text-zinc-500">
+                        {TIERS_SECTION_TITLE}
+                    </h3>
+                    <p className="text-xs text-zinc-500">{TIERS_SECTION_HELP}</p>
+                </header>
+
+                {tierFields.fields.map((field, index) => {
+                    const previewUrl = form.watch(`tiers.${index}.imagePreviewUrl`);
+                    const uploading = form.watch(`tiers.${index}.imageUploading`);
+                    return (
+                        <div
+                            key={field.id}
+                            data-testid={`tier-row-${index}`}
+                            className="flex flex-col gap-2 rounded-xl bg-zinc-950/40 p-3"
+                        >
+                            <div className="flex gap-2">
+                                <div className="w-24">
+                                    <ControlledInput
+                                        name={`tiers.${index}.minLevel`}
+                                        control={form.control}
+                                        label={TIER_MIN_LEVEL_LABEL}
+                                        type="number"
+                                        inputMode="numeric"
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <ControlledInput
+                                        name={`tiers.${index}.title`}
+                                        control={form.control}
+                                        label={TIER_TITLE_LABEL}
+                                        maxLength={CREATE_CHALLENGE_LIMITS.tierTitleMaxLength}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                {previewUrl ? (
+                                    // Local blob URL from the picked file; next/image needs
+                                    // registered remote patterns that we can't enumerate.
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        src={previewUrl}
+                                        alt=""
+                                        className="h-16 w-16 rounded-lg border border-zinc-800 object-cover"
+                                    />
+                                ) : (
+                                    <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-zinc-700 text-zinc-600">
+                                        <ImagePlus className="h-6 w-6" />
+                                    </div>
+                                )}
+
+                                <label className="flex cursor-pointer items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/60 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:border-emerald-500/40 hover:text-emerald-200">
+                                    {uploading ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                        <ImagePlus className="h-3.5 w-3.5" />
+                                    )}
+                                    {uploading ? UPLOADING_TIER_IMAGE_LABEL : UPLOAD_TIER_IMAGE_LABEL}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="sr-only"
+                                        disabled={uploading}
+                                        onChange={onFileChange(index)}
+                                    />
+                                </label>
+
+                                {previewUrl && !uploading ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => clearTierImage(index)}
+                                        aria-label={CLEAR_TIER_IMAGE_LABEL}
+                                        className="rounded-full border border-zinc-700 bg-zinc-900/60 p-1.5 text-zinc-300 hover:border-red-500/40 hover:text-red-300"
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
+                                ) : null}
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => removeTier(index)}
+                                className="flex items-center justify-center gap-2 self-end rounded-full border border-zinc-700 bg-zinc-900/60 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:border-red-500/40 hover:text-red-300"
+                            >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                {REMOVE_TIER_LABEL}
+                            </button>
+                        </div>
+                    );
+                })}
+
+                <button
+                    type="button"
+                    onClick={addTier}
+                    disabled={!canAddTier}
+                    className="flex items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/60 px-4 py-2 text-sm font-semibold text-zinc-200 transition-colors hover:border-emerald-500/40 hover:text-emerald-200 disabled:opacity-50"
+                >
+                    <Plus className="h-4 w-4" />
+                    {ADD_TIER_LABEL}
+                </button>
+            </section>
+
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? SUBMITTING_LABEL : SUBMIT_LABEL}
             </Button>
         </form>
     );

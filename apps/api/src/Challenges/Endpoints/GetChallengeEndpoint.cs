@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Xpeak.Api.Challenges.Dto;
 using Xpeak.Api.Challenges.Services;
+using Xpeak.Api.Media;
 
 namespace Xpeak.Api.Challenges.Endpoints;
 
@@ -20,6 +21,7 @@ public static class GetChallengeEndpoint
         Guid id,
         ClaimsPrincipal principal,
         IChallengeService service,
+        IMediaStorage storage,
         CancellationToken ct)
     {
         var sub = principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
@@ -34,10 +36,16 @@ public static class GetChallengeEndpoint
             return Results.NotFound();
         }
 
+        var tiers = (detail.Tiers ?? [])
+            .Select(t => ChallengeTierResponse.From(t, storage))
+            .ToList();
+
         var response = new GetChallengeResponse(
             ChallengeResponse.From(detail.Challenge),
             detail.Membership is null ? null : MembershipResponse.From(detail.Membership),
-            detail.ShareLink is null ? null : ChallengeInvitationResponse.From(detail.ShareLink));
+            detail.ShareLink is null ? null : ChallengeInvitationResponse.From(detail.ShareLink),
+            tiers,
+            detail.CurrentTier is null ? null : ChallengeTierResponse.From(detail.CurrentTier, storage));
 
         return Results.Ok(response);
     }

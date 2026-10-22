@@ -251,18 +251,201 @@ public sealed class ChallengeServiceTests
         await act.Should().ThrowAsync<ChallengeAlreadyEndedException>();
     }
 
-    private async Task<CreateChallengeResult> CreateChallengeAsync(AppUser owner, int? memberCap = null)
+    [Fact]
+    public async Task Create_persists_tiers_sorted_by_min_level()
+    {
+        var user = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var result = await service.CreateAsync(user.Id, NewInput() with
+        {
+            Tiers = new List<CreateChallengeTierInput>
+            {
+                new(MinLevel: 60, Title: "ArchMago"),
+                new(MinLevel: 10, Title: " Aprendiz "),
+                new(MinLevel: 30, Title: "Mago"),
+            },
+        });
+
+        result.Tiers.Should().HaveCount(3);
+        result.Tiers.Select(t => t.MinLevel).Should().ContainInOrder(10, 30, 60);
+        result.Tiers.Select(t => t.Title).Should().ContainInOrder("Aprendiz", "Mago", "ArchMago");
+
+        await using var verifyScope = _factory.Services.CreateAsyncScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var reloaded = await db.ChallengeTiers
+            .AsNoTracking()
+            .Where(t => t.ChallengeId == result.Challenge.Id)
+            .OrderBy(t => t.MinLevel)
+            .ToListAsync();
+        reloaded.Should().HaveCount(3);
+        reloaded.Select(t => t.MinLevel).Should().ContainInOrder(10, 30, 60);
+    }
+
+    [Fact]
+    public async Task Create_without_tiers_persists_an_empty_tier_list()
+    {
+        var user = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var result = await service.CreateAsync(user.Id, NewInput());
+
+        result.Tiers.Should().BeEmpty();
+
+        await using var verifyScope = _factory.Services.CreateAsyncScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var count = await db.ChallengeTiers
+            .AsNoTracking()
+            .CountAsync(t => t.ChallengeId == result.Challenge.Id);
+        count.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Create_with_eleven_tiers_throws_TooManyTiers()
+    {
+        var user = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var tiers = Enumerable.Range(1, 11)
+            .Select(i => new CreateChallengeTierInput(MinLevel: i, Title: $"Tier {i}"))
+            .ToList();
+
+        var act = async () => await service.CreateAsync(user.Id, NewInput() with { Tiers = tiers });
+
+        var ex = await act.Should().ThrowAsync<TooManyTiersException>();
+        ex.Which.Count.Should().Be(11);
+        ex.Which.Max.Should().Be(ChallengeService.MaxTiersPerChallenge);
+    }
+
+    [Fact]
+    public async Task Create_with_duplicate_min_level_throws_DuplicateTier()
+    {
+        var user = await CreateUserAsync();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+
+        var tiers = new List<CreateChallengeTierInput>
+        {
+            new(MinLevel: 10, Title: "Aprendiz"),
+            new(MinLevel: 10, Title: "Outro Aprendiz"),
+        };
+
+        var act = async () => await service.CreateAsync(user.Id, NewInput() with { Tiers = tiers });
+
+        var ex = await act.Should().ThrowAsync<DuplicateTierException>();
+        ex.Which.MinLevel.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task Get_for_user_returns_tiers_sorted_and_current_tier_for_a_member()
+    {
+        var owner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner, tiers:
+        [
+            new(MinLevel: 10, Title: "Aprendiz"),
+            new(MinLevel: 30, Title: "Mago"),
+            new(MinLevel: 60, Title: "ArchMago"),
+        ]);
+        await SetOwnerProgressAsync(created, value: 30);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+        var detail = await service.GetForUserAsync(created.Challenge.Id, owner.Id);
+
+        detail.Should().NotBeNull();
+        detail!.Tiers!.Select(t => t.MinLevel).Should().ContainInOrder(10, 30, 60);
+        detail.CurrentTier.Should().NotBeNull();
+        detail.CurrentTier!.MinLevel.Should().Be(30);
+    }
+
+    [Fact]
+    public async Task Get_for_user_returns_null_current_tier_when_progress_is_below_the_first()
+    {
+        var owner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner, tiers:
+        [
+            new(MinLevel: 10, Title: "Aprendiz"),
+            new(MinLevel: 30, Title: "Mago"),
+        ]);
+        await SetOwnerProgressAsync(created, value: 5);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+        var detail = await service.GetForUserAsync(created.Challenge.Id, owner.Id);
+
+        detail!.Tiers.Should().HaveCount(2);
+        detail.CurrentTier.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Get_for_user_returns_tiers_but_no_current_tier_for_a_non_member_on_a_public_challenge()
+    {
+        var owner = await CreateUserAsync();
+        var outsider = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner, visibility: ChallengeVisibility.Public, tiers:
+        [
+            new(MinLevel: 10, Title: "Aprendiz"),
+            new(MinLevel: 30, Title: "Mago"),
+        ]);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+        var detail = await service.GetForUserAsync(created.Challenge.Id, outsider.Id);
+
+        detail.Should().NotBeNull();
+        detail!.Membership.Should().BeNull();
+        detail.Tiers.Should().HaveCount(2);
+        detail.CurrentTier.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Get_for_user_returns_empty_tiers_and_null_current_tier_for_a_challenge_without_tiers()
+    {
+        var owner = await CreateUserAsync();
+        var created = await CreateChallengeAsync(owner);
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
+        var detail = await service.GetForUserAsync(created.Challenge.Id, owner.Id);
+
+        detail!.Tiers.Should().BeEmpty();
+        detail.CurrentTier.Should().BeNull();
+    }
+
+    private async Task SetOwnerProgressAsync(CreateChallengeResult created, int value)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var membership = await db.ChallengeMemberships
+            .SingleAsync(m => m.ChallengeId == created.Challenge.Id && m.UserId == created.Challenge.OwnerId);
+        membership.Progress = new MembershipProgress(
+            Value: value,
+            Target: created.Challenge.TargetLevel,
+            AchievedAt: null);
+        await db.SaveChangesAsync();
+    }
+
+    private async Task<CreateChallengeResult> CreateChallengeAsync(
+        AppUser owner,
+        int? memberCap = null,
+        IReadOnlyList<CreateChallengeTierInput>? tiers = null,
+        ChallengeVisibility visibility = ChallengeVisibility.Private)
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var service = scope.ServiceProvider.GetRequiredService<IChallengeService>();
-        return await service.CreateAsync(owner.Id, NewInput(memberCap));
+        return await service.CreateAsync(owner.Id, NewInput(memberCap, visibility) with { Tiers = tiers });
     }
 
-    private static CreateChallengeInput NewInput(int? memberCap = null) => new(
+    private static CreateChallengeInput NewInput(
+        int? memberCap = null,
+        ChallengeVisibility visibility = ChallengeVisibility.Private) => new(
         Title: "30 dias de treino",
         Description: "Levantar peso toda semana por 30 dias.",
         IconPublicId: "challenges/sample-icon",
-        Visibility: ChallengeVisibility.Private,
+        Visibility: visibility,
         TargetLevel: 10,
         XpMultiplier: 1.0m,
         StartsAt: DateTimeOffset.UtcNow,

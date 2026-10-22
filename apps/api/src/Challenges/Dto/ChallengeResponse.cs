@@ -1,4 +1,6 @@
 using Xpeak.Api.Challenges.Entities;
+using Xpeak.Api.Media;
+using Xpeak.Api.Media.Entities;
 
 namespace Xpeak.Api.Challenges.Dto;
 
@@ -84,13 +86,34 @@ public sealed record ChallengeInvitationResponse(
         new(i.Id, i.ChallengeId, i.InvitedByUserId, i.State, i.CreatedAt);
 }
 
+/// <summary>Wire representation of a <see cref="ChallengeTier"/>.
+/// Order comes from the enclosing list (sorted by
+/// <see cref="MinLevel"/> ascending); there is no numeric
+/// position field.</summary>
+public sealed record ChallengeTierResponse(
+    Guid Id,
+    int MinLevel,
+    string Title,
+    string? ImageUrl)
+{
+    public static ChallengeTierResponse From(ChallengeTier t, IMediaStorage storage)
+    {
+        var imageUrl = string.IsNullOrEmpty(t.ImageStorageKey)
+            ? null
+            : storage.BuildThumbUrl(t.ImageStorageKey, MediaKind.Photo);
+        return new(t.Id, t.MinLevel, t.Title, imageUrl);
+    }
+}
+
 /// <summary>Payload of <c>POST /challenges</c>. Carries the default
 /// share-link so the client can show "copy link" straight after
-/// creation without a follow-up request.</summary>
+/// creation without a follow-up request, and the owner-declared
+/// progression ladder (empty when none).</summary>
 public sealed record CreateChallengeResponse(
     ChallengeResponse Challenge,
     MembershipResponse OwnerMembership,
-    ChallengeInvitationResponse ShareLink);
+    ChallengeInvitationResponse ShareLink,
+    IReadOnlyList<ChallengeTierResponse> Tiers);
 
 /// <summary>Payload of <c>GET /challenges</c>.</summary>
 public sealed record ListChallengesResponse(
@@ -100,11 +123,16 @@ public sealed record ListChallengesResponse(
 /// null when the caller views a public challenge they do not
 /// belong to. ShareLink is non-null only when the caller is the
 /// owner — so the UI can render "copy share link" without a
-/// second request.</summary>
+/// second request. Tiers is always populated (empty when the
+/// challenge has none); CurrentTier is null when the caller has
+/// no membership, the challenge has no tiers, or the member's
+/// progress is below the first floor.</summary>
 public sealed record GetChallengeResponse(
     ChallengeResponse Challenge,
     MembershipResponse? Membership,
-    ChallengeInvitationResponse? ShareLink);
+    ChallengeInvitationResponse? ShareLink,
+    IReadOnlyList<ChallengeTierResponse> Tiers,
+    ChallengeTierResponse? CurrentTier);
 
 /// <summary>Payload of <c>POST /challenges/join</c>. Mirrors
 /// <see cref="GetChallengeResponse"/> but membership is always
