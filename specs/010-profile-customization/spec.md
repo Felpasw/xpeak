@@ -1,5 +1,32 @@
 # Phase 10 — Profile Customization (SPEC)
 
+> **Scope cut (2026-11-10) — "Background picker MVP"**
+>
+> First slice of Phase 10 ships under
+> `XPK-34/felpa-profile-background` and covers only the
+> **background** story. Avatar upload, banner uploads and the
+> frames catalog stay in `tasks.md` as `[DEFERRED]` and ship in a
+> follow-up branch. The roadmap already pivoted "banner" to
+> "background" (a swappable **component** rendered from the
+> mobile `backgrounds/registry.ts`, not an uploaded image), so the
+> MVP persists only a short slug on the user row and does not
+> introduce a `cosmetics` catalog table yet.
+>
+> **Slug is a strict enum on both sides.** The backend's
+> `BackgroundSlug` C# enum and the shared TS `BackgroundSlug`
+> enum both list the same three members (`Stars`, `Lightning`,
+> `EtchedAccretion`); `PATCH /me/background` rejects any value
+> outside the enum with 422. Adding a new background means
+> adding to both enums + registering the component in
+> `backgrounds/registry.ts` — three places, one atomic change.
+> No "loose string + fallback" lenience.
+>
+> Everything in §1-§3 below describes the full Phase 10 vision.
+> The MVP implements a minimal subset:
+> `users.active_background_slug` + `PATCH /me/background` +
+> mobile picker screen. See `tasks.md` for the implemented
+> surface.
+
 ## 1. Data model
 
 ### 1.1. `users` additions
