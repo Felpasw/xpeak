@@ -47,6 +47,7 @@ public static class AuthCoreModule
     public static IEndpointRouteBuilder UseAuthCore(this IEndpointRouteBuilder app)
     {
         MeEndpoint.Map(app);
+        UpdateBackgroundEndpoint.Map(app);
 
         var authGroup = app.MapGroup("/auth").WithTags("Auth");
         LogoutEndpoint.Map(authGroup);

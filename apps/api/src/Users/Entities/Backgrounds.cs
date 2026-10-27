@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Xpeak.Api.Users;
 
 /// <summary>
@@ -19,4 +21,23 @@ public enum Backgrounds
     Stars,
     Lightning,
     EtchedAccretion,
+}
+
+/// <summary>Wire-form parsing for <see cref="Backgrounds"/>. The
+/// snake_case keys are derived from the enum members through the
+/// same naming policy the global <c>JsonStringEnumConverter</c>
+/// uses, so request parsing and response serialisation stay in
+/// lockstep without a hand-maintained table.</summary>
+public static class BackgroundsExtensions
+{
+    private static readonly IReadOnlyDictionary<string, Backgrounds> WIRE_MAP =
+        Enum.GetValues<Backgrounds>()
+            .ToDictionary(
+                e => JsonNamingPolicy.SnakeCaseLower.ConvertName(e.ToString()),
+                e => e);
+
+    public static IReadOnlyCollection<string> WireValues => (IReadOnlyCollection<string>)WIRE_MAP.Keys;
+
+    public static bool TryParseWire(string value, out Backgrounds parsed) =>
+        WIRE_MAP.TryGetValue(value, out parsed);
 }
