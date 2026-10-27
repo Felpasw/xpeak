@@ -36,5 +36,16 @@ public sealed class AppUser : IdentityUser<Guid>
     /// </summary>
     public string TimeZone { get; set; } = "America/Sao_Paulo";
 
+    /// <summary>
+    /// User-picked background component for the profile atrium.
+    /// Null = render the project default (see
+    /// <c>DEFAULT_BACKGROUND_SLUG</c> in the mobile registry).
+    /// Writing this field goes through
+    /// <see cref="Backgrounds"/> enum validation — the HTTP
+    /// surface rejects anything outside the enum before it reaches
+    /// here.
+    /// </summary>
+    public Backgrounds? Background { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

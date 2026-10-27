@@ -5,7 +5,7 @@ import type { BackgroundManifest } from './types';
 /**
  * Registry of every background the app knows about. Keyed by `slug`
  * so the profile page (Phase 10 onward) can look up the user's
- * `active_background_slug` and render the matching component.
+ * `background` column and render the matching component.
  *
  * ## Adicionando um wallpaper novo
  *

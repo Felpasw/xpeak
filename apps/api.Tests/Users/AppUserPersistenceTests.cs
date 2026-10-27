@@ -72,4 +72,51 @@ public sealed class AppUserPersistenceTests : IClassFixture<XpeakWebApplicationF
         reloaded.Level.Should().Be(0);
         reloaded.Xp.Should().Be(0);
     }
+
+    [Fact]
+    public async Task Active_background_slug_defaults_to_null()
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var suffix = Guid.NewGuid().ToString("N")[..6];
+
+        var user = new AppUser { UserName = $"bg_null_{suffix}", Email = $"bg_null_{suffix}@x.com" };
+        (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
+
+        var reloaded = await db.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id);
+        reloaded.Background.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(Backgrounds.Stars, "stars")]
+    [InlineData(Backgrounds.Lightning, "lightning")]
+    [InlineData(Backgrounds.EtchedAccretion, "etched_accretion")]
+    public async Task Active_background_slug_round_trips_through_the_wire_form(
+        Backgrounds slug,
+        string expectedWire)
+    {
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var suffix = Guid.NewGuid().ToString("N")[..6];
+
+        var user = new AppUser
+        {
+            UserName = $"bg_{suffix}",
+            Email = $"bg_{expectedWire}_{suffix}@x.com",
+            Background = slug,
+        };
+        (await users.CreateAsync(user, "hunter22!")).Succeeded.Should().BeTrue();
+
+        var reloaded = await db.Users.AsNoTracking().SingleAsync(u => u.Id == user.Id);
+        reloaded.Background.Should().Be(slug);
+
+        var rawFromDb = await db.Database
+            .SqlQueryRaw<string?>(
+                "SELECT background AS \"Value\" FROM users WHERE \"Id\" = {0}",
+                user.Id)
+            .SingleAsync();
+        rawFromDb.Should().Be(expectedWire);
+    }
 }

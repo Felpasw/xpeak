@@ -43,6 +43,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.HasPostgresExtension("citext");
+        modelBuilder.HasPostgresEnum<Backgrounds>();
 
         modelBuilder.Entity<AppUser>(b =>
         {
@@ -55,6 +56,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
                 .HasColumnName("time_zone")
                 .HasMaxLength(64)
                 .HasDefaultValue("America/Sao_Paulo");
+            b.Property(u => u.Background)
+                .HasColumnName("background")
+                .HasColumnType("backgrounds");
             b.Property(u => u.CreatedAt).HasColumnName("created_at");
 
             b.HasIndex(u => u.GoogleUid).IsUnique().HasFilter("google_uid IS NOT NULL");
