@@ -6,12 +6,14 @@ import type { BackgroundManifest, BackgroundProps } from './types';
 
 function EtchedAccretionDefault({ className }: BackgroundProps) {
     return (
-        <EtchedAccretion
-            className={className}
-            preset="crimson"
-            height="100%"
-            interactive={false}
-        />
+        <div className={className}>
+            <EtchedAccretion
+                preset="crimson"
+                height="100%"
+                interactive={false}
+                className="h-full w-full"
+            />
+        </div>
     );
 }
 
