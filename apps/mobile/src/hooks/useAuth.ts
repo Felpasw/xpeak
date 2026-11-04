@@ -6,7 +6,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { User } from '@xpeak/shared';
+import type { Backgrounds, User } from '@xpeak/shared';
 
 import authService from '@/services/auth.service';
 import type { LoginPayload } from '@/services/interfaces/auth.interface';
@@ -44,7 +44,14 @@ class AuthHooks implements IAuthHooks {
             },
         });
 
-        return { me, login, logout };
+        const patchBackground = useMutation<User, unknown, Backgrounds>({
+            mutationFn: (background) => authService.patchBackground(background),
+            onSuccess: (user) => {
+                queryClient.setQueryData(AUTH_QUERY_KEYS.me, user);
+            },
+        });
+
+        return { me, login, logout, patchBackground };
     }
 }
 
