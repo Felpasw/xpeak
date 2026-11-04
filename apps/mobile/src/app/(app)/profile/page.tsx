@@ -1,6 +1,7 @@
 'use client';
 
-import { BarChart3, Flame, Trophy } from 'lucide-react';
+import { BarChart3, Flame, Palette, Trophy } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { DiscreteTabs } from '@/components/atoms/DiscreteTabs';
@@ -51,6 +52,14 @@ export default function ProfilePage() {
                     </h1>
                     <p className="text-sm text-zinc-400">{user.email}</p>
                 </div>
+
+                <Link
+                    href="/profile/background"
+                    className="mt-6 inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/70 px-4 py-2 text-sm font-medium text-zinc-200 backdrop-blur transition hover:border-sky-500/50 hover:text-sky-200"
+                >
+                    <Palette className="h-4 w-4" aria-hidden="true" />
+                    Trocar background
+                </Link>
 
                 <DiscreteTabs
                     tabs={TABS}
