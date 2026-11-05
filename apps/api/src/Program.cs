@@ -104,6 +104,7 @@ app.UseGoogleAuth();
 app.UseCheckIns();
 app.UseChallenges();
 app.UseMedia();
+app.UseUsers();
 
 app.Run();
 

@@ -32,4 +32,13 @@ public static class UsersModule
 
         return services;
     }
+
+    /// <summary>
+    /// Maps the Users domain endpoints under <c>/users</c>.
+    /// </summary>
+    public static IEndpointRouteBuilder UseUsers(this IEndpointRouteBuilder app)
+    {
+        GetUserByUsernameEndpoint.Map(app);
+        return app;
+    }
 }
