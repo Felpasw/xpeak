@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 
 import { Providers } from '@/components/atoms/Providers';
-import { UserBackground } from '@/components/atoms/UserBackground';
 import './globals.css';
 
 const geistSans = Geist({
@@ -47,7 +46,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
                 }}
             >
                 <Providers>
-                    <UserBackground>{children}</UserBackground>
+                    <div className="flex flex-1 flex-col">{children}</div>
                     <footer className="pointer-events-none fixed bottom-6 left-0 right-0 z-10 text-center text-sm text-zinc-400">
                         <span>{CREDIT_PREFIX}</span>
                         <a
