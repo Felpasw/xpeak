@@ -37,6 +37,7 @@ public sealed class RegisterEndpointTests : IClassFixture<XpeakWebApplicationFac
         body.User.Email.Should().Be(payload.email);
         body.User.Level.Should().Be(0);
         body.User.Xp.Should().Be(0);
+        body.User.Background.Should().BeNull();
     }
 
     [Fact]

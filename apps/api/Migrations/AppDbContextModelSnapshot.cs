@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Xpeak.Api.Infrastructure;
+using Xpeak.Api.Users;
 
 #nullable disable
 
@@ -20,6 +21,7 @@ namespace Xpeak.Api.Migrations
                 .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "backgrounds", new[] { "stars", "lightning", "etched_accretion", "matrix", "fluid" });
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
@@ -574,6 +576,10 @@ namespace Xpeak.Api.Migrations
                     b.Property<string>("AvatarUrl")
                         .HasColumnType("text")
                         .HasColumnName("avatar_url");
+
+                    b.Property<Backgrounds?>("Background")
+                        .HasColumnType("backgrounds")
+                        .HasColumnName("background");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()

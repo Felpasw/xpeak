@@ -17,5 +17,6 @@ internal static class AppUserExtensions
         Xp: u.Xp,
         CurrentStreakDays: 0,
         LongestStreakDays: 0,
+        Background: u.Background,
         CreatedAt: u.CreatedAt);
 }

@@ -1,35 +1,45 @@
+import { Backgrounds } from '@xpeak/shared';
+
+import { etchedAccretionManifest } from './accretion';
+import { fluidManifest } from './fluid';
 import { lightningManifest } from './lightning';
+import { matrixManifest } from './matrix';
+import { starsManifest } from './stars';
 
 import type { BackgroundManifest } from './types';
 
 /**
- * Registry of every background the app knows about. Keyed by `slug`
- * so the profile page (Phase 10 onward) can look up the user's
- * `active_background_slug` and render the matching component.
+ * Registry of every background the app knows about. Keyed by the
+ * shared `Backgrounds` enum so the profile picker and layout can
+ * resolve the user's `background` column into a component.
  *
- * ## Adicionando um wallpaper novo
+ * ## Adicionando um background novo
  *
- * 1. Coloca o arquivo em `wallpapers/<slug>.jpg` (ou `.png`, `.webp`).
- * 2. Cria um arquivo `wallpaper-<slug>.tsx` aqui na pasta com um
- *    componente que faça `<img src>` ou `next/image` da imagem e
- *    exporta um manifest com `slug`, `name`, `description` opcional
- *    e `preview` apontando pra thumb.
- * 3. Adiciona o import + entry no map abaixo.
- *
- * Pra shaders animados (tipo `lightning.tsx`), mesmo fluxo — cria
- * o componente + manifest e registra aqui.
+ * 1. Cria um arquivo `<slug>.tsx` aqui exportando um componente
+ *    puro (`h-full w-full`, sem eventos próprios) + um manifest
+ *    tipado `BackgroundManifest`.
+ * 2. Adiciona o membro em `Backgrounds` no `@xpeak/shared` e
+ *    atualiza o enum C# (`Backgrounds`) + migration que roda
+ *    `ALTER TYPE backgrounds ADD VALUE`.
+ * 3. Importa o manifest e registra em `BACKGROUNDS`.
  */
-export const BACKGROUNDS: Record<string, BackgroundManifest> = {
-    [lightningManifest.slug]: lightningManifest,
+export const BACKGROUNDS: Record<Backgrounds, BackgroundManifest> = {
+    [Backgrounds.Stars]: starsManifest,
+    [Backgrounds.Lightning]: lightningManifest,
+    [Backgrounds.EtchedAccretion]: etchedAccretionManifest,
+    [Backgrounds.Matrix]: matrixManifest,
+    [Backgrounds.Fluid]: fluidManifest,
 };
 
-export const DEFAULT_BACKGROUND_SLUG = lightningManifest.slug;
+export const DEFAULT_BACKGROUND: Backgrounds = Backgrounds.Stars;
 
-export function getBackground(slug: string | null | undefined): BackgroundManifest {
+export function getBackground(
+    slug: Backgrounds | null | undefined,
+): BackgroundManifest {
     if (slug && slug in BACKGROUNDS) {
-        return BACKGROUNDS[slug]!;
+        return BACKGROUNDS[slug];
     }
-    return BACKGROUNDS[DEFAULT_BACKGROUND_SLUG]!;
+    return BACKGROUNDS[DEFAULT_BACKGROUND];
 }
 
 export function listBackgrounds(): BackgroundManifest[] {

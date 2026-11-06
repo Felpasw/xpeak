@@ -1,10 +1,12 @@
 'use client';
 
-import { BarChart3, Flame, Trophy } from 'lucide-react';
+import { BarChart3, Eye, Flame, Palette, Trophy } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { DiscreteTabs } from '@/components/atoms/DiscreteTabs';
 import type { DiscreteTab } from '@/components/atoms/DiscreteTabs';
+import { ProfileBackground } from '@/components/atoms/ProfileBackground';
 import authHooks from '@/hooks/useAuth';
 
 const TABS: DiscreteTab[] = [
@@ -27,8 +29,9 @@ export default function ProfilePage() {
     const initials = user.username.slice(0, 2).toUpperCase();
 
     return (
-        <main className="flex flex-1 flex-col pt-12 pb-48">
-            <div className="flex flex-col items-center px-6">
+        <main className="relative flex flex-1 flex-col overflow-hidden pt-12 pb-48">
+            <ProfileBackground background={user.background} />
+            <div className="relative z-10 flex flex-col items-center px-6">
                 {user.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -50,6 +53,23 @@ export default function ProfilePage() {
                         @{user.username}
                     </h1>
                     <p className="text-sm text-zinc-400">{user.email}</p>
+                </div>
+
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                    <Link
+                        href="/profile/background"
+                        className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/70 px-4 py-2 text-sm font-medium text-zinc-200 backdrop-blur transition hover:border-sky-500/50 hover:text-sky-200"
+                    >
+                        <Palette className="h-4 w-4" aria-hidden="true" />
+                        Trocar background
+                    </Link>
+                    <Link
+                        href={`/u?username=${encodeURIComponent(user.username)}`}
+                        className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900/70 px-4 py-2 text-sm font-medium text-zinc-200 backdrop-blur transition hover:border-sky-500/50 hover:text-sky-200"
+                    >
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                        Ver como visitante
+                    </Link>
                 </div>
 
                 <DiscreteTabs

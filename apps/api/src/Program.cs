@@ -3,6 +3,8 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Npgsql;
 using Xpeak.Api.Auth.Core;
 using Xpeak.Api.Auth.Google;
 using Xpeak.Api.Auth.Password;
@@ -16,8 +18,29 @@ using Xpeak.Api.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+// Postgres data source with native enum mappings. Registered as
+// a singleton (resolved lazily so tests can override the
+// connection string before validation). Any time a new native
+// enum lands, register it here AND call HasPostgresEnum<T> in
+// AppDbContext — see Backgrounds for the shape.
+builder.Services.AddSingleton<NpgsqlDataSource>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var dsBuilder = new NpgsqlDataSourceBuilder(config.GetConnectionString("Postgres"));
+    dsBuilder.MapEnum<Backgrounds>("backgrounds");
+    return dsBuilder.Build();
+});
+
+// Each WebApplicationFactory in integration tests spins up its own
+// Postgres container and DbContext options; adding MapEnum pushes
+// EF Core past its 20-service-provider warning threshold during a
+// full suite run, so we silence it for this options signature.
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+    options
+        .UseNpgsql(
+            sp.GetRequiredService<NpgsqlDataSource>(),
+            npgsql => npgsql.MapEnum<Backgrounds>("backgrounds"))
+        .ConfigureWarnings(w => w.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning)));
 
 // Enum fields on HTTP payloads serialize as snake_case strings
 // ("private", "total_xp", "active") rather than the default int
@@ -81,6 +104,7 @@ app.UseGoogleAuth();
 app.UseCheckIns();
 app.UseChallenges();
 app.UseMedia();
+app.UseUsers();
 
 app.Run();
 

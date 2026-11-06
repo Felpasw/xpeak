@@ -1,3 +1,4 @@
+import type { Backgrounds } from '@xpeak/shared';
 import { isAxiosError } from 'axios';
 
 import api from '@/api';
@@ -8,6 +9,7 @@ import type {
     LoginPayload,
     LoginResponse,
     MeResponse,
+    UpdateBackgroundResponse,
 } from './interfaces/auth.interface';
 
 const extractBearer = (raw: string | undefined | null): string | null => {
@@ -51,6 +53,14 @@ class AuthService implements IAuthService {
             }
             throw error;
         }
+    }
+
+    async patchBackground(background: Backgrounds) {
+        const response = await api.patch<UpdateBackgroundResponse>(
+            '/me/background',
+            { background },
+        );
+        return response.data.user;
     }
 }
 

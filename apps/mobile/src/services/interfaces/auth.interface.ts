@@ -1,4 +1,4 @@
-import type { AuthResponse, User } from '@xpeak/shared';
+import type { AuthResponse, Backgrounds, User } from '@xpeak/shared';
 
 export interface LoginPayload {
     identifier: string;
@@ -7,9 +7,11 @@ export interface LoginPayload {
 
 export type LoginResponse = AuthResponse;
 export type MeResponse = AuthResponse;
+export type UpdateBackgroundResponse = AuthResponse;
 
 export interface IAuthService {
     login(payload: LoginPayload): Promise<{ user: User; token: string | null }>;
     logout(): Promise<void>;
     me(): Promise<User | null>;
+    patchBackground(background: Backgrounds): Promise<User>;
 }

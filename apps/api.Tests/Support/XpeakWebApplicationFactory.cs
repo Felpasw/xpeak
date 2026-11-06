@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Npgsql;
 using Testcontainers.PostgreSql;
 using Xpeak.Api.Auth.Password;
 using Xpeak.Api.Infrastructure;
@@ -80,11 +82,31 @@ public class XpeakWebApplicationFactory
             // the fake singleton here so tests can seed metadata.
             services.RemoveAll<IMediaStorage>();
             services.AddSingleton<IMediaStorage, FakeMediaStorage>();
-
-            using var scope = services.BuildServiceProvider().CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Database.Migrate();
         });
+    }
+
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var host = base.CreateHost(builder);
+
+        // Run migrations through the host's own NpgsqlDataSource
+        // singleton so the OID cache we populate below is the one
+        // tests will reuse. Doing this via a sidecar provider would
+        // create a different singleton and leave the real one with a
+        // stale cache (unaware of the enum types the migration just
+        // created, so Npgsql would fall back to int32 bindings).
+        using var scope = host.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+
+        // Migrations create native Postgres enums after the data
+        // source has already opened its first connection, so its
+        // type OID cache is stale. Reload once before tests run so
+        // enum bindings resolve instead of falling back to integer.
+        var dataSource = host.Services.GetRequiredService<NpgsqlDataSource>();
+        using var reloadConn = dataSource.OpenConnection();
+        reloadConn.ReloadTypes();
+
+        return host;
     }
 
     private static void ReplaceWithNoLimiter(RateLimiterOptions options)

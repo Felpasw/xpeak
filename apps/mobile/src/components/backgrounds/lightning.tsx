@@ -1,5 +1,6 @@
 'use client';
 
+import { Backgrounds } from '@xpeak/shared';
 import { useEffect, useRef } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -245,7 +246,7 @@ function LightningDefault({ className }: BackgroundProps) {
 }
 
 export const lightningManifest: BackgroundManifest = {
-    slug: 'lightning',
+    slug: Backgrounds.Lightning,
     name: 'Raios azuis',
     description: 'Shader WebGL de raios elétricos em tom azul.',
     Component: LightningDefault,

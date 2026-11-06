@@ -9,6 +9,7 @@ public sealed record UserDto(
     int Xp,
     int CurrentStreakDays,
     int LongestStreakDays,
+    string? Background,
     DateTimeOffset CreatedAt);
 
 public sealed record AuthResponseDto(UserDto User);

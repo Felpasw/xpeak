@@ -1,7 +1,10 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using Xpeak.Api.Tests.Support;
+using Xpeak.Api.Users;
 
 namespace Xpeak.Api.Tests.Auth.Core;
 
@@ -36,6 +39,28 @@ public sealed class MeEndpointTests : IClassFixture<XpeakWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
         body!.User.Username.Should().Be(username);
+    }
+
+    [Fact]
+    public async Task Me_echoes_the_persisted_background_in_wire_form()
+    {
+        var client = _factory.CreateClient();
+        var (username, token) = await RegisterAndGetToken(client);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var user = await users.FindByNameAsync(username);
+            user!.Background = Backgrounds.EtchedAccretion;
+            (await users.UpdateAsync(user)).Succeeded.Should().BeTrue();
+        }
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.GetAsync("/me");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+        body!.User.Background.Should().Be("etched_accretion");
     }
 
     [Fact]

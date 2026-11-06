@@ -1,8 +1,9 @@
+import type { Backgrounds } from '@xpeak/shared';
 import type { ComponentType } from 'react';
 
 /**
- * A background is identified by a stable `slug` (persisted per user
- * once Phase 10 wires the profile-customization picker) and rendered
+ * A background is identified by the shared <c>Backgrounds</c> enum
+ * (backed by a native Postgres type on the backend) and rendered
  * via `Component`. The component should absolutely fill its parent
  * (`h-full w-full`) and stay `pointer-events-none` so it never eats
  * clicks. Optional `className` prop lets the consumer add extra
@@ -17,7 +18,7 @@ export interface BackgroundProps {
 }
 
 export interface BackgroundManifest {
-    slug: string;
+    slug: Backgrounds;
     name: string;
     description?: string;
     preview?: string;

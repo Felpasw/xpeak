@@ -1,3 +1,5 @@
+using Xpeak.Api.Users;
+
 namespace Xpeak.Api.Auth.Core;
 
 public sealed record UserResponse(
@@ -9,4 +11,5 @@ public sealed record UserResponse(
     int Xp,
     int CurrentStreakDays,
     int LongestStreakDays,
+    Backgrounds? Background,
     DateTimeOffset CreatedAt);
