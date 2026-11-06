@@ -2,6 +2,7 @@ import { Backgrounds } from '@xpeak/shared';
 
 import { etchedAccretionManifest } from './accretion';
 import { lightningManifest } from './lightning';
+import { matrixManifest } from './matrix';
 import { starsManifest } from './stars';
 
 import type { BackgroundManifest } from './types';
@@ -25,6 +26,7 @@ export const BACKGROUNDS: Record<Backgrounds, BackgroundManifest> = {
     [Backgrounds.Stars]: starsManifest,
     [Backgrounds.Lightning]: lightningManifest,
     [Backgrounds.EtchedAccretion]: etchedAccretionManifest,
+    [Backgrounds.Matrix]: matrixManifest,
 };
 
 export const DEFAULT_BACKGROUND: Backgrounds = Backgrounds.Stars;

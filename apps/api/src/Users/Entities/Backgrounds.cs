@@ -21,6 +21,7 @@ public enum Backgrounds
     Stars,
     Lightning,
     EtchedAccretion,
+    Matrix,
 }
 
 /// <summary>Wire-form parsing for <see cref="Backgrounds"/>. The

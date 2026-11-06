@@ -21,7 +21,7 @@ namespace Xpeak.Api.Migrations
                 .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "backgrounds", new[] { "stars", "lightning", "etched_accretion" });
+            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "backgrounds", new[] { "stars", "lightning", "etched_accretion", "matrix" });
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
