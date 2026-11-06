@@ -25,3 +25,46 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes dock-strike {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20%) scaleY(0.25);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, 0%) scaleY(1);
+  }
+  60% {
+    opacity: 0.9;
+    transform: translate(-50%, 0%) scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -6%) scaleY(1);
+  }
+}
+
+@keyframes dock-strike-flash {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.55;
+  }
+  40% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.dock-strike {
+  animation: dock-strike 440ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  transform-origin: bottom center;
+}
+
+.dock-strike-flash {
+  animation: dock-strike-flash 440ms ease-out forwards;
+}
