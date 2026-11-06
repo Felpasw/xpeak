@@ -1,9 +1,11 @@
 import { Backgrounds } from '@xpeak/shared';
 
 import { etchedAccretionManifest } from './accretion';
+import { dimensionalFieldManifest } from './dimensional-field';
 import { fluidManifest } from './fluid';
 import { lightningManifest } from './lightning';
 import { matrixManifest } from './matrix';
+import { scanlineBloomManifest } from './scanline-bloom';
 import { starsManifest } from './stars';
 
 import type { BackgroundManifest } from './types';
@@ -29,6 +31,8 @@ export const BACKGROUNDS: Record<Backgrounds, BackgroundManifest> = {
     [Backgrounds.EtchedAccretion]: etchedAccretionManifest,
     [Backgrounds.Matrix]: matrixManifest,
     [Backgrounds.Fluid]: fluidManifest,
+    [Backgrounds.ScanlineBloom]: scanlineBloomManifest,
+    [Backgrounds.DimensionalField]: dimensionalFieldManifest,
 };
 
 export const DEFAULT_BACKGROUND: Backgrounds = Backgrounds.Stars;

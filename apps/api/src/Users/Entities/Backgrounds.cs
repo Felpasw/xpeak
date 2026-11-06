@@ -23,6 +23,8 @@ public enum Backgrounds
     EtchedAccretion,
     Matrix,
     Fluid,
+    ScanlineBloom,
+    DimensionalField,
 }
 
 /// <summary>Wire-form parsing for <see cref="Backgrounds"/>. The

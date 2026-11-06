@@ -11,6 +11,8 @@ export enum Backgrounds {
   EtchedAccretion = 'etched_accretion',
   Matrix = 'matrix',
   Fluid = 'fluid',
+  ScanlineBloom = 'scanline_bloom',
+  DimensionalField = 'dimensional_field',
 }
 
 export interface User {
