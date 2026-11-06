@@ -22,6 +22,7 @@ public enum Backgrounds
     Lightning,
     EtchedAccretion,
     Matrix,
+    Fluid,
 }
 
 /// <summary>Wire-form parsing for <see cref="Backgrounds"/>. The

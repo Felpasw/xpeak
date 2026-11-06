@@ -10,6 +10,7 @@ export enum Backgrounds {
   Lightning = 'lightning',
   EtchedAccretion = 'etched_accretion',
   Matrix = 'matrix',
+  Fluid = 'fluid',
 }
 
 export interface User {
