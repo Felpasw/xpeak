@@ -60,6 +60,8 @@ describe('PublicProfilePage', () => {
                     avatarUrl: null,
                     level: 7,
                     xp: 1420,
+                    currentStreakDays: 3,
+                    longestStreakDays: 11,
                     background: 'etched_accretion',
                     createdAt: '2026-09-17T12:00:00Z',
                 }),
@@ -69,8 +71,8 @@ describe('PublicProfilePage', () => {
         await renderPage();
 
         await screen.findByText('@felipe');
-        expect(screen.getByText(/Level 7/)).toBeInTheDocument();
-        expect(screen.getByText(/1420/)).toBeInTheDocument();
+        expect(screen.getByText('7')).toBeInTheDocument();
+        expect(screen.getByText('1420')).toBeInTheDocument();
         expect(screen.getByTestId('profile-background')).toHaveAttribute(
             'data-slug',
             'etched_accretion',

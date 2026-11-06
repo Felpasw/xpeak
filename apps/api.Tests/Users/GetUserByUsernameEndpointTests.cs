@@ -112,5 +112,7 @@ internal sealed record PublicUserDto(
     string? AvatarUrl,
     int Level,
     int Xp,
+    int CurrentStreakDays,
+    int LongestStreakDays,
     string? Background,
     DateTimeOffset CreatedAt);
