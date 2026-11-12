@@ -149,6 +149,22 @@
   - Reuse `AnimatedBorderButton` for the primary CTA.
   - Green.
 
+- [ ] **T-028-13 `[T][S]`** — Mobile: home renders the check-in list inline
+  - Product direction override of T-028-10's "Ver histórico →" link:
+    the home itself is the primary surface for the check-in feed.
+    Groups route no longer exists (dropped in Phase 30), so there
+    is no secondary surface to link to.
+  - Failing spec
+    (`apps/mobile/test/app/(app)/home/page.spec.tsx`): renders the
+    existing welcome block, renders a `Check-in agora` CTA linking
+    to `/checkin`, and renders `<CheckinList />` below the CTA.
+  - Rewrite `apps/mobile/src/app/(app)/home/page.tsx` — drop the
+    "Your workout log lives here soon" placeholder, keep the
+    header/profile pill and the welcome section.
+  - Streak hint and `lastCheckInAt` (T-028-08/09) stay deferred —
+    scope is the list + CTA only.
+  - Green.
+
 ## Section C — Wrap-up
 
 - [ ] **T-028-11 `[P]`** — ADR `docs/adr/0028-check-in-history.md`

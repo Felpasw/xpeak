@@ -3,10 +3,13 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { AnimatedBorderButton } from '@/components/atoms/AnimatedBorderButton';
 import { LightningText } from '@/components/atoms/LightningText';
+import { CheckinList } from '@/components/organisms/CheckinList';
 import authHooks from '@/hooks/useAuth';
 
 const PROFILE_HREF = '/profile';
+const CHECKIN_HREF = '/checkin';
 
 export default function HomePage() {
     const router = useRouter();
@@ -54,12 +57,15 @@ export default function HomePage() {
                 </p>
             </section>
 
-            <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 text-center">
-                <p className="text-sm text-zinc-400">
-                    Your workout log lives here soon. Check-ins, streaks and titles are
-                    on the way.
-                </p>
-            </section>
+            <AnimatedBorderButton
+                href={CHECKIN_HREF}
+                ariaLabel="Check-in agora"
+                className="self-start"
+            >
+                Check-in agora
+            </AnimatedBorderButton>
+
+            <CheckinList />
         </main>
     );
 }
