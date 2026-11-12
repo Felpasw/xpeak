@@ -1,3 +1,5 @@
+import type { PublicUser } from '../users/types';
+
 export enum ChallengeVisibility {
     Public = 'public',
     Private = 'private',
@@ -140,4 +142,20 @@ export interface JoinChallengeRequest {
 export interface JoinChallengeResponse {
   challenge: Challenge;
   membership: ChallengeMembership;
+}
+
+export interface ChallengeMemberTier {
+  id: string;
+  minLevel: number;
+  title: string;
+}
+
+export interface ChallengeMemberRanking {
+  user: PublicUser;
+  progress: MembershipProgress;
+  tier: ChallengeMemberTier | null;
+}
+
+export interface ListChallengeMembersResponse {
+  members: ChallengeMemberRanking[];
 }

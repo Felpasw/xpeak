@@ -5,6 +5,7 @@ import type {
     GetChallengeResponse,
     JoinChallengeRequest,
     JoinChallengeResponse,
+    ListChallengeMembersResponse,
     ListChallengesResponse,
     ListChallengesSummaryResponse,
     PresignTierImageResponse,
@@ -34,6 +35,11 @@ class ChallengesService implements IChallengesService {
 
     async progress(id: string) {
         const response = await api.get<ChallengeProgressResponse>(`/challenges/${id}/progress`);
+        return response.data;
+    }
+
+    async members(id: string) {
+        const response = await api.get<ListChallengeMembersResponse>(`/challenges/${id}/members`);
         return response.data;
     }
 

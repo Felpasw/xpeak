@@ -12,6 +12,7 @@ import challengesService from '@/services/challenges.service';
 
 import type {
     ChallengeDetailQuery,
+    ChallengeMembersQuery,
     ChallengeProgressQuery,
     ChallengesListQuery,
     ChallengesSummaryQuery,
@@ -32,6 +33,7 @@ export const CHALLENGES_QUERY_KEYS = {
     summary: () => SUMMARY_KEY,
     detail: (id: string) => ['challenges', 'detail', id] as const,
     progress: (id: string) => ['challenges', 'progress', id] as const,
+    members: (id: string) => ['challenges', 'members', id] as const,
 } as const;
 
 class ChallengesHooks implements IChallengesHooks {
@@ -67,6 +69,19 @@ class ChallengesHooks implements IChallengesHooks {
         return useQuery({
             queryKey: CHALLENGES_QUERY_KEYS.progress(id),
             queryFn: () => challengesService.progress(id),
+            enabled: Boolean(id),
+        });
+    }
+
+    useMembers(id: string | null | undefined): ChallengeMembersQuery {
+        return useQuery({
+            queryKey: id
+                ? CHALLENGES_QUERY_KEYS.members(id)
+                : (['challenges', 'members', '_disabled'] as const),
+            queryFn: async () => {
+                const response = await challengesService.members(id!);
+                return response.members;
+            },
             enabled: Boolean(id),
         });
     }

@@ -1,6 +1,7 @@
 import type { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
 import type {
     Challenge,
+    ChallengeMemberRanking,
     ChallengeProgressResponse,
     ChallengeState,
     ChallengeSummary,
@@ -23,6 +24,8 @@ export type ChallengeDetailQuery = UseQueryResult<GetChallengeResponse>;
 
 export type ChallengeProgressQuery = UseQueryResult<ChallengeProgressResponse>;
 
+export type ChallengeMembersQuery = UseQueryResult<ChallengeMemberRanking[]>;
+
 export type CreateChallengeMutation = UseMutationResult<
     CreateChallengeResponse,
     unknown,
@@ -44,6 +47,7 @@ export interface IChallengesHooks {
     useSummary(): ChallengesSummaryQuery;
     useDetail(id: string): ChallengeDetailQuery;
     useProgress(id: string): ChallengeProgressQuery;
+    useMembers(id: string | null | undefined): ChallengeMembersQuery;
     useCreate(): CreateChallengeMutation;
     useDelete(): DeleteChallengeMutation;
     useJoin(): JoinChallengeMutation;

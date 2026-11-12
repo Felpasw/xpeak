@@ -6,6 +6,7 @@ import type {
     GetChallengeResponse,
     JoinChallengeRequest,
     JoinChallengeResponse,
+    ListChallengeMembersResponse,
     ListChallengesResponse,
     ListChallengesSummaryResponse,
     PresignTierImageResponse,
@@ -20,6 +21,7 @@ export interface IChallengesService {
     summary(): Promise<ListChallengesSummaryResponse>;
     get(id: string): Promise<GetChallengeResponse>;
     progress(id: string): Promise<ChallengeProgressResponse>;
+    members(id: string): Promise<ListChallengeMembersResponse>;
     create(payload: CreateChallengeRequest): Promise<CreateChallengeResponse>;
     delete(id: string): Promise<void>;
     join(payload: JoinChallengeRequest): Promise<JoinChallengeResponse>;

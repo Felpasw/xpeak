@@ -7,6 +7,7 @@ import { ChallengeMembershipRole } from '@xpeak/shared';
 import { ChallengeDetailNotFound } from '@/components/atoms/ChallengeDetailNotFound';
 import { ChallengeDetailDeleteButton } from '@/components/organisms/ChallengeDetailDeleteButton';
 import { ChallengeDetailHeader } from '@/components/organisms/ChallengeDetailHeader';
+import { ChallengeDetailMembers } from '@/components/organisms/ChallengeDetailMembers';
 import { ChallengeDetailProgress } from '@/components/organisms/ChallengeDetailProgress';
 import { ChallengeDetailShareButton } from '@/components/organisms/ChallengeDetailShareButton';
 import { ChallengeDetailTiers } from '@/components/organisms/ChallengeDetailTiers';
@@ -44,6 +45,7 @@ function ChallengeDetailBody() {
             <ChallengeDetailHeader challenge={challenge} />
             <ChallengeDetailProgress challengeId={challenge.id} />
             <ChallengeDetailTiers tiers={tiers} currentTier={currentTier} />
+            <ChallengeDetailMembers challengeId={challenge.id} />
             {isOwner && shareLink && (
                 <ChallengeDetailShareButton invitationId={shareLink.id} />
             )}

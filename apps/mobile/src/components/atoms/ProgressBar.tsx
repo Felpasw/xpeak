@@ -1,22 +1,10 @@
+import { clampPercent } from '@/lib/progress';
+
 interface ProgressBarProps {
     value: number;
     target: number;
     achieved?: boolean;
 }
-
-const clampPercent = (value: number, target: number): number => {
-    if (target <= 0) {
-        return 0;
-    }
-    const raw = (value / target) * 100;
-    if (raw < 0) {
-        return 0;
-    }
-    if (raw > 100) {
-        return 100;
-    }
-    return raw;
-};
 
 export function ProgressBar({ value, target, achieved = false }: ProgressBarProps) {
     const percent = clampPercent(value, target);
