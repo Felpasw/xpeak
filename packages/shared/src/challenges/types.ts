@@ -1,3 +1,4 @@
+import type { CheckIn } from '../checkin/types';
 import type { PublicUser } from '../users/types';
 
 export enum ChallengeVisibility {
@@ -158,4 +159,14 @@ export interface ChallengeMemberRanking {
 
 export interface ListChallengeMembersResponse {
   members: ChallengeMemberRanking[];
+}
+
+export interface ChallengeCheckInFeedEntry {
+  checkIn: CheckIn;
+  author: PublicUser;
+}
+
+export interface ListChallengeCheckInsResponse {
+  items: ChallengeCheckInFeedEntry[];
+  nextCursor: string | null;
 }

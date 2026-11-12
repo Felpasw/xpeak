@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { ChallengeMembershipRole } from '@xpeak/shared';
 
 import { ChallengeDetailNotFound } from '@/components/atoms/ChallengeDetailNotFound';
+import { ChallengeDetailActivity } from '@/components/organisms/ChallengeDetailActivity';
 import { ChallengeDetailDeleteButton } from '@/components/organisms/ChallengeDetailDeleteButton';
 import { ChallengeDetailHeader } from '@/components/organisms/ChallengeDetailHeader';
 import { ChallengeDetailMembers } from '@/components/organisms/ChallengeDetailMembers';
@@ -46,6 +47,7 @@ function ChallengeDetailBody() {
             <ChallengeDetailProgress challengeId={challenge.id} />
             <ChallengeDetailTiers tiers={tiers} currentTier={currentTier} />
             <ChallengeDetailMembers challengeId={challenge.id} />
+            <ChallengeDetailActivity challengeId={challenge.id} />
             {isOwner && shareLink && (
                 <ChallengeDetailShareButton invitationId={shareLink.id} />
             )}

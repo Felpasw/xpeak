@@ -1,4 +1,8 @@
-import type { UseMutationResult, UseQueryResult } from '@tanstack/react-query';
+import type {
+    UseInfiniteQueryResult,
+    UseMutationResult,
+    UseQueryResult,
+} from '@tanstack/react-query';
 import type {
     Challenge,
     ChallengeMemberRanking,
@@ -10,6 +14,7 @@ import type {
     GetChallengeResponse,
     JoinChallengeRequest,
     JoinChallengeResponse,
+    ListChallengeCheckInsResponse,
 } from '@xpeak/shared';
 
 export interface UseChallengesListParams {
@@ -25,6 +30,11 @@ export type ChallengeDetailQuery = UseQueryResult<GetChallengeResponse>;
 export type ChallengeProgressQuery = UseQueryResult<ChallengeProgressResponse>;
 
 export type ChallengeMembersQuery = UseQueryResult<ChallengeMemberRanking[]>;
+
+export type ChallengeCheckInsQuery = UseInfiniteQueryResult<{
+    pages: ListChallengeCheckInsResponse[];
+    pageParams: Array<string | null>;
+}>;
 
 export type CreateChallengeMutation = UseMutationResult<
     CreateChallengeResponse,
@@ -48,6 +58,7 @@ export interface IChallengesHooks {
     useDetail(id: string): ChallengeDetailQuery;
     useProgress(id: string): ChallengeProgressQuery;
     useMembers(id: string | null | undefined): ChallengeMembersQuery;
+    useCheckIns(id: string | null | undefined): ChallengeCheckInsQuery;
     useCreate(): CreateChallengeMutation;
     useDelete(): DeleteChallengeMutation;
     useJoin(): JoinChallengeMutation;
