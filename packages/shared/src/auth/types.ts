@@ -15,6 +15,12 @@ export enum Backgrounds {
   DimensionalField = 'dimensional_field',
 }
 
+export interface LevelProgress {
+  xpIntoLevel: number;
+  xpToNextLevel: number;
+  percent: number;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -26,6 +32,7 @@ export interface User {
   longestStreakDays: number;
   background: Backgrounds | null;
   createdAt: string;
+  levelProgress: LevelProgress;
 }
 
 export interface AuthResponse {

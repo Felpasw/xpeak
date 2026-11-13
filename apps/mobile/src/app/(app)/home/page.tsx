@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { AnimatedBorderButton } from '@/components/atoms/AnimatedBorderButton';
+import { LevelProgressHero } from '@/components/atoms/LevelProgressHero';
 import { LightningText } from '@/components/atoms/LightningText';
 import { CheckinList } from '@/components/organisms/CheckinList';
 import authHooks from '@/hooks/useAuth';
@@ -45,17 +46,7 @@ export default function HomePage() {
                 </Link>
             </header>
 
-            <section className="flex flex-col gap-2">
-                <p className="font-mono text-[11px] uppercase tracking-[0.35em] text-white/50">
-                    Welcome back
-                </p>
-                <h1 className="text-3xl font-semibold tracking-tight">
-                    @{user.username}
-                </h1>
-                <p className="text-sm text-zinc-400">
-                    Level {user.level} · {user.xp} XP · {user.currentStreakDays}d streak
-                </p>
-            </section>
+            <LevelProgressHero user={user} />
 
             <AnimatedBorderButton
                 href={CHECKIN_HREF}

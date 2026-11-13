@@ -64,6 +64,7 @@ const sampleUser = {
     currentStreakDays: 7,
     longestStreakDays: 21,
     createdAt: '2026-09-17T12:00:00Z',
+    levelProgress: { xpIntoLevel: 730, xpToNextLevel: 280, percent: 1 },
 };
 
 const row = (id: string, title: string) => ({
@@ -91,7 +92,7 @@ const renderPage = async () => {
 };
 
 describe('HomePage', () => {
-    it('renders the welcome section with the user info', async () => {
+    it('renders the welcome section with the level hero', async () => {
         server.use(
             http.get('http://localhost:5000/me', () =>
                 HttpResponse.json({ user: sampleUser }),
@@ -103,9 +104,9 @@ describe('HomePage', () => {
         await renderPage();
 
         expect(screen.getByText('@felipe')).toBeInTheDocument();
-        expect(
-            screen.getByText(/Level 3 · 1250 XP · 7d streak/i),
-        ).toBeInTheDocument();
+        expect(screen.getByText(/Level 3/i)).toBeInTheDocument();
+        expect(screen.getByText(/1250 XP/i)).toBeInTheDocument();
+        expect(screen.getByTestId('streak-chip')).toHaveTextContent('7d');
     });
 
     it('renders a Check-in agora CTA linking to /checkin', async () => {

@@ -64,6 +64,33 @@ public sealed class MeEndpointTests : IClassFixture<XpeakWebApplicationFactory>
     }
 
     [Fact]
+    public async Task Me_exposes_level_progress_derived_from_level_curve()
+    {
+        var client = _factory.CreateClient();
+        var (username, token) = await RegisterAndGetToken(client);
+
+        await using (var scope = _factory.Services.CreateAsyncScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var user = await users.FindByNameAsync(username);
+            user!.Level = 1;
+            user.Xp = 150;
+            (await users.UpdateAsync(user)).Succeeded.Should().BeTrue();
+        }
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var response = await client.GetAsync("/me");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+        body!.User.Level.Should().Be(1);
+        body.User.Xp.Should().Be(150);
+        body.User.LevelProgress.XpIntoLevel.Should().Be(50);
+        body.User.LevelProgress.XpToNextLevel.Should().Be(183);
+        body.User.LevelProgress.Percent.Should().BeApproximately(50.0 / 183.0, 0.001);
+    }
+
+    [Fact]
     public async Task Returns_401_after_token_is_revoked()
     {
         var client = _factory.CreateClient();

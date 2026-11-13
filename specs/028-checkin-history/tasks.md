@@ -149,6 +149,26 @@
   - Reuse `AnimatedBorderButton` for the primary CTA.
   - Green.
 
+- [ ] **T-028-14 `[T][S]`** — Backend + mobile: home shows global level progress hero
+  - Backend: extend `UserResponse` (and `AppUser.ToResponse`) with a
+    `LevelProgress(XpIntoLevel, XpToNextLevel, Percent)` block
+    computed from `LevelCurve.XpForLevel(level)` and
+    `LevelCurve.XpForLevel(level + 1)`. At max level the block stays
+    valid with `XpToNextLevel = 0` and `Percent = 1`.
+  - Failing test
+    (`apps/api.Tests/Auth/Core/MeEndpointTests.cs` or equivalent):
+    `GET /me` with a user at `level=3, xp=1250` returns
+    `levelProgress.xpIntoLevel`, `xpToNextLevel` and `percent`
+    matching the curve.
+  - Mirror in `packages/shared/src/user/types.ts` (`LevelProgress`
+    interface + `User.levelProgress` field).
+  - Mobile: new atom `LevelProgressHero` rendering level, username,
+    animated progress bar and a `🔥 Nd` streak chip. Spec covers
+    percent-width, "faltam X XP" copy and chip visibility.
+  - Rewrite `apps/mobile/src/app/(app)/home/page.tsx` welcome block
+    to use the hero; keep the header + CTA + list intact.
+  - Green.
+
 - [ ] **T-028-13 `[T][S]`** — Mobile: home renders the check-in list inline
   - Product direction override of T-028-10's "Ver histórico →" link:
     the home itself is the primary surface for the check-in feed.
