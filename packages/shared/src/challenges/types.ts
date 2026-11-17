@@ -122,6 +122,17 @@ export interface ChallengeProgressResponse {
   progress: MembershipProgress;
 }
 
+export interface ChallengeSummary {
+  id: string;
+  title: string;
+  state: ChallengeState;
+  progress: MembershipProgress;
+}
+
+export interface ListChallengesSummaryResponse {
+  summaries: ChallengeSummary[];
+}
+
 export interface JoinChallengeRequest {
   invitationId: string;
 }

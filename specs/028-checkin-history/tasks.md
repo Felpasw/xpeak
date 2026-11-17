@@ -149,6 +149,29 @@
   - Reuse `AnimatedBorderButton` for the primary CTA.
   - Green.
 
+- [ ] **T-028-15 `[T][S]`** — Backend + mobile: home surfaces active challenges with progress
+  - Backend: new endpoint `GET /challenges/summary` returning the
+    caller's active memberships with per-challenge progress inline,
+    isolated from the existing `GET /challenges` listing so
+    unrelated consumers do not have to adapt.
+  - New DTO `ChallengeSummaryResponse(Id, Title, State, Progress)`
+    where `Progress` is `MembershipProgressResponse`.
+  - Failing test
+    (`apps/api.Tests/Challenges/MyChallengesSummaryEndpointTests.cs`):
+    401 without a token; 200 returning only the caller's active
+    memberships; each row exposes `progress.value`, `progress.target`.
+  - Mirror in `packages/shared/src/challenges/types.ts`
+    (`ChallengeSummary` + `ListChallengesSummaryResponse`).
+  - Mobile: `ChallengesService.summary()` + `useMyChallengesSummary`
+    hook following the singleton/class pattern. New
+    `MyChallengesSummary` organism rendering each row with title,
+    state badge, progress bar (reuses `lib/progress`) and a link to
+    the challenge detail. Empty, error and skeleton states.
+  - Plug between the CTA and `CheckinList` on the home. Hide the
+    section entirely when the user has zero active challenges to
+    avoid shouting at a new user.
+  - Green.
+
 - [ ] **T-028-14 `[T][S]`** — Backend + mobile: home shows global level progress hero
   - Backend: extend `UserResponse` (and `AppUser.ToResponse`) with a
     `LevelProgress(XpIntoLevel, XpToNextLevel, Percent)` block

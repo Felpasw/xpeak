@@ -14,6 +14,7 @@ import type {
     ChallengeDetailQuery,
     ChallengeProgressQuery,
     ChallengesListQuery,
+    ChallengesSummaryQuery,
     CreateChallengeMutation,
     DeleteChallengeMutation,
     EndChallengeMutation,
@@ -23,10 +24,12 @@ import type {
 } from './interfaces/useChallenges.interface';
 
 const LIST_PREFIX = ['challenges', 'list'] as const;
+const SUMMARY_KEY = ['challenges', 'summary'] as const;
 
 export const CHALLENGES_QUERY_KEYS = {
     list: (state?: string) => [...LIST_PREFIX, state ?? 'all'] as const,
     listPrefix: LIST_PREFIX,
+    summary: () => SUMMARY_KEY,
     detail: (id: string) => ['challenges', 'detail', id] as const,
     progress: (id: string) => ['challenges', 'progress', id] as const,
 } as const;
@@ -38,6 +41,16 @@ class ChallengesHooks implements IChallengesHooks {
             queryFn: async () => {
                 const response = await challengesService.list({ state: params.state });
                 return response.challenges;
+            },
+        });
+    }
+
+    useSummary(): ChallengesSummaryQuery {
+        return useQuery({
+            queryKey: CHALLENGES_QUERY_KEYS.summary(),
+            queryFn: async () => {
+                const response = await challengesService.summary();
+                return response.summaries;
             },
         });
     }

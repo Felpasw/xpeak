@@ -7,6 +7,7 @@ import { AnimatedBorderButton } from '@/components/atoms/AnimatedBorderButton';
 import { LevelProgressHero } from '@/components/atoms/LevelProgressHero';
 import { LightningText } from '@/components/atoms/LightningText';
 import { CheckinList } from '@/components/organisms/CheckinList';
+import { MyChallengesSummary } from '@/components/organisms/MyChallengesSummary';
 import authHooks from '@/hooks/useAuth';
 
 const PROFILE_HREF = '/profile';
@@ -55,6 +56,8 @@ export default function HomePage() {
             >
                 Check-in agora
             </AnimatedBorderButton>
+
+            <MyChallengesSummary />
 
             <CheckinList />
         </main>

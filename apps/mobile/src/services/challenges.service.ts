@@ -6,6 +6,7 @@ import type {
     JoinChallengeRequest,
     JoinChallengeResponse,
     ListChallengesResponse,
+    ListChallengesSummaryResponse,
     PresignTierImageResponse,
 } from '@xpeak/shared';
 
@@ -18,6 +19,11 @@ class ChallengesService implements IChallengesService {
         const response = await api.get<ListChallengesResponse>('/challenges', {
             params: { state: params.state },
         });
+        return response.data;
+    }
+
+    async summary() {
+        const response = await api.get<ListChallengesSummaryResponse>('/challenges/summary');
         return response.data;
     }
 

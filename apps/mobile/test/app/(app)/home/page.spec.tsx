@@ -97,6 +97,9 @@ describe('HomePage', () => {
             http.get('http://localhost:5000/me', () =>
                 HttpResponse.json({ user: sampleUser }),
             ),
+            http.get('http://localhost:5000/challenges/summary', () =>
+                HttpResponse.json({ summaries: [] }),
+            ),
             http.get('http://localhost:5000/check_ins', () =>
                 HttpResponse.json({ checkIns: [], nextCursor: null }),
             ),
@@ -113,6 +116,9 @@ describe('HomePage', () => {
         server.use(
             http.get('http://localhost:5000/me', () =>
                 HttpResponse.json({ user: sampleUser }),
+            ),
+            http.get('http://localhost:5000/challenges/summary', () =>
+                HttpResponse.json({ summaries: [] }),
             ),
             http.get('http://localhost:5000/check_ins', () =>
                 HttpResponse.json({ checkIns: [], nextCursor: null }),
@@ -146,6 +152,9 @@ describe('HomePage', () => {
         server.use(
             http.get('http://localhost:5000/me', () =>
                 HttpResponse.json({ user: sampleUser }),
+            ),
+            http.get('http://localhost:5000/challenges/summary', () =>
+                HttpResponse.json({ summaries: [] }),
             ),
             http.get('http://localhost:5000/check_ins', () =>
                 HttpResponse.json({ checkIns: [], nextCursor: null }),
