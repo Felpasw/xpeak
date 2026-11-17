@@ -18,6 +18,7 @@ public static class ChallengesModule
     {
         CreateChallengeEndpoint.Map(app);
         ListChallengesEndpoint.Map(app);
+        GetMyChallengesSummaryEndpoint.Map(app);
         GetChallengeEndpoint.Map(app);
         DeleteChallengeEndpoint.Map(app);
         GetChallengeProgressEndpoint.Map(app);

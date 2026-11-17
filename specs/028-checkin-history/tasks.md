@@ -149,6 +149,65 @@
   - Reuse `AnimatedBorderButton` for the primary CTA.
   - Green.
 
+- [ ] **T-028-15 `[T][S]`** — Backend + mobile: home surfaces active challenges with progress
+  - Backend: new endpoint `GET /challenges/summary` returning the
+    caller's active memberships with per-challenge progress inline,
+    isolated from the existing `GET /challenges` listing so
+    unrelated consumers do not have to adapt.
+  - New DTO `ChallengeSummaryResponse(Id, Title, State, Progress)`
+    where `Progress` is `MembershipProgressResponse`.
+  - Failing test
+    (`apps/api.Tests/Challenges/MyChallengesSummaryEndpointTests.cs`):
+    401 without a token; 200 returning only the caller's active
+    memberships; each row exposes `progress.value`, `progress.target`.
+  - Mirror in `packages/shared/src/challenges/types.ts`
+    (`ChallengeSummary` + `ListChallengesSummaryResponse`).
+  - Mobile: `ChallengesService.summary()` + `useMyChallengesSummary`
+    hook following the singleton/class pattern. New
+    `MyChallengesSummary` organism rendering each row with title,
+    state badge, progress bar (reuses `lib/progress`) and a link to
+    the challenge detail. Empty, error and skeleton states.
+  - Plug between the CTA and `CheckinList` on the home. Hide the
+    section entirely when the user has zero active challenges to
+    avoid shouting at a new user.
+  - Green.
+
+- [ ] **T-028-14 `[T][S]`** — Backend + mobile: home shows global level progress hero
+  - Backend: extend `UserResponse` (and `AppUser.ToResponse`) with a
+    `LevelProgress(XpIntoLevel, XpToNextLevel, Percent)` block
+    computed from `LevelCurve.XpForLevel(level)` and
+    `LevelCurve.XpForLevel(level + 1)`. At max level the block stays
+    valid with `XpToNextLevel = 0` and `Percent = 1`.
+  - Failing test
+    (`apps/api.Tests/Auth/Core/MeEndpointTests.cs` or equivalent):
+    `GET /me` with a user at `level=3, xp=1250` returns
+    `levelProgress.xpIntoLevel`, `xpToNextLevel` and `percent`
+    matching the curve.
+  - Mirror in `packages/shared/src/user/types.ts` (`LevelProgress`
+    interface + `User.levelProgress` field).
+  - Mobile: new atom `LevelProgressHero` rendering level, username,
+    animated progress bar and a `🔥 Nd` streak chip. Spec covers
+    percent-width, "faltam X XP" copy and chip visibility.
+  - Rewrite `apps/mobile/src/app/(app)/home/page.tsx` welcome block
+    to use the hero; keep the header + CTA + list intact.
+  - Green.
+
+- [ ] **T-028-13 `[T][S]`** — Mobile: home renders the check-in list inline
+  - Product direction override of T-028-10's "Ver histórico →" link:
+    the home itself is the primary surface for the check-in feed.
+    Groups route no longer exists (dropped in Phase 30), so there
+    is no secondary surface to link to.
+  - Failing spec
+    (`apps/mobile/test/app/(app)/home/page.spec.tsx`): renders the
+    existing welcome block, renders a `Check-in agora` CTA linking
+    to `/checkin`, and renders `<CheckinList />` below the CTA.
+  - Rewrite `apps/mobile/src/app/(app)/home/page.tsx` — drop the
+    "Your workout log lives here soon" placeholder, keep the
+    header/profile pill and the welcome section.
+  - Streak hint and `lastCheckInAt` (T-028-08/09) stay deferred —
+    scope is the list + CTA only.
+  - Green.
+
 ## Section C — Wrap-up
 
 - [ ] **T-028-11 `[P]`** — ADR `docs/adr/0028-check-in-history.md`

@@ -7,6 +7,7 @@ import type {
     JoinChallengeRequest,
     JoinChallengeResponse,
     ListChallengesResponse,
+    ListChallengesSummaryResponse,
     PresignTierImageResponse,
 } from '@xpeak/shared';
 
@@ -16,6 +17,7 @@ export interface ListChallengesParams {
 
 export interface IChallengesService {
     list(params?: ListChallengesParams): Promise<ListChallengesResponse>;
+    summary(): Promise<ListChallengesSummaryResponse>;
     get(id: string): Promise<GetChallengeResponse>;
     progress(id: string): Promise<ChallengeProgressResponse>;
     create(payload: CreateChallengeRequest): Promise<CreateChallengeResponse>;

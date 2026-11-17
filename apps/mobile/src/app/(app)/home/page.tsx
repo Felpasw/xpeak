@@ -3,10 +3,15 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { AnimatedBorderButton } from '@/components/atoms/AnimatedBorderButton';
+import { LevelProgressHero } from '@/components/atoms/LevelProgressHero';
 import { LightningText } from '@/components/atoms/LightningText';
+import { CheckinList } from '@/components/organisms/CheckinList';
+import { MyChallengesSummary } from '@/components/organisms/MyChallengesSummary';
 import authHooks from '@/hooks/useAuth';
 
 const PROFILE_HREF = '/profile';
+const CHECKIN_HREF = '/checkin';
 
 export default function HomePage() {
     const router = useRouter();
@@ -42,24 +47,19 @@ export default function HomePage() {
                 </Link>
             </header>
 
-            <section className="flex flex-col gap-2">
-                <p className="font-mono text-[11px] uppercase tracking-[0.35em] text-white/50">
-                    Welcome back
-                </p>
-                <h1 className="text-3xl font-semibold tracking-tight">
-                    @{user.username}
-                </h1>
-                <p className="text-sm text-zinc-400">
-                    Level {user.level} · {user.xp} XP · {user.currentStreakDays}d streak
-                </p>
-            </section>
+            <LevelProgressHero user={user} />
 
-            <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 text-center">
-                <p className="text-sm text-zinc-400">
-                    Your workout log lives here soon. Check-ins, streaks and titles are
-                    on the way.
-                </p>
-            </section>
+            <AnimatedBorderButton
+                href={CHECKIN_HREF}
+                ariaLabel="Check-in agora"
+                className="self-start"
+            >
+                Check-in agora
+            </AnimatedBorderButton>
+
+            <MyChallengesSummary />
+
+            <CheckinList />
         </main>
     );
 }

@@ -144,3 +144,16 @@ public sealed record JoinChallengeResponse(
 /// <summary>Payload of <c>GET /challenges/{id}/progress</c>.</summary>
 public sealed record ChallengeProgressResponse(
     MembershipProgressResponse Progress);
+
+/// <summary>Compact row returned by <c>GET /challenges/summary</c> —
+/// the minimum shape a home dashboard needs to render a progress bar
+/// per active challenge the caller belongs to.</summary>
+public sealed record ChallengeSummaryResponse(
+    Guid Id,
+    string Title,
+    ChallengeState State,
+    MembershipProgressResponse Progress);
+
+/// <summary>Payload of <c>GET /challenges/summary</c>.</summary>
+public sealed record ListChallengesSummaryResponse(
+    IReadOnlyList<ChallengeSummaryResponse> Summaries);

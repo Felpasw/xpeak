@@ -3,6 +3,7 @@ import type {
     Challenge,
     ChallengeProgressResponse,
     ChallengeState,
+    ChallengeSummary,
     CreateChallengeRequest,
     CreateChallengeResponse,
     GetChallengeResponse,
@@ -15,6 +16,8 @@ export interface UseChallengesListParams {
 }
 
 export type ChallengesListQuery = UseQueryResult<Challenge[]>;
+
+export type ChallengesSummaryQuery = UseQueryResult<ChallengeSummary[]>;
 
 export type ChallengeDetailQuery = UseQueryResult<GetChallengeResponse>;
 
@@ -38,6 +41,7 @@ export type EndChallengeMutation = UseMutationResult<void, unknown, string>;
 
 export interface IChallengesHooks {
     useList(params?: UseChallengesListParams): ChallengesListQuery;
+    useSummary(): ChallengesSummaryQuery;
     useDetail(id: string): ChallengeDetailQuery;
     useProgress(id: string): ChallengeProgressQuery;
     useCreate(): CreateChallengeMutation;
