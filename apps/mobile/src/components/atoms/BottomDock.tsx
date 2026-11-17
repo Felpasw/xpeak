@@ -2,6 +2,7 @@
 
 import { Flag, Home, Plus, Trophy, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
@@ -171,6 +172,30 @@ export function BottomDock() {
             aria-label="Primary"
             className="fixed bottom-14 left-4 right-4 z-20 flex items-end rounded-2xl border border-white/10 bg-zinc-950/85 px-2 py-3 shadow-2xl backdrop-blur-md"
         >
+            <span
+                aria-hidden="true"
+                className={cn(
+                    'pointer-events-none absolute -inset-px rounded-[inherit] border-2 border-transparent',
+                    '[mask-clip:padding-box,border-box]',
+                    '[mask-composite:intersect] [mask-image:linear-gradient(transparent,transparent),linear-gradient(#000,#000)]',
+                )}
+            >
+                <motion.span
+                    className="absolute aspect-square bg-gradient-to-r from-transparent via-sky-300 to-sky-400"
+                    animate={{ offsetDistance: ['0%', '100%'] }}
+                    style={{
+                        width: 96,
+                        filter: 'drop-shadow(0 0 6px rgba(56,189,248,0.7))',
+                        offsetPath: 'rect(0 auto auto 0 round 16px)',
+                    }}
+                    transition={{
+                        repeat: Number.POSITIVE_INFINITY,
+                        duration: 3.5,
+                        ease: 'linear',
+                    }}
+                />
+            </span>
+
             <div
                 aria-hidden="true"
                 className="pointer-events-none absolute bottom-0 h-full transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
