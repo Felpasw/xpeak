@@ -8,6 +8,7 @@ using Xpeak.Api.Challenges.Entities;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.CheckIns.Entities;
 using Xpeak.Api.Media.Entities;
+using Xpeak.Api.Social.Entities;
 using Xpeak.Api.Users;
 
 namespace Xpeak.Api.Infrastructure;
@@ -37,6 +38,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<ChallengeInvitation> ChallengeInvitations => Set<ChallengeInvitation>();
 
     public DbSet<ChallengeTier> ChallengeTiers => Set<ChallengeTier>();
+
+    public DbSet<CheckInReaction> CheckInReactions => Set<CheckInReaction>();
+
+    public DbSet<CheckInComment> CheckInComments => Set<CheckInComment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -362,6 +367,71 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             b.HasIndex(t => new { t.ChallengeId, t.MinLevel })
                 .IsUnique()
                 .HasDatabaseName("ux_challenge_tiers_challenge_min_level");
+        });
+
+        modelBuilder.Entity<CheckInReaction>(b =>
+        {
+            b.ToTable("check_in_reactions", t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_check_in_reactions_emoji_not_blank",
+                    "length(trim(emoji)) > 0");
+            });
+
+            b.HasKey(r => r.Id);
+            b.Property(r => r.Id).HasColumnName("id");
+            b.Property(r => r.CheckInId).HasColumnName("check_in_id");
+            b.Property(r => r.UserId).HasColumnName("user_id");
+            b.Property(r => r.Emoji).HasColumnName("emoji").HasMaxLength(32).IsRequired();
+            b.Property(r => r.CreatedAt).HasColumnName("created_at");
+
+            b.HasOne<CheckIn>()
+                .WithMany()
+                .HasForeignKey(r => r.CheckInId)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasOne<AppUser>()
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(r => new { r.CheckInId, r.UserId, r.Emoji })
+                .IsUnique()
+                .HasDatabaseName("ux_check_in_reactions_check_user_emoji");
+            b.HasIndex(r => r.CheckInId)
+                .HasDatabaseName("ix_check_in_reactions_check_in_id");
+        });
+
+        modelBuilder.Entity<CheckInComment>(b =>
+        {
+            b.ToTable("check_in_comments", t =>
+            {
+                t.HasCheckConstraint(
+                    "ck_check_in_comments_body_length",
+                    "length(trim(body)) > 0 AND length(body) <= 280");
+            });
+
+            b.HasKey(c => c.Id);
+            b.Property(c => c.Id).HasColumnName("id");
+            b.Property(c => c.CheckInId).HasColumnName("check_in_id");
+            b.Property(c => c.UserId).HasColumnName("user_id");
+            b.Property(c => c.Body).HasColumnName("body").HasMaxLength(280).IsRequired();
+            b.Property(c => c.CreatedAt).HasColumnName("created_at");
+            b.Property(c => c.DeletedAt).HasColumnName("deleted_at");
+
+            b.HasOne<CheckIn>()
+                .WithMany()
+                .HasForeignKey(c => c.CheckInId)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasOne<AppUser>()
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(c => new { c.CheckInId, c.CreatedAt })
+                .HasDatabaseName("ix_check_in_comments_check_in_created_at");
+            b.HasIndex(c => c.CheckInId)
+                .HasFilter("deleted_at IS NULL")
+                .HasDatabaseName("ix_check_in_comments_live");
         });
     }
 }
