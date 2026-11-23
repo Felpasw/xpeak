@@ -3,7 +3,10 @@
 ## 1. Summary
 
 Emoji reactions (fixed palette, toggle) and flat text comments on
-check-ins. Visibility gated by the friendship graph (Phase 12).
+check-ins. **MVP visibility is open** — any authenticated user can
+see, react to and comment on any check-in. Friend-graph gating is
+reintroduced when Phase 12 ships; the visibility helper is wired
+through a single extension point so the switch is a one-line change.
 Writes emit MediatR notifications for downstream feed and push
 consumers.
 
@@ -59,8 +62,12 @@ so `👍`, `👍🏻` … `👍🏿` collapse into the same aggregate bucket.
 ## 4. Endpoints
 
 All endpoints require `Authorization: Bearer <jwt>` and pass through
-the same visibility helper introduced in Phase 12 — a caller who
-cannot see the check-in gets 404 (not 403), to obscure existence.
+a single `ICheckInVisibility` helper. For the MVP the helper returns
+true for any authenticated caller on any existing check-in (open
+visibility). When Phase 12 ships, the helper becomes the single
+seam where the friend-graph rule lands and the endpoints switch to
+returning 404 (not 403) to obscure existence — no endpoint code
+changes.
 
 ### 4.1. `POST /check_ins/{id}/reactions`
 
@@ -165,29 +172,58 @@ with its own coalescing rules.
 
 ## 6. Mobile
 
-### 6.1. Reactions strip
+### 6.1. Dedicated detail route
 
-Renders on the check-in detail screen and as a compact strip on the
-feed item.
+Opening a check-in from any feed card navigates to
+`/checkin/view?id=<uuid>`. The route is the single surface for
+reactions and comments — there is no bottom-sheet modal, no
+in-place expansion. The URL is deep-linkable and shareable.
 
-- Row of 5 emoji chips with count badges.
+Layout, top to bottom:
+
+1. **Header** — author avatar + `@username` + relative timestamp.
+2. **Media hero** — square-ish full-width image (or video). Falls
+   back to a muted dumbbell placeholder when the check-in has no
+   media.
+3. **Title + notes** — the check-in's title and the author's notes.
+4. **XP card** — XP earned with a compact breakdown of the
+   `scoring_snapshot.multipliers` (base + each multiplier that
+   applied).
+5. **Reactions strip** — row of chips with counts (see §6.2).
+6. **Comments section** — inline list + input (see §6.3).
+
+Back navigation returns the user to the previous scroll position
+on the feed (Next's router cache handles this out of the box).
+
+### 6.2. Reactions strip
+
+Renders on the detail route and as a compact read-only badge row
+on feed cards.
+
+- 12 emoji chips (the MVP palette) with count badges. Chips with
+  zero count collapse under a "+" button to keep the strip tidy.
 - Tap = toggle. Optimistic update (immediate visual flip) with
   rollback on failure.
-- Long-press an existing count opens the "who reacted" sheet
-  (`GET /reactions?include=users`).
+- Tapping an existing count opens a **"who reacted" view** backed
+  by `GET /reactions?include=users` — grouped by emoji, up to 20
+  users per emoji, overflow collapsed as "... and N more". The view
+  is a sub-panel on the detail route (expand/collapse), not a
+  modal.
 
-### 6.2. Comments sheet
+### 6.3. Comments section
 
-Bottom-sheet modal opened from a comment icon on the check-in card.
+Inline on the detail route, directly under the reactions strip.
 
-- Header: total count.
-- Body: list of comments, oldest at top, own comments right-aligned
-  with a subtle background.
-- Footer: text input (280 char counter), send button disabled until
-  non-empty.
-- Author or check-in owner sees a delete affordance on each comment.
+- Header: total count ("12 comentários").
+- Body: paginated list of comments, oldest at top, own comments
+  right-aligned with a subtle background. Virtualized when the
+  list grows (sentinel-driven fetch-next-page).
+- Footer: text input (280 char counter), send button disabled
+  until non-empty. Optimistic append on submit.
+- Author or check-in owner sees a delete affordance on each
+  comment.
 
-### 6.3. Feed integration
+### 6.4. Feed integration
 
 Feed list response includes:
 ```json
@@ -197,8 +233,10 @@ Feed list response includes:
 }
 ```
 
-so the feed can render the strip and the badge without a per-item
-round-trip.
+so the feed card renders the aggregate chip row and the comment
+badge without any per-item round-trip. Tapping the card (or the
+reactions / comments affordances) always navigates to the detail
+route — no in-feed interactivity besides visual.
 
 ## 7. Test plan
 
@@ -206,19 +244,26 @@ round-trip.
 - `POST` toggle: same emoji twice → count goes up then down.
 - `POST` two different emojis from same user → both persist.
 - Palette validation: unknown emoji → 422.
-- Visibility: friends-only check-in, non-friend caller → 404 on
-  every endpoint.
+- Visibility (MVP open): any authenticated caller reaches any
+  check-in's reactions / comments endpoints with 200/201/204.
+- Visibility seam: `ICheckInVisibility` has a test double that
+  returns false, so endpoints flip to 404 without code change —
+  future-proofs the Phase 12 swap.
 - Comment length: 281 chars → 422.
 - Delete auth: author OK, check-in owner OK, third party 403.
 - Cascade: deleting a check-in wipes its reactions and comments.
 - MediatR emission: writes trigger the four notification types.
 
 ### Mobile
-- Optimistic toggle rolls back on 5xx.
+- Optimistic reaction toggle rolls back on 5xx.
 - Comment optimistic append rolls back on 5xx.
-- Long-press opens the who-reacted sheet with correct users.
-- Feed item renders the strip from the batched payload (no extra
-  request).
+- `/checkin/view?id=...` renders header, media, XP breakdown,
+  reactions strip and comments section from `GET /check_ins/{id}`
+  plus the two aggregates.
+- "Who reacted" sub-panel lists the correct users per emoji.
+- Feed card renders the strip + comment badge from the batched
+  payload (no extra request) and navigates to the detail route on
+  tap.
 
 ## 8. Non-goals
 
