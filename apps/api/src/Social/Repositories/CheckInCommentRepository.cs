@@ -107,6 +107,31 @@ public sealed class CheckInCommentRepository(AppDbContext db)
             .AsNoTracking()
             .CountAsync(c => c.CheckInId == checkInId && c.DeletedAt == null, ct);
 
+    public async Task<IReadOnlyDictionary<Guid, int>> GetCountsBatchAsync(
+        IReadOnlyList<Guid> checkInIds,
+        CancellationToken ct = default)
+    {
+        if (checkInIds.Count == 0)
+        {
+            return new Dictionary<Guid, int>();
+        }
+
+        var rows = await db.CheckInComments
+            .AsNoTracking()
+            .Where(c => checkInIds.Contains(c.CheckInId) && c.DeletedAt == null)
+            .GroupBy(c => c.CheckInId)
+            .Select(g => new { CheckInId = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+
+        var byCheckIn = rows.ToDictionary(r => r.CheckInId, r => r.Count);
+        foreach (var id in checkInIds)
+        {
+            byCheckIn.TryAdd(id, 0);
+        }
+
+        return byCheckIn;
+    }
+
     private static string EncodeCursor(DateTimeOffset createdAt, Guid id)
     {
         var raw = $"{createdAt.UtcTicks}|{id:N}";

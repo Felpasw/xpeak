@@ -43,4 +43,11 @@ public interface ICheckInCommentRepository
     Task<int> CountVisibleAsync(
         Guid checkInId,
         CancellationToken ct = default);
+
+    /// <summary>Batched count read for the feed card so the list
+    /// endpoint does not pay an N+1 against this table. Keys with no
+    /// live comments map to zero.</summary>
+    Task<IReadOnlyDictionary<Guid, int>> GetCountsBatchAsync(
+        IReadOnlyList<Guid> checkInIds,
+        CancellationToken ct = default);
 }

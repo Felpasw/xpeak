@@ -5,7 +5,10 @@ namespace Xpeak.Api.CheckIns.Dto;
 /// <summary>
 /// Wire representation of a single check-in row. Used both as the
 /// standalone item in <c>ListCheckInsResponse.CheckIns</c> and inside
-/// the create response.
+/// the create response. Carries the reactions aggregate and the
+/// live comment count so the mobile card renders the engagement
+/// badges without secondary requests (batched at the list layer to
+/// avoid N+1).
 /// </summary>
 public sealed record CheckInResponse(
     Guid Id,
@@ -16,12 +19,19 @@ public sealed record CheckInResponse(
     int? DurationMinutes,
     string? Notes,
     bool HasMedia,
-    MediaPreview? MediaPreview)
+    MediaPreview? MediaPreview,
+    CheckInReactionsSummary Reactions,
+    int CommentsCount)
 {
+    private static readonly CheckInReactionsSummary EmptyReactions =
+        new(new Dictionary<string, int>(), Array.Empty<string>());
+
     public static CheckInResponse From(
         CheckIn c,
         MediaPreview? mediaPreview = null,
-        bool hasMedia = false) => new(
+        bool hasMedia = false,
+        CheckInReactionsSummary? reactions = null,
+        int commentsCount = 0) => new(
         c.Id,
         c.Title,
         c.XpEarned,
@@ -30,7 +40,9 @@ public sealed record CheckInResponse(
         c.DurationMinutes,
         c.Notes,
         hasMedia,
-        mediaPreview);
+        mediaPreview,
+        reactions ?? EmptyReactions,
+        commentsCount);
 }
 
 /// <summary>

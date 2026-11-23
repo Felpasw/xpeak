@@ -28,4 +28,13 @@ public interface ICheckInReactionRepository
         Guid checkInId,
         int perEmojiCap,
         CancellationToken ct = default);
+
+    /// <summary>Batched aggregate read for the feed card so the
+    /// list endpoint does not pay an N+1 against this table.
+    /// Keys the caller did not touch still map to an entry with an
+    /// empty <c>Mine</c> list.</summary>
+    Task<IReadOnlyDictionary<Guid, ReactionAggregate>> GetAggregatesBatchAsync(
+        IReadOnlyList<Guid> checkInIds,
+        Guid callerId,
+        CancellationToken ct = default);
 }

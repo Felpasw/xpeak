@@ -63,6 +63,46 @@ public sealed class CheckInReactionRepository(AppDbContext db)
         return new ReactionAggregate(counts, mine);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, ReactionAggregate>> GetAggregatesBatchAsync(
+        IReadOnlyList<Guid> checkInIds,
+        Guid callerId,
+        CancellationToken ct = default)
+    {
+        if (checkInIds.Count == 0)
+        {
+            return new Dictionary<Guid, ReactionAggregate>();
+        }
+
+        var rows = await db.CheckInReactions
+            .AsNoTracking()
+            .Where(r => checkInIds.Contains(r.CheckInId))
+            .Select(r => new { r.CheckInId, r.UserId, r.Emoji })
+            .ToListAsync(ct);
+
+        var byCheckIn = rows.GroupBy(r => r.CheckInId).ToDictionary(
+            g => g.Key,
+            g =>
+            {
+                var counts = g.GroupBy(r => r.Emoji)
+                    .ToDictionary(gg => gg.Key, gg => gg.Count());
+                var mine = g.Where(r => r.UserId == callerId)
+                    .Select(r => r.Emoji)
+                    .Distinct()
+                    .ToList();
+                return new ReactionAggregate(counts, mine);
+            });
+
+        var empty = new ReactionAggregate(
+            new Dictionary<string, int>(),
+            Array.Empty<string>());
+        foreach (var id in checkInIds)
+        {
+            byCheckIn.TryAdd(id, empty);
+        }
+
+        return byCheckIn;
+    }
+
     public async Task<IReadOnlyDictionary<string, IReadOnlyList<ReactionUser>>> GetUsersAsync(
         Guid checkInId,
         int perEmojiCap,
