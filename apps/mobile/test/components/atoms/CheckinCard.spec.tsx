@@ -14,6 +14,8 @@ const base: CheckIn = {
     notes: 'Agachamento pesado',
     hasMedia: false,
     mediaPreview: null,
+    reactions: { counts: {}, mine: [] },
+    commentsCount: 0,
 };
 
 describe('<CheckinCard />', () => {

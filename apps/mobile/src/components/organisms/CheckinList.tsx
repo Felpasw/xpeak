@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 
 import { CheckinCard } from '@/components/atoms/CheckinCard';
 import { CheckinListSkeleton } from '@/components/atoms/CheckinListSkeleton';
-import { useCheckInsList } from '@/hooks/useCheckIn';
+import checkInHooks from '@/hooks/useCheckIn';
 
 interface CheckinListProps {
     initialLimit?: number;
@@ -15,7 +15,7 @@ const ERROR_COPY = 'Falhou carregar o histórico.';
 const RETRY_LABEL = 'Tentar de novo';
 
 export function CheckinList({ initialLimit }: CheckinListProps) {
-    const query = useCheckInsList({ limit: initialLimit });
+    const query = checkInHooks.useList({ limit: initialLimit });
     const sentinelRef = useRef<HTMLDivElement>(null);
 
     const { fetchNextPage, hasNextPage, isFetchingNextPage } = query;

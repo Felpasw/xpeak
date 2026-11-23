@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { useCreateCheckIn } from '@/hooks/useCheckIn';
+import checkInHooks from '@/hooks/useCheckIn';
 import { uploadCheckInMedia } from '@/lib/media/uploader';
 import type { SelectedMedia } from '@/lib/media/types';
 
@@ -69,7 +69,7 @@ const checkinSchema = z.object({
 
 export function useCheckinForm(): UseCheckinFormResult {
     const router = useRouter();
-    const createCheckIn = useCreateCheckIn();
+    const createCheckIn = checkInHooks.useCreate();
     const [levelUpTo, setLevelUpTo] = useState<number | null>(null);
 
     const form = useForm<CheckinFormValues>({
