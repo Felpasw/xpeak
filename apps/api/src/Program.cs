@@ -14,6 +14,7 @@ using Xpeak.Api.Endpoints;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Media;
 using Xpeak.Api.Progression;
+using Xpeak.Api.Social;
 using Xpeak.Api.Users;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -56,6 +57,7 @@ builder.Services
     .AddProgression()
     .AddCheckIns()
     .AddChallenges()
+    .AddSocial()
     .AddMedia(builder.Configuration)
     .AddAuthCore(builder.Configuration)
     .AddPasswordAuth()
