@@ -20,6 +20,7 @@ public static class CheckInsModule
     {
         CreateCheckInEndpoint.Map(app);
         ListCheckInsEndpoint.Map(app);
+        GetCheckInEndpoint.Map(app);
         return app;
     }
 }
