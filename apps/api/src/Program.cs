@@ -105,6 +105,7 @@ app.UsePasswordAuth();
 app.UseGoogleAuth();
 app.UseCheckIns();
 app.UseChallenges();
+app.UseSocial();
 app.UseMedia();
 app.UseUsers();
 
