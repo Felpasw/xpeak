@@ -10,7 +10,6 @@ interface ChallengeDetailShareButtonProps {
 const COPY_LABEL = 'Copiar link';
 const COPIED_TOAST = 'Link copiado.';
 const COPY_ERROR = 'Deu ruim copiando. Copia manual aí.';
-const SECTION_LABEL = 'Convite';
 
 function buildShareUrl(invitationId: string): string {
     const origin = typeof window === 'undefined' ? '' : window.location.origin;
@@ -30,22 +29,15 @@ export function ChallengeDetailShareButton({ invitationId }: ChallengeDetailShar
     };
 
     return (
-        <div className="mt-2 flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-            <p className="text-xs uppercase tracking-widest text-zinc-500">{SECTION_LABEL}</p>
-            <code
-                data-testid="challenge-share-url"
-                className="truncate rounded-lg bg-zinc-950/60 px-3 py-2 text-xs text-zinc-300"
-            >
-                {url}
-            </code>
-            <button
-                type="button"
-                onClick={onCopy}
-                className="flex items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/60 px-4 py-2.5 text-sm font-semibold text-zinc-100 transition-colors hover:border-zinc-500"
-            >
-                <Copy className="h-4 w-4" />
-                {COPY_LABEL}
-            </button>
-        </div>
+        <button
+            type="button"
+            onClick={onCopy}
+            data-testid="challenge-share-url"
+            data-share-url={url}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-sky-500/40 bg-gradient-to-br from-sky-500/15 via-sky-500/10 to-transparent px-4 py-3 text-sm font-semibold text-sky-100 shadow-[0_0_24px_-10px_rgba(56,189,248,0.6)] transition-colors hover:border-sky-400/70 hover:bg-sky-500/25"
+        >
+            <Copy className="h-4 w-4" />
+            {COPY_LABEL}
+        </button>
     );
 }

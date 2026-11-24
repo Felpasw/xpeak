@@ -18,8 +18,8 @@ export function ChallengeDetailActivity({ challengeId }: ChallengeDetailActivity
     const feed = challengesHooks.useCheckIns(challengeId);
 
     return (
-        <section className="flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-            <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-zinc-500">
+        <section className="flex flex-col gap-4">
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.35em] text-sky-300">
                 {SECTION_LABEL}
             </h2>
             {renderBody()}
@@ -39,7 +39,7 @@ export function ChallengeDetailActivity({ challengeId }: ChallengeDetailActivity
         }
         return (
             <>
-                <ol className="flex flex-col gap-2">
+                <ol className="flex flex-col gap-4">
                     {entries.map((entry) => (
                         <ChallengeActivityRow key={entry.checkIn.id} entry={entry} />
                     ))}
