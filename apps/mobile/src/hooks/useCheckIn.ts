@@ -33,6 +33,7 @@ const LIST_QUERY_PREFIX = ['checkins', 'list'] as const;
 const DETAIL_PREFIX = ['checkins', 'detail'] as const;
 const REACTION_USERS_PREFIX = ['checkins', 'reactions', 'users'] as const;
 const COMMENTS_PREFIX = ['checkins', 'comments'] as const;
+const CHALLENGE_CHECK_INS_PREFIX = ['challenges', 'check_ins'] as const;
 const DEFAULT_LIST_LIMIT = 20;
 const DEFAULT_COMMENTS_LIMIT = 20;
 
@@ -44,6 +45,7 @@ export const CHECK_IN_QUERY_KEYS = {
     reactionUsers: (id: string) => [...REACTION_USERS_PREFIX, id] as const,
     comments: (id: string) => [...COMMENTS_PREFIX, id] as const,
     commentsPrefix: COMMENTS_PREFIX,
+    challengeFeedPrefix: CHALLENGE_CHECK_INS_PREFIX,
 } as const;
 
 class CheckInHooks implements ICheckInHooks {
@@ -92,6 +94,9 @@ class CheckInHooks implements ICheckInHooks {
                 queryClient.invalidateQueries({
                     queryKey: CHECK_IN_QUERY_KEYS.listPrefix,
                 });
+                queryClient.invalidateQueries({
+                    queryKey: CHECK_IN_QUERY_KEYS.challengeFeedPrefix,
+                });
             },
         });
     }
@@ -136,6 +141,9 @@ class CheckInHooks implements ICheckInHooks {
                 queryClient.invalidateQueries({
                     queryKey: CHECK_IN_QUERY_KEYS.listPrefix,
                 });
+                queryClient.invalidateQueries({
+                    queryKey: CHECK_IN_QUERY_KEYS.challengeFeedPrefix,
+                });
             },
         });
     }
@@ -153,6 +161,9 @@ class CheckInHooks implements ICheckInHooks {
                 });
                 queryClient.invalidateQueries({
                     queryKey: CHECK_IN_QUERY_KEYS.listPrefix,
+                });
+                queryClient.invalidateQueries({
+                    queryKey: CHECK_IN_QUERY_KEYS.challengeFeedPrefix,
                 });
             },
         });
