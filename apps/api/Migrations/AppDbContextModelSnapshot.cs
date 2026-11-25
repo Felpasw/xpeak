@@ -564,6 +564,94 @@ namespace Xpeak.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Xpeak.Api.Social.Entities.CheckInComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(280)
+                        .HasColumnType("character varying(280)")
+                        .HasColumnName("body");
+
+                    b.Property<Guid>("CheckInId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("check_in_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CheckInId")
+                        .HasDatabaseName("ix_check_in_comments_live")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CheckInId", "CreatedAt")
+                        .HasDatabaseName("ix_check_in_comments_check_in_created_at");
+
+                    b.ToTable("check_in_comments", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_check_in_comments_body_length", "length(trim(body)) > 0 AND length(body) <= 280");
+                        });
+                });
+
+            modelBuilder.Entity("Xpeak.Api.Social.Entities.CheckInReaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CheckInId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("check_in_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Emoji")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("emoji");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CheckInId")
+                        .HasDatabaseName("ix_check_in_reactions_check_in_id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CheckInId", "UserId", "Emoji")
+                        .IsUnique()
+                        .HasDatabaseName("ux_check_in_reactions_check_user_emoji");
+
+                    b.ToTable("check_in_reactions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_check_in_reactions_emoji_not_blank", "length(trim(emoji)) > 0");
+                        });
+                });
+
             modelBuilder.Entity("Xpeak.Api.Users.AppUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -788,6 +876,36 @@ namespace Xpeak.Api.Migrations
                     b.HasOne("Xpeak.Api.CheckIns.Entities.CheckIn", null)
                         .WithMany()
                         .HasForeignKey("CheckInId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Xpeak.Api.Social.Entities.CheckInComment", b =>
+                {
+                    b.HasOne("Xpeak.Api.CheckIns.Entities.CheckIn", null)
+                        .WithMany()
+                        .HasForeignKey("CheckInId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Xpeak.Api.Users.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Xpeak.Api.Social.Entities.CheckInReaction", b =>
+                {
+                    b.HasOne("Xpeak.Api.CheckIns.Entities.CheckIn", null)
+                        .WithMany()
+                        .HasForeignKey("CheckInId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Xpeak.Api.Users.AppUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

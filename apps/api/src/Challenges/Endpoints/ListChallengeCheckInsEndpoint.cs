@@ -7,6 +7,7 @@ using Xpeak.Api.Challenges.Dto;
 using Xpeak.Api.CheckIns.Dto;
 using Xpeak.Api.Infrastructure;
 using Xpeak.Api.Media;
+using Xpeak.Api.Social.Repositories;
 using Xpeak.Api.Users;
 
 namespace Xpeak.Api.Challenges.Endpoints;
@@ -32,6 +33,8 @@ public static class ListChallengeCheckInsEndpoint
         ClaimsPrincipal principal,
         AppDbContext db,
         IMediaStorage storage,
+        ICheckInReactionRepository reactionRepo,
+        ICheckInCommentRepository commentRepo,
         int? limit,
         string? cursor,
         CancellationToken ct)
@@ -104,6 +107,10 @@ public static class ListChallengeCheckInsEndpoint
             .Where(u => authorIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, ct);
 
+        var checkInIds = rows.Select(r => r.Id).ToList();
+        var aggregates = await reactionRepo.GetAggregatesBatchAsync(checkInIds, callerId, ct);
+        var commentCounts = await commentRepo.GetCountsBatchAsync(checkInIds, ct);
+
         var items = rows.Select(c =>
         {
             var media = db.CheckInMedia
@@ -113,8 +120,14 @@ public static class ListChallengeCheckInsEndpoint
                 .Select(m => new FirstMediaSource(m.Kind, m.StorageKey))
                 .FirstOrDefault();
             var hasMedia = media is not null;
+            var aggregate = aggregates[c.Id];
             return new ChallengeCheckInFeedEntry(
-                CheckInResponse.From(c, BuildPreview(storage, media), hasMedia),
+                CheckInResponse.From(
+                    c,
+                    BuildPreview(storage, media),
+                    hasMedia,
+                    new CheckInReactionsSummary(aggregate.Counts, aggregate.Mine),
+                    commentCounts[c.Id]),
                 PublicUserResponse.From(authors[c.UserId]));
         }).ToList();
 

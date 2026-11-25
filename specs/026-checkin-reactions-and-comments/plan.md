@@ -27,15 +27,20 @@ that closes the loop between the person who trained and their crew.
   skin-tone / variation-selector modifiers so `👍` and `👍🏽` collapse
   into the same bucket instead of bloating the aggregate.
 - Comment length cap: 280 chars (matches Phase 5 check-in note cap).
-- Endpoints (all auth-gated, visibility-checked against Phase 12
-  privacy graph):
+- Endpoints (all auth-gated, visibility-checked via
+  `ICheckInVisibility` — MVP returns true for any authenticated
+  caller; Phase 12 later swaps the implementation without touching
+  endpoint code):
   - `POST /check_ins/{id}/reactions` — toggle a reaction (idempotent).
   - `GET  /check_ins/{id}/reactions` — grouped counts + who reacted.
   - `POST /check_ins/{id}/comments` — new comment.
   - `GET  /check_ins/{id}/comments` — paginated by `created_at ASC`.
   - `DELETE /comments/{id}` — soft-delete (author or owner).
-- Mobile: reactions strip + comments sheet on the check-in detail
-  screen; badge counts on the feed thumbnail.
+- Mobile: dedicated `/checkin/view?id=<uuid>` route rendering the
+  check-in with media hero, XP breakdown, reactions strip and
+  inline comments section — no bottom-sheet modals. Feed cards
+  render the aggregate strip + comment count badge from the
+  batched payload and link to the detail route.
 
 **Out of scope**
 
@@ -53,10 +58,12 @@ that closes the loop between the person who trained and their crew.
 - **Aggregation on read**, not write. Reaction counts and comment
   counts are computed from the base tables with an index; no
   denormalized counter columns until read volume demands it.
-- **Visibility is checked once per request** at the endpoint layer,
-  using the same helper that Phase 12 introduces for check-in
-  visibility. Do not embed visibility rules inside the reaction /
-  comment services.
+- **Visibility is checked once per request** at the endpoint layer
+  through an `ICheckInVisibility` seam. The MVP implementation
+  returns true for every authenticated caller (open feed); Phase 12
+  later provides the friend-graph implementation without the
+  endpoint layer caring. Reaction / comment services stay
+  visibility-agnostic.
 - **Idempotent reaction toggle** — `POST /check_ins/{id}/reactions`
   with the same emoji from the same user removes it (nice for
   double-tap UX). Return the updated aggregate in the same response
@@ -76,20 +83,30 @@ that closes the loop between the person who trained and their crew.
 - `Social/Entities/CheckInReaction.cs`, `CheckInComment.cs`.
 - `Social/Repositories/ICheckInReactionRepository.cs` +
   `ICheckInCommentRepository.cs`.
+- `Social/Services/ICheckInVisibility.cs` — single seam for
+  visibility (MVP: `OpenCheckInVisibility` returns true for any
+  authenticated caller).
 - `Social/Services/ICheckInSocialService.cs` — orchestrates toggle
   and comment CRUD, emits MediatR events.
 - `Social/Endpoints/CheckInReactionsEndpoint.cs` + `CheckInCommentsEndpoint.cs`.
 - `Social/Dto/*` — request/response DTOs + validators.
-- Mobile: `components/organisms/ReactionsStrip.tsx`,
-  `CommentsSheet.tsx`; wire into the check-in detail screen and the
-  feed item.
+- Mobile route: `app/(app)/checkin/view/page.tsx` — the detail
+  screen.
+- Mobile components: `organisms/ReactionsStrip.tsx`,
+  `organisms/CommentsSection.tsx`, `atoms/CheckinMediaHero.tsx`,
+  `atoms/XpBreakdown.tsx`. Feed cards (`CheckinCard`) gain the
+  aggregate strip + comment badge from the batched payload.
 
 ## 5. Dependencies
 
-- **Blocked by**: Phase 5 (check-in exists), Phase 12 (friendship +
-  visibility rules), Phase 13 (activity timeline emitters).
+- **Blocked by**: Phase 5 (check-in exists).
+- **Soft-dependency on Phase 12** (friendship + visibility rules) —
+  the `ICheckInVisibility` seam ships here so Phase 12 can plug its
+  implementation in without touching endpoints. MVP ships with an
+  open implementation (any authenticated caller).
 - **Blocks**: Phase 24 (push notifications routes reaction/comment
-  events).
+  events). Phase 13 (activity timeline) subscribes to the MediatR
+  events emitted here.
 - **Adjacent**: Phase 6 (check-in media) — reactions/comments hang
   off the check-in, not the media itself, so ordering vs. Phase 6
   is free. Ship Phase 6 first so the check-in detail screen has
@@ -123,8 +140,10 @@ that closes the loop between the person who trained and their crew.
   page of comments oldest-first with author + timestamp.
 - `DELETE /comments/{id}` soft-deletes when caller is the author
   or the check-in owner; 403 otherwise.
-- Visibility respected: friends-only check-ins reject reactions /
-  comments from non-friends with 404 (obscure the existence).
+- Visibility routed through `ICheckInVisibility`: MVP open — every
+  authenticated caller succeeds; when a test double or Phase 12
+  implementation returns false, endpoints respond with 404 (not
+  403) to obscure existence.
 - Feed item on mobile renders the aggregate reaction strip and the
   comment count badge without an extra round-trip (data included in
   the feed list response).

@@ -61,6 +61,8 @@ const row = (id: string, title: string) => ({
     notes: null,
     hasMedia: false,
     mediaPreview: null,
+    reactions: { counts: {}, mine: [] },
+    commentsCount: 0,
 });
 
 describe('<CheckinList />', () => {

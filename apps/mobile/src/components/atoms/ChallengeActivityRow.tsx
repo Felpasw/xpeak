@@ -1,10 +1,17 @@
+'use client';
+
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Dumbbell } from 'lucide-react';
+import { Dumbbell, Heart, MessageCircle } from 'lucide-react';
+import { motion } from 'motion/react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import type { ChallengeCheckInFeedEntry } from '@xpeak/shared';
+
+import checkInHooks from '@/hooks/useCheckIn';
+
+const QUICK_EMOJI = '🔥';
 
 interface ChallengeActivityRowProps {
     entry: ChallengeCheckInFeedEntry;
@@ -20,6 +27,20 @@ export function ChallengeActivityRow({ entry }: ChallengeActivityRowProps) {
     const multipliers = checkIn.scoringSnapshot.multipliers;
     const hasMultipliers = multipliers.length > 0;
     const profileHref = `/u?username=${encodeURIComponent(author.username)}`;
+    const detailHref = `/checkin/view?id=${checkIn.id}`;
+    const reactionCount = Object.values(checkIn.reactions.counts).reduce(
+        (acc, n) => acc + n,
+        0,
+    );
+    const quickLiked = checkIn.reactions.mine.includes(QUICK_EMOJI);
+
+    const toggle = checkInHooks.useToggleReaction();
+
+    const handleQuickReact = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggle.mutate({ checkInId: checkIn.id, emoji: QUICK_EMOJI });
+    };
 
     return (
         <li className="flex flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40">
@@ -90,6 +111,33 @@ export function ChallengeActivityRow({ entry }: ChallengeActivityRowProps) {
                     <span className="shrink-0 rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 font-mono text-xs font-semibold text-sky-200">
                         +{checkIn.xpEarned} XP
                     </span>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-zinc-400">
+                    <motion.button
+                        type="button"
+                        onClick={handleQuickReact}
+                        disabled={toggle.isPending}
+                        aria-label={`Reagir com ${QUICK_EMOJI}`}
+                        aria-pressed={quickLiked}
+                        data-testid="challenge-activity-reactions"
+                        data-mine={quickLiked || undefined}
+                        data-pending={toggle.isPending || undefined}
+                        whileTap={{ scale: 1.3 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                        className="inline-flex items-center gap-1 rounded-full px-1 transition-colors data-[mine]:text-sky-300 data-[pending]:opacity-60"
+                    >
+                        <Heart className="h-4 w-4" />
+                        {reactionCount}
+                    </motion.button>
+                    <Link
+                        href={detailHref}
+                        aria-label="Ver comentários"
+                        data-testid="challenge-activity-comments"
+                        className="inline-flex items-center gap-1 rounded-full px-1 transition-colors hover:text-zinc-200"
+                    >
+                        <MessageCircle className="h-4 w-4" />
+                        {checkIn.commentsCount}
+                    </Link>
                 </div>
                 {hasMultipliers && (
                     <p

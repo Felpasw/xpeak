@@ -58,8 +58,8 @@ describe('useCheckInsList', () => {
             ),
         );
 
-        const { useCheckInsList } = await import('@/hooks/useCheckIn');
-        const { result } = renderHook(() => useCheckInsList(), { wrapper: wrap() });
+        const { default: checkInHooks } = await import('@/hooks/useCheckIn');
+        const { result } = renderHook(() => checkInHooks.useList(), { wrapper: wrap() });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data?.pages[0]?.checkIns).toHaveLength(1);
@@ -87,8 +87,8 @@ describe('useCheckInsList', () => {
             }),
         );
 
-        const { useCheckInsList } = await import('@/hooks/useCheckIn');
-        const { result } = renderHook(() => useCheckInsList(), { wrapper: wrap() });
+        const { default: checkInHooks } = await import('@/hooks/useCheckIn');
+        const { result } = renderHook(() => checkInHooks.useList(), { wrapper: wrap() });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.hasNextPage).toBe(true);
@@ -132,15 +132,15 @@ describe('useCreateCheckIn', () => {
         );
 
         const Wrapper = wrap();
-        const { useCheckInsList, useCreateCheckIn } = await import('@/hooks/useCheckIn');
+        const { default: checkInHooks } = await import('@/hooks/useCheckIn');
 
-        const { result: listResult } = renderHook(() => useCheckInsList(), {
+        const { result: listResult } = renderHook(() => checkInHooks.useList(), {
             wrapper: Wrapper,
         });
         await waitFor(() => expect(listResult.current.isSuccess).toBe(true));
         expect(listFetchCount).toBe(1);
 
-        const { result: mutationResult } = renderHook(() => useCreateCheckIn(), {
+        const { result: mutationResult } = renderHook(() => checkInHooks.useCreate(), {
             wrapper: Wrapper,
         });
         await mutationResult.current.mutateAsync({ title: 'Leg day' });

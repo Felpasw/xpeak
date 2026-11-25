@@ -53,6 +53,27 @@ public sealed class CheckInRepository(AppDbContext db) : ICheckInRepository
         return new CheckInPage(rows, nextCursor);
     }
 
+    public async Task<CheckInDetailRow?> GetDetailAsync(
+        Guid checkInId,
+        CancellationToken ct = default) =>
+        await db.CheckIns
+            .AsNoTracking()
+            .Where(c => c.Id == checkInId)
+            .Join(
+                db.Users.AsNoTracking(),
+                c => c.UserId,
+                u => u.Id,
+                (c, u) => new CheckInDetailRow(
+                    c,
+                    new CheckInAuthorSnapshot(u.Id, u.UserName ?? "", u.AvatarUrl),
+                    db.CheckInMedia.Any(m => m.CheckInId == c.Id),
+                    db.CheckInMedia
+                        .Where(m => m.CheckInId == c.Id)
+                        .OrderBy(m => m.Position)
+                        .Select(m => new FirstMediaSource(m.Kind, m.StorageKey))
+                        .FirstOrDefault()))
+            .SingleOrDefaultAsync(ct);
+
     private static string EncodeCursor(DateTimeOffset at, Guid id)
     {
         var raw = $"{at.ToString("O", CultureInfo.InvariantCulture)}|{id:D}";
