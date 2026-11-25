@@ -1,3 +1,5 @@
+import type { PropsWithChildren } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import type { CheckIn } from '@xpeak/shared';
 import { describe, expect, it } from 'vitest';
@@ -18,9 +20,18 @@ const base: CheckIn = {
     commentsCount: 0,
 };
 
+const wrap = () => {
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    return function Wrapper({ children }: PropsWithChildren) {
+        return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    };
+};
+
 describe('<CheckinCard />', () => {
     it('renders title and the XP pill', () => {
-        render(<CheckinCard checkIn={base} />);
+        render(<CheckinCard checkIn={base} />, { wrapper: wrap() });
 
         expect(screen.getByText('Treino de perna')).toBeInTheDocument();
         expect(screen.getByText(/\+14 XP/)).toBeInTheDocument();
@@ -36,25 +47,25 @@ describe('<CheckinCard />', () => {
             },
         };
 
-        render(<CheckinCard checkIn={withMedia} />);
+        render(<CheckinCard checkIn={withMedia} />, { wrapper: wrap() });
 
         const img = screen.getByAltText('Mídia do check-in Treino de perna');
         expect(img.getAttribute('src')).toContain('fake.local');
     });
 
     it('falls back to a placeholder icon when no media', () => {
-        render(<CheckinCard checkIn={base} />);
+        render(<CheckinCard checkIn={base} />, { wrapper: wrap() });
         expect(screen.getByTestId('checkin-card-placeholder')).toBeInTheDocument();
     });
 
     it('renders truncated notes when present', () => {
-        render(<CheckinCard checkIn={base} />);
+        render(<CheckinCard checkIn={base} />, { wrapper: wrap() });
         expect(screen.getByText('Agachamento pesado')).toBeInTheDocument();
     });
 
     it('omits the notes line when notes is null', () => {
         const noNotes: CheckIn = { ...base, notes: null };
-        render(<CheckinCard checkIn={noNotes} />);
+        render(<CheckinCard checkIn={noNotes} />, { wrapper: wrap() });
         expect(screen.queryByText('Agachamento pesado')).not.toBeInTheDocument();
     });
 });
