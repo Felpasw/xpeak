@@ -31,15 +31,15 @@ describe('<ChallengeDetailShareButton />', () => {
         vi.clearAllMocks();
     });
 
-    it('renders the share url built from the invitation id', async () => {
+    it('carries the share url built from the invitation id on the copy button', async () => {
         const { ChallengeDetailShareButton } = await import(
             '@/components/organisms/ChallengeDetailShareButton'
         );
 
         render(<ChallengeDetailShareButton invitationId={invitationId} />);
 
-        const url = screen.getByTestId('challenge-share-url');
-        expect(url.textContent).toBe(expectedUrl);
+        const button = screen.getByTestId('challenge-share-url');
+        expect(button.getAttribute('data-share-url')).toBe(expectedUrl);
     });
 
     it('writes the url to the clipboard and toasts success on copy click', async () => {

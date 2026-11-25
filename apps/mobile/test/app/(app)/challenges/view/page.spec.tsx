@@ -108,7 +108,9 @@ describe('ChallengeDetailPage', () => {
         expect(bar.getAttribute('aria-valuenow')).toBe('420');
         expect(bar.getAttribute('aria-valuemax')).toBe('3162');
 
-        expect(screen.getByRole('button', { name: /deletar/i })).toBeInTheDocument();
+        expect(
+            screen.getByRole('link', { name: /configurar challenge/i }),
+        ).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /copiar link/i })).toBeInTheDocument();
     });
 
@@ -259,7 +261,7 @@ describe('ChallengeDetailPage', () => {
         expect(screen.queryByTestId('challenge-detail-tiers')).not.toBeInTheDocument();
     });
 
-    it('hides the delete and share buttons for non-owner members', async () => {
+    it('hides the settings and share buttons for non-owner members', async () => {
         server.use(
             http.get('http://localhost:5000/challenges/ch-1', () =>
                 HttpResponse.json({
@@ -290,7 +292,9 @@ describe('ChallengeDetailPage', () => {
         render(<Page />, { wrapper: wrap() });
 
         await waitFor(() => expect(screen.getByText('Rumo ao level 10')).toBeInTheDocument());
-        expect(screen.queryByRole('button', { name: /deletar/i })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('link', { name: /configurar challenge/i }),
+        ).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /copiar link/i })).not.toBeInTheDocument();
     });
 });

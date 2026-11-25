@@ -1,3 +1,6 @@
+import type { CheckIn } from '../checkin/types';
+import type { PublicUser } from '../users/types';
+
 export enum ChallengeVisibility {
     Public = 'public',
     Private = 'private',
@@ -140,4 +143,30 @@ export interface JoinChallengeRequest {
 export interface JoinChallengeResponse {
   challenge: Challenge;
   membership: ChallengeMembership;
+}
+
+export interface ChallengeMemberTier {
+  id: string;
+  minLevel: number;
+  title: string;
+}
+
+export interface ChallengeMemberRanking {
+  user: PublicUser;
+  progress: MembershipProgress;
+  tier: ChallengeMemberTier | null;
+}
+
+export interface ListChallengeMembersResponse {
+  members: ChallengeMemberRanking[];
+}
+
+export interface ChallengeCheckInFeedEntry {
+  checkIn: CheckIn;
+  author: PublicUser;
+}
+
+export interface ListChallengeCheckInsResponse {
+  items: ChallengeCheckInFeedEntry[];
+  nextCursor: string | null;
 }

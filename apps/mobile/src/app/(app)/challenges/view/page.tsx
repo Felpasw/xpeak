@@ -1,12 +1,15 @@
 'use client';
 
+import { Settings } from 'lucide-react';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChallengeMembershipRole } from '@xpeak/shared';
 
 import { ChallengeDetailNotFound } from '@/components/atoms/ChallengeDetailNotFound';
-import { ChallengeDetailDeleteButton } from '@/components/organisms/ChallengeDetailDeleteButton';
+import { SkyIconButton } from '@/components/atoms/SkyIconButton';
+import { ChallengeDetailActivity } from '@/components/organisms/ChallengeDetailActivity';
 import { ChallengeDetailHeader } from '@/components/organisms/ChallengeDetailHeader';
+import { ChallengeDetailMembers } from '@/components/organisms/ChallengeDetailMembers';
 import { ChallengeDetailProgress } from '@/components/organisms/ChallengeDetailProgress';
 import { ChallengeDetailShareButton } from '@/components/organisms/ChallengeDetailShareButton';
 import { ChallengeDetailTiers } from '@/components/organisms/ChallengeDetailTiers';
@@ -42,12 +45,24 @@ function ChallengeDetailBody() {
     return (
         <main className="flex flex-1 flex-col gap-6 px-6 pt-10 pb-48">
             <ChallengeDetailHeader challenge={challenge} />
+            {isOwner && (
+                <div className="flex items-stretch gap-3">
+                    {shareLink && (
+                        <div className="flex-1">
+                            <ChallengeDetailShareButton invitationId={shareLink.id} />
+                        </div>
+                    )}
+                    <SkyIconButton
+                        href={`/challenges/view/settings?id=${challenge.id}`}
+                        Icon={Settings}
+                        ariaLabel="Configurar challenge"
+                    />
+                </div>
+            )}
             <ChallengeDetailProgress challengeId={challenge.id} />
             <ChallengeDetailTiers tiers={tiers} currentTier={currentTier} />
-            {isOwner && shareLink && (
-                <ChallengeDetailShareButton invitationId={shareLink.id} />
-            )}
-            {isOwner && <ChallengeDetailDeleteButton challengeId={challenge.id} />}
+            <ChallengeDetailMembers challengeId={challenge.id} />
+            <ChallengeDetailActivity challengeId={challenge.id} />
         </main>
     );
 }

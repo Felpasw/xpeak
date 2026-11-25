@@ -28,7 +28,7 @@ export default function ChallengesPage() {
                 <PageHeader title={TITLE} description={DESCRIPTION} />
                 <Link
                     href="/challenges/new"
-                    className="flex items-center gap-1 rounded-full border border-sky-500/40 bg-sky-500/10 px-4 py-2 text-xs font-semibold text-sky-300 transition-colors hover:border-sky-400/70 hover:text-sky-200"
+                    className="flex items-center gap-1 rounded-full border border-sky-500/40 bg-gradient-to-br from-sky-500/15 via-sky-500/10 to-transparent px-4 py-2 text-xs font-semibold text-sky-100 shadow-[0_0_24px_-10px_rgba(56,189,248,0.6)] transition-colors hover:border-sky-400/70 hover:bg-sky-500/25"
                     aria-label="Criar novo challenge"
                 >
                     <Plus className="h-4 w-4" />

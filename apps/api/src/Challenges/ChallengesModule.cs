@@ -22,6 +22,8 @@ public static class ChallengesModule
         GetChallengeEndpoint.Map(app);
         DeleteChallengeEndpoint.Map(app);
         GetChallengeProgressEndpoint.Map(app);
+        ListChallengeMembersEndpoint.Map(app);
+        ListChallengeCheckInsEndpoint.Map(app);
         JoinChallengeEndpoint.Map(app);
         EndChallengeEndpoint.Map(app);
         PresignTierImageEndpoint.Map(app);

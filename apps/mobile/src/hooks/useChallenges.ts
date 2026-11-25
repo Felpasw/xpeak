@@ -6,12 +6,19 @@
  * hook calls below.
  */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+    useInfiniteQuery,
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from '@tanstack/react-query';
 
 import challengesService from '@/services/challenges.service';
 
 import type {
+    ChallengeCheckInsQuery,
     ChallengeDetailQuery,
+    ChallengeMembersQuery,
     ChallengeProgressQuery,
     ChallengesListQuery,
     ChallengesSummaryQuery,
@@ -32,6 +39,8 @@ export const CHALLENGES_QUERY_KEYS = {
     summary: () => SUMMARY_KEY,
     detail: (id: string) => ['challenges', 'detail', id] as const,
     progress: (id: string) => ['challenges', 'progress', id] as const,
+    members: (id: string) => ['challenges', 'members', id] as const,
+    checkIns: (id: string) => ['challenges', 'check_ins', id] as const,
 } as const;
 
 class ChallengesHooks implements IChallengesHooks {
@@ -67,6 +76,32 @@ class ChallengesHooks implements IChallengesHooks {
         return useQuery({
             queryKey: CHALLENGES_QUERY_KEYS.progress(id),
             queryFn: () => challengesService.progress(id),
+            enabled: Boolean(id),
+        });
+    }
+
+    useMembers(id: string | null | undefined): ChallengeMembersQuery {
+        return useQuery({
+            queryKey: id
+                ? CHALLENGES_QUERY_KEYS.members(id)
+                : (['challenges', 'members', '_disabled'] as const),
+            queryFn: async () => {
+                const response = await challengesService.members(id!);
+                return response.members;
+            },
+            enabled: Boolean(id),
+        });
+    }
+
+    useCheckIns(id: string | null | undefined): ChallengeCheckInsQuery {
+        return useInfiniteQuery({
+            queryKey: id
+                ? CHALLENGES_QUERY_KEYS.checkIns(id)
+                : (['challenges', 'check_ins', '_disabled'] as const),
+            queryFn: ({ pageParam }) =>
+                challengesService.checkIns(id!, { cursor: pageParam ?? undefined }),
+            initialPageParam: null as string | null,
+            getNextPageParam: (lastPage) => lastPage.nextCursor,
             enabled: Boolean(id),
         });
     }
